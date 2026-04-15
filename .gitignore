@@ -59,7 +59,12 @@ Assets/AddressableAssetsData/*.json
 Assets/AddressableAssetsData/**/*.hash
 
 # =========================
-# GitHuub Copilot
+# GitHub Copilot
 # =========================
 .github/
 docs/
+
+# =========================
+# Markdownlint configuration
+# =========================
+.markdownlint-cli2.jsonc
