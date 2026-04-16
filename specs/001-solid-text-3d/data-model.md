@@ -184,7 +184,7 @@ RegenerateMesh() → GlyphMeshBuilder.Build() → MeshFilter.sharedMesh 更新
 | メソッド | シグネチャ | 説明 |
 | --- | --- | --- |
 | `Build` | `(List<GlyphContour> contours, MeshGenerationParams p) : Mesh` | メッシュ全体を生成して返す |
-| `BuildGlyphMesh` | `(GlyphContour glyph, float extrusionDepth, float outlineWidth) : GlyphMeshData` | 1 グリフのメッシュデータを生成 |
+| `BuildGlyphMesh` | `(GlyphContour glyph, float extrusionDepth, float outlineWidth) : GlyphMeshData` | 1 グリフのメッシュデータを生成（戻り値型 `GlyphMeshData` の定義は § 9 を参照） |
 
 #### 内部処理フロー
 
@@ -215,6 +215,12 @@ RegenerateMesh() → GlyphMeshBuilder.Build() → MeshFilter.sharedMesh 更新
 4. `MeshExtruder.Build()` で 3D メッシュを生成
 5. フォント未指定時・グリフ欠損時のフォールバック処理
 
+> **実装上の注意: フォントバイトの取得方法**  
+> `SolidText3DComponent._font`（`UnityEngine.Font`）から生の TTF/OTF バイト列を取得する Unity 標準 API は存在しない。実装では以下の方針を採用する。
+>
+> - **エディタ実行時（OnValidate 経由・エディタメッシュ更新）**: `#if UNITY_EDITOR` ガード内で `UnityEditor.AssetDatabase.GetAssetPath(font)` によりパスを取得し、`System.IO.File.ReadAllBytes()` で読み込む。
+> - **ランタイム（ビルド済みゲーム）**: `AssetDatabase` は使用不可。v1 ではランタイム実行時に `Debug.LogWarning` を出力して空メッシュを返す。ランタイムでフォントを使用したい場合の回避策は [quickstart.md「トラブルシューティング」](quickstart.md) に記載する。
+
 ---
 
 ### 8. `SolidText3DInspector` (Editor class)
@@ -227,6 +233,22 @@ RegenerateMesh() → GlyphMeshBuilder.Build() → MeshFilter.sharedMesh 更新
 - `[CustomEditor(typeof(SolidText3DComponent))]` 属性でカスタムインスペクターとして登録
 - Inspector の入力変更 → `serializedObject.ApplyModifiedProperties()` → `OnValidate()` が自動呼び出し
 - エディタ実行中は `EditorApplication.QueuePlayerLoopUpdate()` でビューを再描画
+
+---
+
+### 9. `GlyphMeshData` (struct)
+
+**場所**: `Runtime/GlyphMeshData.cs`  
+**責務**: 単一グリフの 3D メッシュ構成データ（頂点・三角形インデックス・法線）を保持する一時的な値型。`MeshExtruder.BuildGlyphMesh()` が返し、`MeshExtruder.Build()` 内で全グリフ分を結合して最終 `UnityEngine.Mesh` を生成する際に使用される。
+
+#### フィールド
+
+| フィールド名 | 型 | 説明 |
+| --- | --- | --- |
+| `Vertices` | `List<Vector3>` | グリフの頂点リスト（前面・背面・側面をすべて含む） |
+| `Triangles` | `List<int>` | 三角形インデックスリスト（3 要素ごとに 1 三角形） |
+| `Normals` | `List<Vector3>` | 各頂点の法線ベクトル |
+| `Offset` | `Vector3` | 文字配置計算で決定したこのグリフの配置オフセット（他グリフとの結合時に加算） |
 
 ---
 

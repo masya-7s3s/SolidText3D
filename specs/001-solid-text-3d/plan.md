@@ -131,40 +131,122 @@ Packages/
 
 ## 実装フェーズ概要
 
-> 詳細タスクは `/speckit.tasks` コマンドで生成される `tasks.md` を参照。
+> 詳細タスクは `/speckit.tasks` コマンドで生成される `tasks.md` を参照。  
+> 各ステップに「→ 参照:」として記載したリンクで、仕様・アルゴリズム詳細を確認できる。
 
 ### フェーズ A: パッケージスケルトン構築
 
-1. `Packages/com.yourcompany.solidtext3d/` ディレクトリ作成
-2. `package.json` 作成（name, version, unity, description, author）
-3. 各ディレクトリ（`Runtime/`, `Editor/`, `Tests/Editor/`, `Tests/Runtime/`, `Samples~/`）作成
-4. 各 `asmdef` ファイル作成・設定
-5. サードパーティ DLL の取得・`Runtime/Plugins/` への配置
+**A-1** ディレクトリツリー作成  
+`Packages/com.yourcompany.solidtext3d/` 配下に `Runtime/`, `Runtime/Plugins/`, `Editor/`, `Tests/Editor/`, `Tests/Runtime/`, `Samples~/BasicUsage/`, `Samples~/CJKExample/`, `Documentation~/` を作成。  
+→ 参照: [research.md「研究結果 6: UPM パッケージ構造・確定ディレクトリ構造」](research.md)
 
-> ⚠️ **手動作業（Unity エディタ必須）**: DLL の Platform 設定確認、asmdef の Precompiled References 確認
+**A-2** `package.json` 作成  
+`name`（逆ドメイン形式）、`version: "1.0.0"`、`unity: "6000.0"`、`description`、`author` を記載。
 
-### フェーズ B: コアロジック実装（テストファースト）
+**A-3** 4 つの `asmdef` ファイル作成・設定
 
-Edit Mode テスト先行 → 実装の順で進める
+- `Runtime/com.yourcompany.solidtext3d.Runtime.asmdef` — `overrideReferences: true`、`precompiledReferences: ["SixLabors.Fonts.dll", "LibTessDotNet.dll"]`
+- `Editor/com.yourcompany.solidtext3d.Editor.asmdef` — `includePlatforms: ["Editor"]`、Runtime asmdef を参照
+- `Tests/Editor/com.yourcompany.solidtext3d.Tests.Editor.asmdef` — `optionalUnityReferences: ["TestAssemblies"]`
+- `Tests/Runtime/com.yourcompany.solidtext3d.Tests.Runtime.asmdef` — `optionalUnityReferences: ["TestAssemblies"]`
 
-1. `BezierSubdivider` テスト → 実装
-2. `GlyphContourBuilder` テスト → 実装
-3. `MeshExtruder` テスト → 実装（LibTessDotNet を使用した三角形分割・押し出し）
-4. `GlyphMeshBuilder` テスト → 実装（統合テスト、CJK 文字含む）
+→ 参照: [research.md「研究結果 6: asmdef 設定（JSON 全文）」](research.md)
 
-### フェーズ C: MonoBehaviour + Editor 統合
+**A-4** サードパーティ DLL 取得・配置  
+`SixLabors.Fonts.dll` と `LibTessDotNet.dll` を `Runtime/Plugins/` に配置。  
+→ 参照: [research.md「研究結果 7: NuGet DLL の Unity への組み込み方法」](research.md) / [quickstart.md「ステップ 1-1」](quickstart.md)
 
-1. `SolidText3DComponent` 実装（`Awake`, `OnValidate`, `LateUpdate`, 公開プロパティ）
-2. `SolidText3DInspector` 実装（カスタムインスペクター）
-3. Play Mode テスト: ダーティフラグ動作・`LateUpdate` 再生成
+> ⚠️ **手動作業 M-1・M-2（Unity エディタ必須）**: DLL 配置後に Plugin Import Settings で Platform 設定確認、asmdef の Precompiled References 確認
 
-### フェーズ D: ドキュメント・サンプル・パッケージ整備
+---
 
-1. `README.md`, `CHANGELOG.md`, `LICENSE.md`, `Third Party Notices.md` 作成
-2. `Samples~/BasicUsage/` サンプルシーン作成
-3. `Samples~/CJKExample/` サンプルシーン作成
+### フェーズ B: データ構造ファイルの作成
 
-> ⚠️ **手動作業（Unity エディタ必須）**: Unity シーンファイル（`.unity`）の作成・編集はエディタ操作が必要。C# スクリプト部分は VS Code で作成可能。
+コアロジックが依存するデータ保持型を先に作成する（相互依存がなく並行作業可）。
+
+**B-1** `Runtime/MeshGenerationParams.cs` 作成  
+→ 参照: [data-model.md「2. MeshGenerationParams (struct)」](data-model.md)
+
+**B-2** `Runtime/GlyphContour.cs` 作成  
+→ 参照: [data-model.md「3. GlyphContour (class)」](data-model.md)
+
+**B-3** `Runtime/GlyphMeshData.cs` 作成  
+→ 参照: [data-model.md「9. GlyphMeshData (struct)」](data-model.md)
+
+---
+
+### フェーズ C: コアロジック実装（テストファースト・依存順）
+
+**Red → Green** のサイクルで進める: テスト作成 → 失敗確認 → 実装 → 通過確認。  
+各ステップは前のステップの全テストが通過してから開始すること。
+
+> ⚠️ **手動作業 M-3（Unity エディタ必須）**: 各ステップ後に Test Runner でテストが認識・実行できるか確認
+
+**C-1** `BezierSubdivider`（依存: なし）
+
+1. `Tests/Editor/BezierSubdividerTests.cs` 作成  
+   → テストケース: [data-model.md「テスト対象エンティティ: BezierSubdivider 行」](data-model.md)
+2. `Runtime/BezierSubdivider.cs` 実装  
+   → メソッド仕様: [data-model.md「5. BezierSubdivider (static class)」](data-model.md)  
+   → アルゴリズム（再帰的 DeCasteljau 法・推奨パラメータ）: [research.md「研究結果 3: Bezier 曲線離散化戦略」](research.md)
+
+**C-2** `GlyphContourBuilder`（依存: C-1 BezierSubdivider、B-2 GlyphContour）
+
+1. `Tests/Editor/GlyphContourBuilderTests.cs` 作成  
+   → テストケース: [data-model.md「テスト対象エンティティ: GlyphContourBuilder 行」](data-model.md)
+2. `Runtime/GlyphContourBuilder.cs` 実装  
+   → コールバックメソッド仕様: [data-model.md「4. GlyphContourBuilder (class, IGlyphRenderer)」](data-model.md)  
+   → SixLabors.Fonts の `IGlyphRenderer` 呼び出しパターン: [research.md「研究結果 1: 使用コード（概要）」](research.md)
+
+**C-3** `MeshExtruder`（依存: B-2 GlyphContour、B-3 GlyphMeshData）
+
+1. `Tests/Editor/MeshExtruderTests.cs` 作成  
+   → テストケース: [data-model.md「テスト対象エンティティ: MeshExtruder 行」](data-model.md)
+2. `Runtime/MeshExtruder.cs` 実装  
+   → メソッド仕様・内部処理フロー: [data-model.md「6. MeshExtruder (static class)」](data-model.md)  
+   → 前面・背面・側面の押し出しアルゴリズム: [research.md「研究結果 4: 押し出しアルゴリズム」](research.md)  
+   → アウトライン（Miter join）生成: [research.md「研究結果 5: アウトライン幾何生成」](research.md)  
+   → LibTessDotNet の `AddContour` / `Tessellate` 呼び出し: [research.md「研究結果 2: LibTessDotNet 使用コード」](research.md)
+
+**C-4** `GlyphMeshBuilder`（依存: C-2 GlyphContourBuilder、C-3 MeshExtruder、B-1 MeshGenerationParams）
+
+1. `Tests/Editor/GlyphMeshBuilderTests.cs` 作成  
+   → テストケース（CJK 文字・空文字・フォントなし）: [data-model.md「テスト対象エンティティ: GlyphMeshBuilder 行」](data-model.md)
+2. `Runtime/GlyphMeshBuilder.cs` 実装  
+   → 処理フロー・フォールバック仕様: [data-model.md「7. GlyphMeshBuilder (static class)」](data-model.md)  
+   → フォントバイト取得の制約と実装方針: [data-model.md「7. 実装上の注意: フォントバイトの取得方法」](data-model.md)  
+   → SixLabors.Fonts `FontCollection` の使い方: [research.md「研究結果 1: 使用コード（概要）」](research.md)
+
+---
+
+### フェーズ D: MonoBehaviour + Editor 統合
+
+**D-1** `Runtime/SolidText3DComponent.cs` 実装  
+→ フィールド・プロパティ・ライフサイクルメソッド仕様: [data-model.md「1. SolidText3DComponent (MonoBehaviour)」](data-model.md)  
+→ 公開 API 契約（XML ドキュメントコメント文面含む）: [contracts/public-api.md](contracts/public-api.md)  
+→ バリデーションルール（クランプ・フォールバック条件）: [data-model.md「バリデーションルール」](data-model.md)
+
+**D-2** Play Mode テスト `Tests/Runtime/SolidText3DRuntimeTests.cs` 作成・実行  
+→ テストケース（ダーティフラグ・LateUpdate 再生成）: [data-model.md「テスト対象エンティティ: SolidText3DComponent 行」](data-model.md)
+
+**D-3** `Editor/SolidText3DInspector.cs` 実装  
+→ 仕様（CustomEditor 属性・QueuePlayerLoopUpdate 呼び出し）: [data-model.md「8. SolidText3DInspector (Editor class)」](data-model.md)
+
+---
+
+### フェーズ E: ドキュメント・サンプル・パッケージ整備
+
+**E-1** パッケージルートのドキュメントファイル作成  
+`README.md`, `CHANGELOG.md`, `LICENSE.md`, `Third Party Notices.md`  
+→ ライセンス記載内容: [research.md「研究結果 1・2: ライセンス欄」](research.md)
+
+**E-2** `Samples~/BasicUsage/` C# スクリプト作成（VS Code で作成可）  
+→ コード例: [contracts/public-api.md「使用例」](contracts/public-api.md)
+
+**E-3** `Samples~/CJKExample/` C# スクリプト作成（VS Code で作成可）
+
+> ⚠️ **手動作業 M-4（Unity エディタ必須）**: `.unity` シーンファイルの作成・オブジェクト配置・保存はエディタ操作が必要  
+> ⚠️ **手動作業 M-5（Unity エディタ必須）**: Unity 6 および Unity 2022.3 LTS でビルドを実行して動作確認
 
 ---
 
@@ -174,9 +256,9 @@ Edit Mode テスト先行 → 実装の順で進める
 | --- | --- | --- |
 | M-1 | DLL の Platform 設定確認（Plugin Import Settings） | フェーズ A 完了後 |
 | M-2 | asmdef の Precompiled References 確認 | フェーズ A 完了後 |
-| M-3 | Test Runner でテストが認識されるか確認 | フェーズ B 各ステップ後 |
-| M-4 | サンプルシーン（.unity）の作成・保存 | フェーズ D |
-| M-5 | Unity 6 / Unity 2022.3 LTS での手動ビルド確認 | フェーズ D 完了後 |
+| M-3 | Test Runner でテストが認識・実行できるか確認 | フェーズ C 各ステップ後 |
+| M-4 | サンプルシーン（.unity）の作成・保存 | フェーズ E |
+| M-5 | Unity 6 / Unity 2022.3 LTS での手動ビルド確認 | フェーズ E 完了後 |
 
 ---
 
