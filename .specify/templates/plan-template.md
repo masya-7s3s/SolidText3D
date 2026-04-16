@@ -31,7 +31,15 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+<!-- SolidText3D 憲法 v1.0.0 に基づくゲート -->
+
+- [ ] **I. UPM 構造**: `Editor/`・`Runtime/`・`Tests/` の分離と各 asmdef の配置が設計に含まれているか
+- [ ] **II. Editor/Runtime 分離**: ランタイム asmdef が Editor Only アセンブリを参照していないか
+- [ ] **III. テストファースト**: Edit Mode / Play Mode テストの計画が spec.md に含まれているか
+- [ ] **IV. 後方互換性**: 公開 API の変更は `[Obsolete]` ステップを経ているか、SemVer バンプ種別は正しいか
+- [ ] **V. パフォーマンス**: Update() 系メソッド内の GC アロケーション計画がゼロかまたは正当化されているか
+- [ ] **VI. Asset Store 準拠**: サードパーティライセンス・依存パッケージの記載計画があるか
+- [ ] **VII. シンプルさ**: 不必要な抽象化・設定オプションが設計に含まれていないか
 
 ## Project Structure
 
