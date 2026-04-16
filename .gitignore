@@ -68,3 +68,8 @@ docs/
 # Markdownlint configuration
 # =========================
 .markdownlint-cli2.jsonc
+
+# =========================
+# SpecKit
+# =========================
+.github/
