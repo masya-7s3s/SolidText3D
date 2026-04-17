@@ -69,8 +69,8 @@
 - [ ] T013 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/BezierSubdivider.cs` を実装（静的クラス。`SubdivideQuadratic(Vector2 p0, p1, p2, float threshold, List<Vector2> output): void` と `SubdivideCubic(Vector2 p0, p1, p2, p3, float threshold, List<Vector2> output): void` を再帰的 De Casteljau 法で実装。research.md 研究結果 3 参照）
 - [ ] T015 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphContourBuilder.cs` を実装（`SixLabors.Fonts.IGlyphRenderer` 実装クラス。7 つのコールバックメソッドで `List<GlyphContour>` を構築。`System.Numerics.Vector2` ↔ `UnityEngine.Vector2` 変換を含む。research.md 研究結果 1 参照）
 - [ ] T017 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/MeshExtruder.cs` を実装（静的クラス。`Build(List<GlyphContour>, MeshGenerationParams): Mesh` と `BuildGlyphMesh(GlyphContour, float, float): GlyphMeshData` を実装。LibTessDotNet `AddContour` / `Tessellate`（EvenOdd WindingRule）による前面三角分割・背面頂点複製・側面クワッド生成・アウトライン帯生成を含む。`mesh.indexFormat = IndexFormat.UInt32` を設定。research.md 研究結果 2・4・5 参照）
-- [ ] T019 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphMeshBuilder.cs` を実装（静的クラス。`Build(MeshGenerationParams): Mesh` を実装。`SixLabors.Fonts.FontCollection` でフォントを読み込み、`GlyphContourBuilder` でグリフ輪郭を収集し、`MeshExtruder.Build()` で 3D メッシュを生成。`#if UNITY_EDITOR` ガード内で `UnityEditor.AssetDatabase.GetAssetPath` + `File.ReadAllBytes` でフォントバイト取得。フォントなし・グリフ欠損時のフォールバック処理を含む。data-model.md § 7 参照）
-- [ ] T020 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/SolidText3DComponent.cs` を実装（MonoBehaviour。`_text`, `_font`, `_extrusionDepth`, `_outlineWidth`, `_letterSpacing`, `_lineSpacing` シリアライズフィールド・`_isDirty` / `_meshFilter` 非シリアライズフィールド。`Text`, `Font`, `ExtrusionDepth`, `OutlineWidth` 公開プロパティ（set で `_isDirty = true`）。`Awake()` で MeshFilter/MeshRenderer を GetComponent または AddComponent。`OnValidate()` で `_isDirty = true`。`LateUpdate()` でダーティフラグをチェックし `RegenerateMesh()` を呼び出し。contracts/public-api.md の XML ドキュメントコメントを付与。data-model.md § 1 参照）
+- [ ] T019 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphMeshBuilder.cs` を実装（静的クラス。`Build(MeshGenerationParams): Mesh` を実装。`SixLabors.Fonts.FontCollection` でフォントを読み込み、`GlyphContourBuilder` でグリフ輪郭を収集し、`MeshExtruder.Build()` で 3D メッシュを生成。`#if UNITY_EDITOR` ガード内で `UnityEditor.AssetDatabase.GetAssetPath` + `File.ReadAllBytes` でフォントバイト取得、`#else` ブロックでは埋め込みデフォルトフォントバイトにフォールバック（FR-009 準拠）。フォントなし・グリフ欠損時のフォールバック処理を含む。data-model.md § 7 参照）
+- [ ] T020 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/SolidText3DComponent.cs` を実装（MonoBehaviour。`_text`, `_font`, `_extrusionDepth`, `_outlineWidth`, `_letterSpacing`, `_lineSpacing` シリアライズフィールド・`_isDirty` / `_meshFilter` 非シリアライズフィールド。`Text`, `Font`, `ExtrusionDepth`, `OutlineWidth`, `LetterSpacing`（FR-013）, `LineSpacing`（FR-014）公開プロパティ（set で `_isDirty = true`）。`Awake()` で MeshFilter/MeshRenderer を GetComponent または AddComponent。`OnValidate()` で `_isDirty = true`。`LateUpdate()` でダーティフラグをチェックし `RegenerateMesh()` を呼び出し。contracts/public-api.md の XML ドキュメントコメントを付与。data-model.md § 1 参照）
 - [ ] T021 [US1] `Packages/com.yourcompany.solidtext3d/Editor/SolidText3DInspector.cs` を実装（`[CustomEditor(typeof(SolidText3DComponent))]` 属性付き Editor クラス。`serializedObject.ApplyModifiedProperties()` 後に `EditorApplication.QueuePlayerLoopUpdate()` を呼び出してシーンビューを再描画。`#if UNITY_EDITOR` ガードは asmdef で不要だが `UnityEditor` 名前空間使用を明示。data-model.md § 8 参照）
 
 **チェックポイント**: この時点で US1 の全テストが PASS し、エディタ上でテキスト設定 → 3D メッシュ生成 → シーンビュー表示が動作すること（受け入れシナリオ 1〜4 を手動確認）
@@ -129,7 +129,7 @@
 ### US4 実装
 
 - [ ] T030 [US4] `Packages/com.yourcompany.solidtext3d/Runtime/SolidText3DComponent.cs` の `Awake()` および `RegenerateMesh()` にフォント null / フォントファイル削除時のデフォルトフォールバックロジックを完全実装（`_font == null` 時に `Debug.LogWarning` を出力し内部デフォルトフォントバイト（埋め込みリソース）を使用。FR-009 参照）
-- [ ] T031 [US4] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphMeshBuilder.cs` のフォントバイト取得ロジックを完全実装（エディタ実行時: `#if UNITY_EDITOR` ガード内で `UnityEditor.AssetDatabase.GetAssetPath(font)` + `System.IO.File.ReadAllBytes()` / ランタイム（ビルド済み）: `Debug.LogWarning` を出力し空メッシュを返却。data-model.md § 7 実装上の注意参照）
+- [ ] T031 [US4] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphMeshBuilder.cs` のフォントバイト取得ロジックを完全実装（エディタ実行時: `#if UNITY_EDITOR` ガード内で `UnityEditor.AssetDatabase.GetAssetPath(font)` + `System.IO.File.ReadAllBytes()` でフォントバイト取得 / ランタイム（ビルド済み）: `#else` ブロックで埋め込みデフォルトフォントバイトを使用してメッシュを生成（FR-009 準拠・エラー停止なし・Warning 出力あり）。data-model.md § 7 実装上の注意参照）
 
 **チェックポイント**: この時点でカスタムフォントの割り当て・null フォールバック・全テストの PASS が確認できること
 
@@ -145,11 +145,13 @@
 - [ ] T035 [P] `Packages/com.yourcompany.solidtext3d/Samples~/CJKExample/CJKExample.cs` を作成（日本語・中国語・韓国語を含む文字列を SolidText3DComponent に設定するサンプルコード）
 - [ ] T036 `Packages/com.yourcompany.solidtext3d/Documentation~/index.md` を作成（API リファレンス・パラメータ一覧・エディタ/ランタイムの使用ガイド・トラブルシューティング（ランタイムでのフォントバイト制限）を記載。quickstart.md を参照）
 - [ ] T037 `quickstart.md` の手動検証チェックリスト（M-1〜M-5）を実施し、Unity 6 で正常にビルド・動作することを確認（DLL Platform 設定、Test Runner 動作、シーンへの配置、エディタプレビュー、ビルド通過）
+- [ ] T038 [P] `Packages/com.yourcompany.solidtext3d/Tests/Editor/PerformanceTests.cs` に SC-001 ベンチマークテストを作成（50文字テキストのメッシュ生成時間を `System.Diagnostics.Stopwatch` で計測し、`Assert.Less(elapsedMs, 2000)` で 2000ms 未満を検証。メッシュ生成のみを計測し Unity Editor の起動コストを含めない。SC-001 対応）
+- [ ] T039 [P] `Packages/com.yourcompany.solidtext3d/Tests/Runtime/PerformanceRuntimeTests.cs` に SC-004 ベンチマークテストを作成（20個の SolidText3DComponent（各50文字）を同一シーンに配置し、`Time.deltaTime` の連続 30 フレーム平均値が 16.7ms 未満（60fps 相当）であることを `Assert.Less` で検証。SC-004 対応）
 
 > ⚠️ **手動作業 M-4**: `Samples~/BasicUsage/` と `Samples~/CJKExample/` の `.unity` シーンファイル作成・GameObject 配置・保存は Unity エディタ操作が必要  
 > ⚠️ **手動作業 M-5**: Unity 6（6000.x LTS）で PC スタンドアロンビルドを実行して動作確認
 
-**チェックポイント**: Asset Store 提出可能な状態。全テスト PASS・ビルド通過・ドキュメント整備完了
+**チェックポイント**: Asset Store 提出可能な状態。全テスト PASS・ビルド通過・ドキュメント整備完了・SC-001/SC-004 ベンチマーク PASS
 
 ---
 
@@ -189,7 +191,7 @@
 - フェーズ 2: T009・T010・T011 は同時に並行実行可能
 - フェーズ 3 テスト: T012・T014・T016・T018 は同時に並行作成可能（実装は依存順を守ること）
 - フェーズ 5 テスト: T025・T026 は同時に並行実行可能
-- フェーズ 7: T032・T034・T035 は同時に並行実行可能
+- フェーズ 7: T032・T034・T035・T038・T039 は同時に並行実行可能
 
 ---
 
@@ -244,5 +246,5 @@ US1 完了時点で:
 | フェーズ 4: US2（P2） | 3 タスク（T022–T024） | US2 |
 | フェーズ 5: US3（P2） | 4 タスク（T025–T028） | US3 |
 | フェーズ 6: US4（P3） | 3 タスク（T029–T031） | US4 |
-| フェーズ 7: ポリッシュ | 6 タスク（T032–T037） | — |
-| **合計** | **37 タスク** | 4 ユーザーストーリー |
+| フェーズ 7: ポリッシュ | 8 タスク（T032–T039） | — |
+| **合計** | **39 タスク** | 4 ユーザーストーリー |
