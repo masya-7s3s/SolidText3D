@@ -21,7 +21,7 @@
 | フェーズ 3 (T012–T021) | フェーズ C + D | コアロジック実装（US1） |
 | フェーズ 4 (T022–T024) | フェーズ D | ランタイム動的変更（US2） |
 | フェーズ 5 (T025–T028) | フェーズ C | CJK 対応（US3） |
-| フェーズ 6 (T029–T031b) | フェーズ C + D | カスタムフォント対応（US4） |
+| フェーズ 6 (T029–T031b) | フェーズ C + D | カスタムフォント対応（US4）（T029b 含む） |
 | フェーズ 7 (T032–T042) | フェーズ E | ドキュメント・ポリッシュ |
 
 ---
@@ -79,15 +79,15 @@
 - [ ] T018 [P] [US1] `Packages/com.yourcompany.solidtext3d/Tests/Editor/GlyphMeshBuilderTests.cs` を作成（ASCII 文字 "A"・"Hello" の統合メッシュ生成テスト・頂点数 > 0 の検証・null パラメータ時の安全性テスト。data-model.md § 7 参照）
 - [ ] T018b [P] [US1] `Packages/com.yourcompany.solidtext3d/Tests/Editor/GlyphMeshBuilderTests.cs` に以下のテストケースを追加:
   - `LetterSpacing` / `LineSpacing` レイアウト計算テスト（`LetterSpacing > 0` 時に各グリフの X オフセットが `LetterSpacing` 分だけ広がることを頂点位置で検証・`LineSpacing` 変更時に改行後グリフの Y オフセットが `LineSpacing × UnitsPerEm` に比例して変化することを検証。FR-013/FR-014 対応。data-model.md § 2 参照）
-- [ ] T018c [P] [US1] `Packages/com.yourcompany.solidtext3d/Tests/Editor/SolidText3DComponentTests.cs` を新規作成し、FR-005 ダーティフラグ検証テストを記述する（`Font` プロパティを変更したとき・`ExtrusionDepth` を変更したとき・`OutlineWidth` を変更したときに、それぞれ `_isDirty` が `true` になることを `SolidText3DComponent` の内部状態で検証。各パラメータ変更 → `LateUpdate` 相当の `RegenerateMesh()` 呼び出し後にメッシュが更新されることを頂点数で確認。FR-005 対応。**注意**: `GlyphMeshBuilder` はメッシュ生成ロジックを担う静的クラスであり、コンポーネントのライフサイクル挙動テストとは関心事が異なるため別ファイルに分離する）
+- [ ] T018c [P] [US1] `Packages/com.yourcompany.solidtext3d/Tests/Editor/SolidText3DComponentTests.cs` を新規作成し、FR-005 ダーティフラグ検証テストを記述する（`Font` プロパティを変更したとき・`ExtrusionDepth` を変更したとき・`OutlineWidth` を変更したときに、それぞれ `_isDirty` が `true` になることを `SolidText3DComponent` の内部状態で検証。各パラメータ変更 → `LateUpdate` 相当の `RegenerateMesh()` 呼び出し後にメッシュが更新されることを頂点数で確認。FR-005 対応。**注意**: `GlyphMeshBuilder` はメッシュ生成ロジックを担う静的クラスであり、コンポーネントのライフサイクル挙動テストとは関心事が異なるため別ファイルに分離する。**追加検証（FR-006）**: `Awake()` 後に `GetComponent<MeshFilter>()` が非 null であること・`GetComponent<MeshRenderer>()` が非 null であること・UI Canvas ではなく World Space コンポーネントであること（`GetComponent<RectTransform>()` が null であること）を検証するテストケースを含めること）
 
 ### US1 実装（各テスト FAIL 確認後に実施）
 
 - [ ] T013 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/BezierSubdivider.cs` を実装（静的クラス。`SubdivideQuadratic(Vector2 p0, p1, p2, float threshold, List<Vector2> output): void` と `SubdivideCubic(Vector2 p0, p1, p2, p3, float threshold, List<Vector2> output): void` を再帰的 De Casteljau 法で実装。research.md 研究結果 3 参照）
 - [ ] T015 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphContourBuilder.cs` を実装（`SixLabors.Fonts.IGlyphRenderer` 実装クラス。7 つのコールバックメソッドで `List<GlyphContour>` を構築。`System.Numerics.Vector2` ↔ `UnityEngine.Vector2` 変換を含む。research.md 研究結果 1 参照）
 - [ ] T017 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/MeshExtruder.cs` を実装（静的クラス。`Build(List<GlyphContour>, MeshGenerationParams): Mesh` と `BuildGlyphMesh(GlyphContour, float, float): GlyphMeshData` を実装。LibTessDotNet `AddContour` / `Tessellate`（EvenOdd WindingRule）による前面三角分割・背面頂点複製・側面クワッド生成・アウトライン帯生成を含む。`mesh.indexFormat = IndexFormat.UInt32` を設定。research.md 研究結果 2・4・5 参照）。**GC 正当化**: `List<Vector3>` 等のアロケーションはパラメータ変更時（メッシュ再生成時）のみ発生するワンショット処理であり、`LateUpdate()` 内ではダーティフラグチェックのみを行いアロケーションは発生しない旨をコード内コメントで明記すること（憲法 V 準拠）
-- [ ] T019 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphMeshBuilder.cs` を実装（静的クラス。`Build(MeshGenerationParams): Mesh` を実装。`SixLabors.Fonts.FontCollection` でフォントを読み込み、`GlyphContourBuilder` でグリフ輪郭を収集し、`MeshExtruder.Build()` で 3D メッシュを生成。`#if UNITY_EDITOR` ガード内で `UnityEditor.AssetDatabase.GetAssetPath` + `File.ReadAllBytes` でフォントバイト取得、`#else` ブロックでは **スタブとして空メッシュを返却**（`Resources.Load<TextAsset>` による Noto Sans JP バイト取得の完全実装は T031 で行う）。グリフ欠損時の空グリフスキップ処理を含む。**グリフレイアウト計算**: `MeshGenerationParams.LetterSpacing` に基づく文字間 X オフセット（各グリフの `AdvanceWidth + LetterSpacing` を累積）と、`MeshGenerationParams.LineSpacing` に基づく改行時 Y オフセット（`LineSpacing × UnitsPerEm` を行高さとして使用）を実装すること（T018b テスト対応。FR-013/FR-014 準拠）。data-model.md § 7 参照）
-- [ ] T020 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/SolidText3DComponent.cs` を実装（MonoBehaviour。`_text`, `_font`, `_extrusionDepth`, `_outlineWidth`, `_letterSpacing`, `_lineSpacing` シリアライズフィールド・`_isDirty` / `_meshFilter` 非シリアライズフィールド。`Text`, `Font`, `ExtrusionDepth`, `OutlineWidth`, `LetterSpacing`（FR-013）, `LineSpacing`（FR-014）公開プロパティ（set で `_isDirty = true`）。`Awake()` で MeshFilter/MeshRenderer を GetComponent または AddComponent。`OnValidate()` で `_isDirty = true`。`LateUpdate()` でダーティフラグをチェックし `RegenerateMesh()` を呼び出し。contracts/public-api.md の XML ドキュメントコメントを付与。data-model.md § 1 参照）
+- [ ] T019 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphMeshBuilder.cs` を実装（静的クラス。`Build(MeshGenerationParams): Mesh` を実装。`SixLabors.Fonts.FontCollection` でフォントを読み込み、`GlyphContourBuilder` でグリフ輪郭を収集し、`MeshExtruder.Build()` で 3D メッシュを生成。`#if UNITY_EDITOR` ガード内で `UnityEditor.AssetDatabase.GetAssetPath` + `File.ReadAllBytes` でフォントバイト取得、`#else` ブロックでは **スタブとして空メッシュを返却**（`Resources.Load<TextAsset>` による Noto Sans JP バイト取得の完全実装は T031 で行う）。グリフ欠損時の空グリフスキップ処理を含む。**グリフレイアウト計算**: `MeshGenerationParams.LetterSpacing` に基づく文字間 X オフセット（各グリフの `AdvanceWidth + LetterSpacing` を累積）と、`MeshGenerationParams.LineSpacing` に基づく改行時 Y オフセット（`LineSpacing × UnitsPerEm` を行高さとして使用）を実装すること（T018b テスト対応。FR-013/FR-014 準拠）。`Build()` メソッドに `<summary>`, `<param>`, `<returns>` の XML ドキュメントコメントを付与すること（憲法 VII 準拠）。data-model.md § 7 参照）
+- [ ] T020 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/SolidText3DComponent.cs` を実装（MonoBehaviour。`_text`, `_font`, `_extrusionDepth`, `_outlineWidth`, `_letterSpacing`, `_lineSpacing` シリアライズフィールド・`_isDirty` / `_meshFilter` 非シリアライズフィールド。`Text`, `Font`, `ExtrusionDepth`, `OutlineWidth`, `LetterSpacing`（FR-013）, `LineSpacing`（FR-014）公開プロパティ（set で `_isDirty = true`）。`Awake()` で MeshFilter/MeshRenderer を GetComponent または AddComponent。`OnValidate()` で `_isDirty = true`。`LateUpdate()` でダーティフラグをチェックし `RegenerateMesh()` を呼び出し。**初期値**: `_letterSpacing = 0.0f`・`_lineSpacing = 1.2f` として初期化すること（FR-013/FR-014 準拠）。contracts/public-api.md の XML ドキュメントコメントを付与。data-model.md § 1 参照）
 - [ ] T021 [US1] `Packages/com.yourcompany.solidtext3d/Editor/SolidText3DInspector.cs` を実装（`[CustomEditor(typeof(SolidText3DComponent))]` 属性付き Editor クラス。`serializedObject.ApplyModifiedProperties()` 後に `EditorApplication.QueuePlayerLoopUpdate()` を呼び出してシーンビューを再描画。`#if UNITY_EDITOR` ガードは asmdef で不要だが `UnityEditor` 名前空間使用を明示。data-model.md § 8 参照）
 
 **チェックポイント**: この時点で US1 の全テストが PASS し、エディタ上でテキスト設定 → 3D メッシュ生成 → シーンビュー表示が動作すること（受け入れシナリオ 1〜4 を手動確認）。**注意**: テスト PASS の条件は `#if UNITY_EDITOR` ブランチが有効なエディタ環境（Unity Test Framework の Edit Mode 実行）での確認とする。CI/非エディタビルドでは T019 の `#else` スタブが適用され、完全なメッシュ生成は T031 完了後に保証される
@@ -142,6 +142,7 @@
 ### US4 テスト（先行作成・FAIL 確認必須）
 
 - [ ] T029 [US4] `Packages/com.yourcompany.solidtext3d/Tests/Editor/GlyphMeshBuilderTests.cs` に `FontData = null` 時のデフォルトフォールバックテストを追加（メッシュが返されエラーが発生しないこと・`Debug.LogWarning` が出力されることを検証）
+- [ ] T029b [US4] `Packages/com.yourcompany.solidtext3d/Tests/Editor/GlyphMeshBuilderTests.cs` に SC-005 フォント切り替えテストを追加（有効なフォント A を設定しテメッシュを生成した後、フォント B（異なる TTF）に切り替えて再生成したとき、頂点数・フォント固有のグリフ形状が更新されることを検証。Inspector のみでフォント切り替えが可能であることの自動証明。SC-005 対応）
 
 ### US4 実装
 
@@ -167,7 +168,7 @@
 - [ ] T039 [P] `Packages/com.yourcompany.solidtext3d/Tests/Runtime/PerformanceRuntimeTests.cs` に SC-004 ベンチマークテストを作成（20個の SolidText3DComponent（各50文字）を同一シーンに配置し、`Time.deltaTime` の連続 30 フレーム平均値が 16.7ms 未満（60fps 相当）であることを `Assert.Less` で検証。SC-004 対応）。**テスト実行環境**: テスト結果はハードウェアに依存するため、テスト実行時の環境スペック（CPU・GPU・OS）を `PerformanceRuntimeTests.cs` 冒頭のコメントまたは Unity Test Runner の Custom Reporter 出力として記録すること。最低動作保証スペックは「Intel Core i5 第10世代相当または Apple M1 以上」とし、それ以下のスペックではテストを `[Ignore]` 属性でスキップして警告ログを出力する
 - [ ] T040 `Packages/com.yourcompany.solidtext3d/CHANGELOG.md` に v1.0.0 のリリース内容を記入（Added セクション: 主要機能一覧・TTF/OTF フォント対応・CJK サポート・LetterSpacing/LineSpacing・デフォルト埋め込みフォント（Noto Sans JP）。憲法 IV 準拠）
 - [ ] T041 `Packages/com.yourcompany.solidtext3d/Tests/` 配下の全テストを Unity Test Runner で実行し、全テスト PASS およびカバレッジ目標を最終確認する（Edit Mode: `BezierSubdivider`, `GlyphContourBuilder`, `MeshExtruder`, `GlyphMeshBuilder` が全 PASS・Play Mode: `SolidText3DRuntimeTests` が全 PASS。カバレッジ計測には Unity Code Coverage パッケージ（`com.unity.testtools.codecoverage`）を使用し（Window > Analysis > Code Coverage）、ランタイムロジックのカバレッジが **80% 以上**であることを確認・記録する。計測が技術的に不可能な場合は `specs/001-solid-text-3d/tests-coverage-gap.md` に不足ケースを記録し次スプリントで補う。標準: 憲法第 III 「ランタイムロジック 80% 以上」準拠）
-- [ ] T042 [P] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphMeshBuilder.cs` の主要メッシュ生成パス（`Build()` および `BuildGlyphMesh()` の入口・出口）に `Profiler.BeginSample` / `Profiler.EndSample` を追加し、Unity Profiler でホットパスの計測ができる状態にする。プロファイル結果は Unity Profiler の「Save current frame」または「Save all frames」機能で `.data` 形式として `specs/001-solid-text-3d/profiler-captures/` 配下に保存し、PR に添付する（保存先ディレクトリが存在しない場合は作成すること。憲法 V 準拠）
+- [ ] T042 [P] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphMeshBuilder.cs` の `Build()` および `Packages/com.yourcompany.solidtext3d/Runtime/MeshExtruder.cs` の `BuildGlyphMesh()` の入口・出口に `Profiler.BeginSample` / `Profiler.EndSample` を追加し、Unity Profiler でホットパスの計測ができる状態にする。プロファイル結果は Unity Profiler の「Save current frame」または「Save all frames」機能で `.data` 形式として `specs/001-solid-text-3d/profiler-captures/` 配下に保存し、PR に添付する（保存先ディレクトリが存在しない場合は作成すること。憲法 V 準拠）
 
 > ⚠️ **手動作業 M-6**: Unity Profiler を開き（Window > Analysis > Profiler）、SolidText3DComponent のテキスト変更を実行して `GlyphMeshBuilder.Build` サンプルがタイムラインに表示されることを確認後、「Save current frame」で `.data` ファイルを `specs/001-solid-text-3d/profiler-captures/` に保存する（Unity エディタ操作が必須）
 > ⚠️ **手動作業 M-4**: `Samples~/BasicUsage/` と `Samples~/CJKExample/` の `.unity` シーンファイル作成・GameObject 配置・保存は Unity エディタ操作が必要  
@@ -267,6 +268,6 @@ US1 完了時点で:
 | フェーズ 3: US1（P1） | 12 タスク（T012–T018c, T019–T021） | US1（MVP） |
 | フェーズ 4: US2（P2） | 3 タスク（T022–T024） | US2 |
 | フェーズ 5: US3（P2） | 4 タスク（T025–T028） | US3 |
-| フェーズ 6: US4（P3） | 4 タスク（T029–T031b） | US4 |
+| フェーズ 6: US4（P3） | 5 タスク（T029–T031b） | US4 |
 | フェーズ 7: ポリッシュ | 11 タスク（T032–T042） | — |
-| **合計** | **46 タスク** | 4 ユーザーストーリー |
+| **合計** | **47 タスク** | 4 ユーザーストーリー |
