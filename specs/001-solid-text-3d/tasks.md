@@ -24,7 +24,7 @@
 - [ ] T004 [P] `Packages/com.yourcompany.solidtext3d/Editor/com.yourcompany.solidtext3d.Editor.asmdef` を作成（`includePlatforms: ["Editor"]`, Runtime asmdef への参照を設定）
 - [ ] T005 [P] `Packages/com.yourcompany.solidtext3d/Tests/Editor/com.yourcompany.solidtext3d.Tests.Editor.asmdef` を作成（`optionalUnityReferences: ["TestAssemblies"]`, Runtime asmdef への参照を設定）
 - [ ] T006 [P] `Packages/com.yourcompany.solidtext3d/Tests/Runtime/com.yourcompany.solidtext3d.Tests.Runtime.asmdef` を作成（`optionalUnityReferences: ["TestAssemblies"]`, Runtime asmdef への参照を設定）
-- [ ] T007 NuGet.org から `SixLabors.Fonts.dll`（MIT）と `LibTessDotNet.dll`（SGI Free B v2）を取得し `Packages/com.yourcompany.solidtext3d/Runtime/Plugins/` に配置（各 `.meta` ファイルも含む）（※ quickstart.md ステップ 1-1 参照）
+- [ ] T007 NuGet.org から `SixLabors.Fonts.dll`（MIT、**取得時にバージョンをピン留めし README に記録すること**）と `LibTessDotNet.dll` v1.1.15（SGI Free B v2）を取得し `Packages/com.yourcompany.solidtext3d/Runtime/Plugins/` に配置（各 `.meta` ファイルも含む）（※ quickstart.md ステップ 1-1 参照）
 - [ ] T007b デフォルト埋め込みフォント **Noto Sans JP Regular**（SIL Open Font License 1.1）を Google Fonts（<https://fonts.google.com/noto/specimen/Noto+Sans+JP>）から取得し `Packages/com.yourcompany.solidtext3d/Runtime/Plugins/Fonts/NotoSansJP-Regular.ttf` に配置。OFL 1.1 ライセンス全文を `Third Party Notices.md` 用に保存する（spec.md § 前提条件「デフォルト埋め込みフォント」参照）
 - [ ] T008 [P] ルートドキュメントプレースホルダーを作成（`Packages/com.yourcompany.solidtext3d/` 直下に `README.md`, `CHANGELOG.md`, `LICENSE.md`, `Third Party Notices.md` を空ファイルとして作成）
 
@@ -88,12 +88,12 @@
 
 ### US2 テスト（先行作成・FAIL 確認必須）
 
-- [ ] T022 [US2] `Packages/com.yourcompany.solidtext3d/Tests/Runtime/SolidText3DRuntimeTests.cs` を作成（テキスト変更後 1 フレーム以内でメッシュが更新される Play Mode テスト・空文字列設定時のゼロポリゴン（頂点数 0）テスト・同一フレーム内の複数プロパティ変更が 1 回のメッシュ再生成に集約されるテスト。data-model.md § 1 ダーティフラグ節参照）
+- [ ] T022 [US2] `Packages/com.yourcompany.solidtext3d/Tests/Runtime/SolidText3DRuntimeTests.cs` を作成（テキスト変更後 1 フレーム以内でメッシュが更新される Play Mode テスト（`yield return null;` 後に `Assert.Greater(meshFilter.sharedMesh.vertexCount, 0)` で検証）・空文字列設定時のゼロポリゴン（頂点数 0）テスト・同一フレーム内の複数プロパティ変更が 1 回のメッシュ再生成に集約されるテスト。**前提**: テスト内でフォントを明示的にアサインして `#if UNITY_EDITOR` ブランチの動作を保証すること。data-model.md § 1 ダーティフラグ節参照）
 
 ### US2 実装
 
 - [ ] T023 [US2] `Packages/com.yourcompany.solidtext3d/Runtime/SolidText3DComponent.cs` の `RegenerateMesh()` に空文字列時のゼロポリゴン処理を追加（`string.IsNullOrEmpty(_text)` の場合は `meshFilter.sharedMesh.Clear()` を実行してエラーを発生させない）
-- [ ] T024 [US2] `Packages/com.yourcompany.solidtext3d/Runtime/SolidText3DComponent.cs` の `Text` setter で `null` 値を空文字に正規化する処理を追加し、Play Mode テスト（T022）がすべて PASS することを確認
+- [ ] T024 [US2] `Packages/com.yourcompany.solidtext3d/Runtime/SolidText3DComponent.cs` の `Text` setter で `null` 値を空文字に正規化する処理を追加し、Play Mode テスト（T022）がすべて PASS することを確認（**T023 完了後に実施**）
 
 **チェックポイント**: この時点で Play Mode でスクリプトからテキストを変更すると 1 フレーム以内でメッシュが更新され、空文字列でエラーが発生しないこと
 
@@ -133,6 +133,7 @@
 
 - [ ] T030 [US4] `Packages/com.yourcompany.solidtext3d/Runtime/SolidText3DComponent.cs` の `Awake()` および `RegenerateMesh()` にフォント null / フォントファイル削除時のデフォルトフォールバックロジックを完全実装（`_font == null` 時に `Debug.LogWarning` を出力し内部デフォルトフォントバイト（埋め込みリソース）を使用。FR-009 参照）
 - [ ] T031 [US4] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphMeshBuilder.cs` のフォントバイト取得ロジックを完全実装（エディタ実行時: `#if UNITY_EDITOR` ガード内で `UnityEditor.AssetDatabase.GetAssetPath(font)` + `System.IO.File.ReadAllBytes()` でフォントバイト取得 / ランタイム（ビルド済み）: `#else` ブロックで埋め込みデフォルトフォントバイトを使用してメッシュを生成（FR-009 準拠・エラー停止なし・Warning 出力あり）。data-model.md § 7 実装上の注意参照）
+- [ ] T031b [US4] `Packages/com.yourcompany.solidtext3d/Tests/Runtime/SolidText3DRuntimeTests.cs` にランタイムフォント切り替えテストを追加（実行中に `SolidText3DComponent.Font` を別のフォントに変更したとき、`yield return null;` 後に新フォントのグリフでメッシュが再生成されることを検証。spec.md エッジケース「ランタイムでフォント自体を変更した場合、メッシュは正しく再生成されるか？」対応）
 
 **チェックポイント**: この時点でカスタムフォントの割り当て・null フォールバック・全テストの PASS が確認できること
 
@@ -149,7 +150,7 @@
 - [ ] T036 `Packages/com.yourcompany.solidtext3d/Documentation~/index.md` を作成（API リファレンス・パラメータ一覧・エディタ/ランタイムの使用ガイド・トラブルシューティング（ランタイムでのフォントバイト制限）を記載。quickstart.md を参照）
 - [ ] T037 `quickstart.md` の手動検証チェックリスト（M-1〜M-5）を実施し、Unity 6 で正常にビルド・動作することを確認（DLL Platform 設定、Test Runner 動作、シーンへの配置、エディタプレビュー、ビルド通過）
 - [ ] T038 [P] `Packages/com.yourcompany.solidtext3d/Tests/Editor/PerformanceTests.cs` に SC-001 ベンチマークテストを作成（50文字テキストのメッシュ生成時間を `System.Diagnostics.Stopwatch` で計測し、`Assert.Less(elapsedMs, 2000)` で 2000ms 未満を検証。メッシュ生成のみを計測し Unity Editor の起動コストを含めない。SC-001 対応）
-- [ ] T039 [P] `Packages/com.yourcompany.solidtext3d/Tests/Runtime/PerformanceRuntimeTests.cs` に SC-004 ベンチマークテストを作成（20個の SolidText3DComponent（各50文字）を同一シーンに配置し、`Time.deltaTime` の連続 30 フレーム平均値が 16.7ms 未満（60fps 相当）であることを `Assert.Less` で検証。SC-004 対応）- [ ] T040 `Packages/com.yourcompany.solidtext3d/Tests/` 配下の全テストを Unity Test Runner で実行し、ランタイムロジックのテストカバレッジを目視確認する（Edit Mode: `BezierSubdivider`, `GlyphContourBuilder`, `MeshExtruder`, `GlyphMeshBuilder`（80%以上を目安）・ Play Mode: `SolidText3DRuntimeTests` が全 PASS であることを確認。不足しているケースがあれば `tests-coverage-gap.md` に記録し気付いた項目を櫃起する。標準: 暇法第 III 「ランタイムロジック 80% 以上」准拠。v1 では自動計測ツールは不使用、手動目視で対応）
+- [ ] T039 [P] `Packages/com.yourcompany.solidtext3d/Tests/Runtime/PerformanceRuntimeTests.cs` に SC-004 ベンチマークテストを作成（20個の SolidText3DComponent（各50文字）を同一シーンに配置し、`Time.deltaTime` の連続 30 フレーム平均値が 16.7ms 未満（60fps 相当）であることを `Assert.Less` で検証。SC-004 対応）- [ ] T040 `Packages/com.yourcompany.solidtext3d/Tests/` 配下の全テストを Unity Test Runner で実行し、ランタイムロジックのテストカバレッジを確認する（Edit Mode: `BezierSubdivider`, `GlyphContourBuilder`, `MeshExtruder`, `GlyphMeshBuilder`（80%以上を目安）・ Play Mode: `SolidText3DRuntimeTests` が全 PASS であることを確認。カバレッジ計測には `com.unity.test-framework.performance`（Unity Code Coverage パッケージ）の導入を推奨する（未導入の場合は手動目視で主要パスをすべてカバーしていることを確認すること）。不足しているケースがあれば `specs/001-solid-text-3d/tests-coverage-gap.md` に記録する。標準: 憲法第 III 「ランタイムロジック 80% 以上」準拠）
 
 > ⚠️ **手動作業 M-4**: `Samples~/BasicUsage/` と `Samples~/CJKExample/` の `.unity` シーンファイル作成・GameObject 配置・保存は Unity エディタ操作が必要  
 > ⚠️ **手動作業 M-5**: Unity 6（6000.x LTS）で PC スタンドアロンビルドを実行して動作確認

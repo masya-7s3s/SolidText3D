@@ -80,7 +80,7 @@ SYNC IMPACT REPORT
 
 アセットは Unity Asset Store の審査要件および法的ライセンス条件を満たさなければならない。
 
-- サードパーティのアセット・フォント・テクスチャを含める場合はライセンスを `Third-Party Notices.md` に明記する
+- サードパーティのアセット・フォント・テクスチャを含める場合はライセンスを `Third Party Notices.md` に明記する
 - Unity 公式パッケージ（`com.unity.*`）への依存は `package.json` の `dependencies` に正確に記載する
 - 独自に定義したアセンブリ名は `com.companyname.packagename.*` の逆ドメイン形式に統一する
 - Asset Store 提出前に Unity 公式の [Asset Store Submission Guidelines] チェックリストをすべて通過しなければならない

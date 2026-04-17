@@ -16,7 +16,7 @@ Solid Text 3D は、TTF/OTF フォントのグリフ輪郭から 3D ポリゴン
 **言語/バージョン**: C#（.NET Standard 2.1 / Unity 6 同梱ランタイム）  
 **主要依存関係**:
 
-- SixLabors.Fonts（MIT）— フォントパーサー・グリフ輪郭取得
+- SixLabors.Fonts（MIT、**バージョン要ピン留め**: NuGet 取得時に最新安定版を確認し T007/README に記録すること）— フォントパーサー・グリフ輸郭取得
 - LibTessDotNet v1.1.15（SGI Free Software License B v2.0）— 三角形分割
 - Unity Test Framework — テスト実行基盤
 
@@ -113,11 +113,14 @@ Packages/
     │   Editor/
     │   │   com.yourcompany.solidtext3d.Tests.Editor.asmdef
     │   │   BezierSubdividerTests.cs
+    │   │   GlyphContourBuilderTests.cs
     │   │   MeshExtruderTests.cs
     │   │   GlyphMeshBuilderTests.cs
+    │   │   PerformanceTests.cs
     │   └── Runtime/
     │       com.yourcompany.solidtext3d.Tests.Runtime.asmdef
     │       SolidText3DRuntimeTests.cs
+    │       PerformanceRuntimeTests.cs
     │
     Samples~/                      ← UPM サンプル（ユーザーが任意にインポート）
     │   BasicUsage/
