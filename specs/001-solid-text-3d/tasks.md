@@ -86,7 +86,7 @@
 - [ ] T013 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/BezierSubdivider.cs` を実装（静的クラス。`SubdivideQuadratic(Vector2 p0, p1, p2, float threshold, List<Vector2> output): void` と `SubdivideCubic(Vector2 p0, p1, p2, p3, float threshold, List<Vector2> output): void` を再帰的 De Casteljau 法で実装。research.md 研究結果 3 参照）
 - [ ] T015 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphContourBuilder.cs` を実装（`SixLabors.Fonts.IGlyphRenderer` 実装クラス。7 つのコールバックメソッドで `List<GlyphContour>` を構築。`System.Numerics.Vector2` ↔ `UnityEngine.Vector2` 変換を含む。research.md 研究結果 1 参照）
 - [ ] T017 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/MeshExtruder.cs` を実装（静的クラス。`Build(List<GlyphContour>, MeshGenerationParams): Mesh` と `BuildGlyphMesh(GlyphContour, float, float): GlyphMeshData` を実装。LibTessDotNet `AddContour` / `Tessellate`（EvenOdd WindingRule）による前面三角分割・背面頂点複製・側面クワッド生成・アウトライン帯生成を含む。`mesh.indexFormat = IndexFormat.UInt32` を設定。research.md 研究結果 2・4・5 参照）。**GC 正当化**: `List<Vector3>` 等のアロケーションはパラメータ変更時（メッシュ再生成時）のみ発生するワンショット処理であり、`LateUpdate()` 内ではダーティフラグチェックのみを行いアロケーションは発生しない旨をコード内コメントで明記すること（憲法 V 準拠）
-- [ ] T019 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphMeshBuilder.cs` を実装（静的クラス。`Build(MeshGenerationParams): Mesh` を実装。`SixLabors.Fonts.FontCollection` でフォントを読み込み、`GlyphContourBuilder` でグリフ輪郭を収集し、`MeshExtruder.Build()` で 3D メッシュを生成。`#if UNITY_EDITOR` ガード内で `UnityEditor.AssetDatabase.GetAssetPath` + `File.ReadAllBytes` でフォントバイト取得、`#else` ブロックでは **スタブとして空メッシュを返却**（`Resources.Load<TextAsset>` による Noto Sans JP バイト取得の完全実装は T031 で行う）。グリフ欠損時の空グリフスキップ処理を含む。data-model.md § 7 参照）
+- [ ] T019 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphMeshBuilder.cs` を実装（静的クラス。`Build(MeshGenerationParams): Mesh` を実装。`SixLabors.Fonts.FontCollection` でフォントを読み込み、`GlyphContourBuilder` でグリフ輪郭を収集し、`MeshExtruder.Build()` で 3D メッシュを生成。`#if UNITY_EDITOR` ガード内で `UnityEditor.AssetDatabase.GetAssetPath` + `File.ReadAllBytes` でフォントバイト取得、`#else` ブロックでは **スタブとして空メッシュを返却**（`Resources.Load<TextAsset>` による Noto Sans JP バイト取得の完全実装は T031 で行う）。グリフ欠損時の空グリフスキップ処理を含む。**グリフレイアウト計算**: `MeshGenerationParams.LetterSpacing` に基づく文字間 X オフセット（各グリフの `AdvanceWidth + LetterSpacing` を累積）と、`MeshGenerationParams.LineSpacing` に基づく改行時 Y オフセット（`LineSpacing × UnitsPerEm` を行高さとして使用）を実装すること（T018b テスト対応。FR-013/FR-014 準拠）。data-model.md § 7 参照）
 - [ ] T020 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/SolidText3DComponent.cs` を実装（MonoBehaviour。`_text`, `_font`, `_extrusionDepth`, `_outlineWidth`, `_letterSpacing`, `_lineSpacing` シリアライズフィールド・`_isDirty` / `_meshFilter` 非シリアライズフィールド。`Text`, `Font`, `ExtrusionDepth`, `OutlineWidth`, `LetterSpacing`（FR-013）, `LineSpacing`（FR-014）公開プロパティ（set で `_isDirty = true`）。`Awake()` で MeshFilter/MeshRenderer を GetComponent または AddComponent。`OnValidate()` で `_isDirty = true`。`LateUpdate()` でダーティフラグをチェックし `RegenerateMesh()` を呼び出し。contracts/public-api.md の XML ドキュメントコメントを付与。data-model.md § 1 参照）
 - [ ] T021 [US1] `Packages/com.yourcompany.solidtext3d/Editor/SolidText3DInspector.cs` を実装（`[CustomEditor(typeof(SolidText3DComponent))]` 属性付き Editor クラス。`serializedObject.ApplyModifiedProperties()` 後に `EditorApplication.QueuePlayerLoopUpdate()` を呼び出してシーンビューを再描画。`#if UNITY_EDITOR` ガードは asmdef で不要だが `UnityEditor` 名前空間使用を明示。data-model.md § 8 参照）
 
@@ -127,7 +127,7 @@
 ### US3 実装
 
 - [ ] T027 [US3] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphMeshBuilder.cs` にフォント未収録グリフのフォールバック処理を追加（グリフが null / 空コンターの場合は `AdvanceWidth` のみ確保して空グリフとしてスキップし、**`Debug.LogWarning` を出力する**、エラー停止しない。data-model.md バリデーションルール参照）
-- [ ] T028 [US3] `Packages/com.yourcompany.solidtext3d/Runtime/MeshExtruder.cs` の `LibTessDotNet.Tess` 呼び出しで `WindingRule.EvenOdd` が設定されていることを確認・修正（CJK グリフの穴コンター「口」「O」等を正しく三角分割するため。research.md 研究結果 2 参照）
+- [ ] T028 [US3] `Packages/com.yourcompany.solidtext3d/Tests/Editor/MeshExtruderTests.cs` に穴あり CJK グリフ（「口」「O」相当の外側コンター＋内側穴コンター）のテストケースを追加し、`WindingRule.EvenOdd` により穴が正しくくり抜かれた三角分割メッシュが生成されることをインデックス数・頂点数で検証する。テストが失敗した場合は `MeshExtruder.cs` の `LibTessDotNet.Tess` 呼び出し箇所の `WindingRule` 設定を修正すること（T017 実装済みの確認フェーズ。research.md 研究結果 2 参照）
 
 **チェックポイント**: この時点で CJK 文字・混在テキストの全テストが PASS し、穴を持つ CJK グリフが正しく 3D メッシュ化されること
 
@@ -162,13 +162,14 @@
 - [ ] T034 [P] `Packages/com.yourcompany.solidtext3d/Samples~/BasicUsage/BasicUsageExample.cs` を作成（スコア表示サンプル。スクリプトから `SolidText3DComponent.Text` を変更するコード例。contracts/public-api.md「使用例」参照）
 - [ ] T035 [P] `Packages/com.yourcompany.solidtext3d/Samples~/CJKExample/CJKExample.cs` を作成（日本語・中国語・韓国語を含む文字列を SolidText3DComponent に設定するサンプルコード）
 - [ ] T036 `Packages/com.yourcompany.solidtext3d/Documentation~/index.md` を作成（API リファレンス・パラメータ一覧・エディタ/ランタイムの使用ガイド・トラブルシューティング（ランタイムでのフォントバイト制限）を記載。quickstart.md を参照）
-- [ ] T037 `quickstart.md` の手動検証チェックリスト（M-1〜M-5）を実施し、Unity 6 で正常にビルド・動作することを確認（DLL Platform 設定、Test Runner 動作、シーンへの配置、エディタプレビュー、ビルド通過）
+- [ ] T037 `quickstart.md` の手動検証チェックリスト（M-1〜M-5）を実施し、Unity 6 で正常にビルド・動作することを確認（DLL Platform 設定、Test Runner 動作、シーンへの配置、エディタプレビュー、ビルド通過）。**前提: T033 完了（`Third Party Notices.md` に全サードパーティライセンス記載済みであること）**（E1: ライセンス未記載状態でのビルド確認完了を防ぐため）
 - [ ] T038 [P] `Packages/com.yourcompany.solidtext3d/Tests/Editor/PerformanceTests.cs` に SC-001 ベンチマークテストを作成（50文字テキストのメッシュ生成時間を `System.Diagnostics.Stopwatch` で計測し、`Assert.Less(elapsedMs, 2000)` で 2000ms 未満を検証。**計測方法**: `GlyphMeshBuilder.Build()` を 2 回実行し、JIT ウォームアップコストを含む 1 回目は計測対象外として破棄し、2 回目以降の実行時間のみを計測する。Unity Editor 起動コストおよびアセンブリロードコストを計測値に含めない。SC-001 対応）
-- [ ] T039 [P] `Packages/com.yourcompany.solidtext3d/Tests/Runtime/PerformanceRuntimeTests.cs` に SC-004 ベンチマークテストを作成（20個の SolidText3DComponent（各50文字）を同一シーンに配置し、`Time.deltaTime` の連続 30 フレーム平均値が 16.7ms 未満（60fps 相当）であることを `Assert.Less` で検証。SC-004 対応）
+- [ ] T039 [P] `Packages/com.yourcompany.solidtext3d/Tests/Runtime/PerformanceRuntimeTests.cs` に SC-004 ベンチマークテストを作成（20個の SolidText3DComponent（各50文字）を同一シーンに配置し、`Time.deltaTime` の連続 30 フレーム平均値が 16.7ms 未満（60fps 相当）であることを `Assert.Less` で検証。SC-004 対応）。**テスト実行環境**: テスト結果はハードウェアに依存するため、テスト実行時の環境スペック（CPU・GPU・OS）を `PerformanceRuntimeTests.cs` 冒頭のコメントまたは Unity Test Runner の Custom Reporter 出力として記録すること。最低動作保証スペックは「Intel Core i5 第10世代相当または Apple M1 以上」とし、それ以下のスペックではテストを `[Ignore]` 属性でスキップして警告ログを出力する
 - [ ] T040 `Packages/com.yourcompany.solidtext3d/CHANGELOG.md` に v1.0.0 のリリース内容を記入（Added セクション: 主要機能一覧・TTF/OTF フォント対応・CJK サポート・LetterSpacing/LineSpacing・デフォルト埋め込みフォント（Noto Sans JP）。憲法 IV 準拠）
 - [ ] T041 `Packages/com.yourcompany.solidtext3d/Tests/` 配下の全テストを Unity Test Runner で実行し、全テスト PASS およびカバレッジ目標を最終確認する（Edit Mode: `BezierSubdivider`, `GlyphContourBuilder`, `MeshExtruder`, `GlyphMeshBuilder` が全 PASS・Play Mode: `SolidText3DRuntimeTests` が全 PASS。カバレッジ計測には Unity Code Coverage パッケージ（`com.unity.testtools.codecoverage`）を使用し（Window > Analysis > Code Coverage）、ランタイムロジックのカバレッジが **80% 以上**であることを確認・記録する。計測が技術的に不可能な場合は `specs/001-solid-text-3d/tests-coverage-gap.md` に不足ケースを記録し次スプリントで補う。標準: 憲法第 III 「ランタイムロジック 80% 以上」準拠）
 - [ ] T042 [P] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphMeshBuilder.cs` の主要メッシュ生成パス（`Build()` および `BuildGlyphMesh()` の入口・出口）に `Profiler.BeginSample` / `Profiler.EndSample` を追加し、Unity Profiler でホットパスの計測ができる状態にする。プロファイル結果は Unity Profiler の「Save current frame」または「Save all frames」機能で `.data` 形式として `specs/001-solid-text-3d/profiler-captures/` 配下に保存し、PR に添付する（保存先ディレクトリが存在しない場合は作成すること。憲法 V 準拠）
 
+> ⚠️ **手動作業 M-6**: Unity Profiler を開き（Window > Analysis > Profiler）、SolidText3DComponent のテキスト変更を実行して `GlyphMeshBuilder.Build` サンプルがタイムラインに表示されることを確認後、「Save current frame」で `.data` ファイルを `specs/001-solid-text-3d/profiler-captures/` に保存する（Unity エディタ操作が必須）
 > ⚠️ **手動作業 M-4**: `Samples~/BasicUsage/` と `Samples~/CJKExample/` の `.unity` シーンファイル作成・GameObject 配置・保存は Unity エディタ操作が必要  
 > ⚠️ **手動作業 M-5**: Unity 6（6000.x LTS）で PC スタンドアロンビルドを実行して動作確認
 
@@ -263,9 +264,9 @@ US1 完了時点で:
 | --- | --- | --- |
 | フェーズ 1: セットアップ | 9 タスク（T001–T007b, T008） | — |
 | フェーズ 2: 基盤 | 3 タスク（T009–T011） | — |
-| フェーズ 3: US1（P1） | 11 タスク（T012–T018b, T019–T021） | US1（MVP） |
+| フェーズ 3: US1（P1） | 12 タスク（T012–T018c, T019–T021） | US1（MVP） |
 | フェーズ 4: US2（P2） | 3 タスク（T022–T024） | US2 |
 | フェーズ 5: US3（P2） | 4 タスク（T025–T028） | US3 |
 | フェーズ 6: US4（P3） | 4 タスク（T029–T031b） | US4 |
 | フェーズ 7: ポリッシュ | 11 タスク（T032–T042） | — |
-| **合計** | **45 タスク** | 4 ユーザーストーリー |
+| **合計** | **46 タスク** | 4 ユーザーストーリー |

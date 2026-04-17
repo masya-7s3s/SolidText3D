@@ -162,6 +162,11 @@ Packages/
 `SixLabors.Fonts.dll` と `LibTessDotNet.dll` を `Runtime/Plugins/` に配置。  
 → 参照: [research.md「研究結果 7: NuGet DLL の Unity への組み込み方法」](research.md) / [quickstart.md「ステップ 1-1」](quickstart.md)
 
+**A-5** デフォルト埋め込みフォント配置（T007b）  
+**Noto Sans JP Regular**（SIL OFL 1.1）を `Runtime/Resources/Fonts/NotoSansJP-Regular.ttf` に配置。  
+→ spec.md 前提条件「デフォルト埋め込みフォント」参照  
+→ ランタイムビルドでの `Resources.Load<TextAsset>` によるバイト取得を可能にする
+
 > ⚠️ **手動作業 M-1・M-2（Unity エディタ必須）**: DLL 配置後に Plugin Import Settings で Platform 設定確認、asmdef の Precompiled References 確認
 
 ---
@@ -217,7 +222,8 @@ Packages/
 **C-4** `GlyphMeshBuilder`（依存: C-2 GlyphContourBuilder、C-3 MeshExtruder、B-1 MeshGenerationParams）
 
 1. `Tests/Editor/GlyphMeshBuilderTests.cs` 作成  
-   → テストケース（CJK 文字・空文字・フォントなし）: [data-model.md「テスト対象エンティティ: GlyphMeshBuilder 行」](data-model.md)
+   → テストケース（CJK 文字・空文字・フォントなし）: [data-model.md「テスト対象エンティティ: GlyphMeshBuilder 行」](data-model.md)  
+   → `LetterSpacing`/`LineSpacing` レイアウトテスト（T018b）: 各グリフの X/Y オフセットが `LetterSpacing`/`LineSpacing` に比例することを頂点位置で検証  
 2. `Runtime/GlyphMeshBuilder.cs` 実装  
    → 処理フロー・フォールバック仕様: [data-model.md「7. GlyphMeshBuilder (static class)」](data-model.md)  
    → フォントバイト取得の制約と実装方針: [data-model.md「7. 実装上の注意: フォントバイトの取得方法」](data-model.md)  
@@ -233,6 +239,11 @@ Packages/
 → フィールド・プロパティ・ライフサイクルメソッド仕様: [data-model.md「1. SolidText3DComponent (MonoBehaviour)」](data-model.md)  
 → 公開 API 契約（XML ドキュメントコメント文面含む）: [contracts/public-api.md](contracts/public-api.md)  
 → バリデーションルール（クランプ・フォールバック条件）: [data-model.md「バリデーションルール」](data-model.md)
+
+**D-1b** Edit Mode テスト `Tests/Editor/SolidText3DComponentTests.cs` 作成（T018c）  
+→ ダーティフラグ動作（`Font`/`ExtrusionDepth`/`OutlineWidth` 変更時に `_isDirty = true`）の単体検証  
+→ `LateUpdate` 相当の `RegenerateMesh()` 呼び出し後にメッシュが更新されることを頂点数で確認  
+→ FR-005 対応。Play Mode テスト（D-2）とは関心事が異なるため別ファイルに分離
 
 **D-2** Play Mode テスト `Tests/Runtime/SolidText3DRuntimeTests.cs` 作成・実行  
 → テストケース（ダーティフラグ・LateUpdate 再生成）: [data-model.md「テスト対象エンティティ: SolidText3DComponent 行」](data-model.md)
