@@ -58,6 +58,8 @@ Solid Text 3D は、TTF/OTF フォントのグリフ輪郭から 3D ポリゴン
 - [x] 公開 API の XML ドキュメントコメントが [contracts/public-api.md](contracts/public-api.md) に定義済み
 - [x] `MeshGenerationParams` を struct として定義し、ヒープアロケーションを最小化
 - [x] フォールバック処理（フォントなし・グリフ未収録）が全エンティティで明示されている
+- [x] **FR-013/FR-014 対応**: `LetterSpacing`・`LineSpacing` フィールドは data-model.md §1・§2 および contracts/public-api.md に定義済み（spec.md で正式要件として追加）
+- [x] **ランタイムフォント制限（v1 設計決定）**: `GlyphMeshBuilder` の `#if UNITY_EDITOR` ガード内フォントバイト取得はエディタ環境専用。ランタイムビルドでは埋め込みデフォルトフォントを使用する。これは憲法 II（Editor/Runtime 分離）に字義上は適合するが、カスタムフォントのランタイム利用は v1 スコープ外として意図的に除外している
 
 ---
 
@@ -217,6 +219,8 @@ Packages/
    → フォントバイト取得の制約と実装方針: [data-model.md「7. 実装上の注意: フォントバイトの取得方法」](data-model.md)  
    → SixLabors.Fonts `FontCollection` の使い方: [research.md「研究結果 1: 使用コード（概要）」](research.md)
 
+   > ⚠️ **v1 スコープ制限**: フォントバイト取得は `#if UNITY_EDITOR` ガード内の `AssetDatabase.GetAssetPath` + `File.ReadAllBytes` のみ。ランタイムビルドでは埋め込みデフォルトフォントにフォールバックする（spec.md 前提条件参照）
+
 ---
 
 ### フェーズ D: MonoBehaviour + Editor 統合
@@ -246,7 +250,7 @@ Packages/
 **E-3** `Samples~/CJKExample/` C# スクリプト作成（VS Code で作成可）
 
 > ⚠️ **手動作業 M-4（Unity エディタ必須）**: `.unity` シーンファイルの作成・オブジェクト配置・保存はエディタ操作が必要  
-> ⚠️ **手動作業 M-5（Unity エディタ必須）**: Unity 6 および Unity 2022.3 LTS でビルドを実行して動作確認
+> ⚠️ **手動作業 M-5（Unity エディタ必須）**: Unity 6（6000.x LTS）で PC スタンドアロンビルドを実行して動作確認
 
 ---
 
@@ -258,7 +262,7 @@ Packages/
 | M-2 | asmdef の Precompiled References 確認 | フェーズ A 完了後 |
 | M-3 | Test Runner でテストが認識・実行できるか確認 | フェーズ C 各ステップ後 |
 | M-4 | サンプルシーン（.unity）の作成・保存 | フェーズ E |
-| M-5 | Unity 6 / Unity 2022.3 LTS での手動ビルド確認 | フェーズ E 完了後 |
+| M-5 | Unity 6（6000.x LTS）での手動ビルド確認 | フェーズ E 完了後 |
 
 ---
 
@@ -267,6 +271,7 @@ Packages/
 | 違反 | 必要な理由 | より単純な代替案を却下した理由 |
 | --- | --- | --- |
 | `LateUpdate` でのメッシュ生成（GC.Alloc 発生） | ランタイムでの動的テキスト変更（FR-007）に対応するため。変更時のみ実行 | 変更検知がない場合は毎フレーム再生成が必要になり、パフォーマンスがより悪化する |
+| `GlyphMeshBuilder` の `#if UNITY_EDITOR` によるフォントバイト取得（カスタムフォントのランタイム非対応） | ランタイムビルドで `AssetDatabase` が使用不可のため。v1 ではエディタ環境専用に限定し、ランタイムは埋め込みデフォルトフォントで動作（spec.md 前提条件参照） | ランタイムでのフォント配布には `StreamingAssets` や `Resources` の設計変更が必要であり、v2 以降のスコープとする |
 
 ---
 
