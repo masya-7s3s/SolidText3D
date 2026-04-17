@@ -56,7 +56,8 @@
 **独立テスト**: SolidText3DComponent をアタッチしてテキスト・フォント・押し出し深さを設定したとき、指定テキストが 3D メッシュとしてシーンビューに表示される
 
 > **TDD サイクル**: 各コンポーネントはテストを先に作成して FAIL を確認してから実装する  
-> ⚠️ **手動作業 M-3**: 各コンポーネント実装後、Unity Test Runner でテストが認識・実行できるか確認する
+> ⚠️ **手動作業 M-3**: 各コンポーネント実装後、Unity Test Runner でテストが認識・実行できるか確認する  
+> 📌 **CI 注意**: フェーズ 3 の全テスト（T012–T018b）は **`Tests/Editor/` 配下の Edit Mode テスト**。`#if UNITY_EDITOR` 環境（Unity Test Framework の Edit Mode 実行）でのみ実行される。T019 の `#else` スタブ（空メッシュ返却）は非エディタビルド（CI / ランタイムビルド）向けの安全なフォールバックであり、T031 完了後に Noto Sans JP 埋め込みバイトで置き換えられる
 
 ### US1 テスト（先行作成・FAIL 確認必須）
 
@@ -148,12 +149,12 @@
 - [ ] T036 `Packages/com.yourcompany.solidtext3d/Documentation~/index.md` を作成（API リファレンス・パラメータ一覧・エディタ/ランタイムの使用ガイド・トラブルシューティング（ランタイムでのフォントバイト制限）を記載。quickstart.md を参照）
 - [ ] T037 `quickstart.md` の手動検証チェックリスト（M-1〜M-5）を実施し、Unity 6 で正常にビルド・動作することを確認（DLL Platform 設定、Test Runner 動作、シーンへの配置、エディタプレビュー、ビルド通過）
 - [ ] T038 [P] `Packages/com.yourcompany.solidtext3d/Tests/Editor/PerformanceTests.cs` に SC-001 ベンチマークテストを作成（50文字テキストのメッシュ生成時間を `System.Diagnostics.Stopwatch` で計測し、`Assert.Less(elapsedMs, 2000)` で 2000ms 未満を検証。メッシュ生成のみを計測し Unity Editor の起動コストを含めない。SC-001 対応）
-- [ ] T039 [P] `Packages/com.yourcompany.solidtext3d/Tests/Runtime/PerformanceRuntimeTests.cs` に SC-004 ベンチマークテストを作成（20個の SolidText3DComponent（各50文字）を同一シーンに配置し、`Time.deltaTime` の連続 30 フレーム平均値が 16.7ms 未満（60fps 相当）であることを `Assert.Less` で検証。SC-004 対応）
+- [ ] T039 [P] `Packages/com.yourcompany.solidtext3d/Tests/Runtime/PerformanceRuntimeTests.cs` に SC-004 ベンチマークテストを作成（20個の SolidText3DComponent（各50文字）を同一シーンに配置し、`Time.deltaTime` の連続 30 フレーム平均値が 16.7ms 未満（60fps 相当）であることを `Assert.Less` で検証。SC-004 対応）- [ ] T040 `Packages/com.yourcompany.solidtext3d/Tests/` 配下の全テストを Unity Test Runner で実行し、ランタイムロジックのテストカバレッジを目視確認する（Edit Mode: `BezierSubdivider`, `GlyphContourBuilder`, `MeshExtruder`, `GlyphMeshBuilder`（80%以上を目安）・ Play Mode: `SolidText3DRuntimeTests` が全 PASS であることを確認。不足しているケースがあれば `tests-coverage-gap.md` に記録し気付いた項目を櫃起する。標準: 暇法第 III 「ランタイムロジック 80% 以上」准拠。v1 では自動計測ツールは不使用、手動目視で対応）
 
 > ⚠️ **手動作業 M-4**: `Samples~/BasicUsage/` と `Samples~/CJKExample/` の `.unity` シーンファイル作成・GameObject 配置・保存は Unity エディタ操作が必要  
 > ⚠️ **手動作業 M-5**: Unity 6（6000.x LTS）で PC スタンドアロンビルドを実行して動作確認
 
-**チェックポイント**: Asset Store 提出可能な状態。全テスト PASS・ビルド通過・ドキュメント整備完了・SC-001/SC-004 ベンチマーク PASS
+**チェックポイント**: Asset Store 提出可能な状態。全テスト PASS・ビルド通過・ドキュメント整備完了・SC-001/SC-004 ベンチマーク PASS・カバレッジ目視確認完了
 
 ---
 
@@ -193,7 +194,7 @@
 - フェーズ 2: T009・T010・T011 は同時に並行実行可能
 - フェーズ 3 テスト: T012・T014・T016・T018・T018b は同時に並行作成可能（実装は依存順を守ること）
 - フェーズ 5 テスト: T025・T026 は同時に並行実行可能（ただし T018 完了後）
-- フェーズ 7: T032・T034・T035・T038・T039 は同時に並行実行可能
+- フェーズ 7: T032・T034・T035・T038・T039 は同時に並行実行可能（T040 は全テスト PASS 後に実施）
 
 ---
 
@@ -248,5 +249,5 @@ US1 完了時点で:
 | フェーズ 4: US2（P2） | 3 タスク（T022–T024） | US2 |
 | フェーズ 5: US3（P2） | 4 タスク（T025–T028） | US3 |
 | フェーズ 6: US4（P3） | 3 タスク（T029–T031） | US4 |
-| フェーズ 7: ポリッシュ | 8 タスク（T032–T039） | — |
-| **合計** | **41 タスク** | 4 ユーザーストーリー |
+| フェーズ 7: ポリッシュ | 9 タスク（T032–T040） | — |
+| **合計** | **42 タスク** | 4 ユーザーストーリー |
