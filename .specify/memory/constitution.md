@@ -1,18 +1,18 @@
 <!--
 SYNC IMPACT REPORT
 ===================
-バージョン変更: 1.0.0 → 1.0.1
+バージョン変更: 1.0.1 → 2.0.0（MAJOR: Unity 最小対応バージョン引き上げ）
 変更された原則: なし
 追加セクション: なし
-削除セクション:
-  - ガバナンス > コンプライアンスレビュー（個人プロジェクトのため不要）
-  - 開発ワークフロー > コードレビュー（個人プロジェクトのため不要）
+削除セクション: なし
 変更セクション:
-  - ガバナンス > 改定手続きを個人プロジェクト向けに簡略化
+  - 技術的制約 > 対応プラットフォーム: モバイル（iOS/Android）を v1 スコープ外として明記（I2 修正）
+  - 技術的制約 > Unity バージョンポリシー: 最小対応バージョンを Unity 6 LTS (6000.x) に引き上げ（I3 修正）
+  - 開発ワークフロー > PR マージ前の必須ゲート §6: Unity 6 LTS のみに更新（I3 修正）
 テンプレート更新状況:
-  - plan-template.md: ✅ 整合確認済み
-  - spec-template.md: ✅ 整合確認済み
-  - tasks-template.md: ✅ 整合確認済み
+  - plan-template.md: ✅ 整合確認済み（plan.md の Unity 6 記載と一致）
+  - spec-template.md: ✅ 整合確認済み（spec.md の「Unity 6 以降」記載と一致）
+  - tasks-template.md: ✅ 整合確認済み（tasks.md T037 の Unity 6 検証と一致）
 延期事項:
   - なし
 -->
@@ -105,14 +105,15 @@ SYNC IMPACT REPORT
 ### 対応プラットフォーム
 
 - **エディタ**: Windows 10/11、macOS 12+、Ubuntu 20.04+
-- **ランタイムターゲット**: PC（Windows/macOS/Linux）、iOS 14+、Android API 22+
+- **ランタイムターゲット（v1）**: PC（Windows/macOS/Linux）のみ。モバイル（iOS/Android）はオプション対応
 - **グラフィックス API**: URP（Universal Render Pipeline）必須対応、Built-in RP はオプション対応
 
 ### Unity バージョンポリシー
 
-- **最小対応バージョン**: Unity 2022.3 LTS（SolidText3D が依存するパッケージの最小要件に準拠）
-- **推奨バージョン**: Unity 6 LTS（最新 LTS）
+- **最小対応バージョン**: Unity 6 LTS（6000.x）。`package.json` の `unity` フィールドは `"6000.0"` を設定する
+- **推奨バージョン**: Unity 6 最新 LTS パッチ
 - 新 LTS リリースから 3 ヶ月以内に動作確認を実施し、`package.json` の `unityRelease` を更新する
+- Unity 2022.3 LTS 以前は非対応。対応バージョン下限の引き上げは MAJOR バージョンアップとして扱う（原則 IV 準拠）
 
 ### 依存関係ポリシー
 
@@ -137,7 +138,7 @@ SYNC IMPACT REPORT
 3. ✅ 公開 API の XML ドキュメントコメントが追加または更新されていること
 4. ✅ `CHANGELOG.md` が更新されていること
 5. ✅ 新規 GC アロケーションがある場合は設計上の正当化コメントがあること
-6. ✅ Unity 2022.3 LTS および Unity 6 で手動ビルド確認済みであること
+6. ✅ Unity 6 LTS（6000.x）で手動ビルド確認済みであること
 
 ### リリースフロー
 
@@ -167,4 +168,4 @@ SYNC IMPACT REPORT
 - **MINOR**: 新原則の追加、セクションの実質的な拡張
 - **PATCH**: 文言の明確化、誤字修正、非意味論的な改善
 
-**Version**: 1.0.1 | **Ratified**: 2026-04-17 | **Last Amended**: 2026-04-17
+**Version**: 2.0.0 | **Ratified**: 2026-04-17 | **Last Amended**: 2026-04-17
