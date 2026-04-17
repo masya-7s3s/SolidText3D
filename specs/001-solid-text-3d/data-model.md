@@ -67,6 +67,8 @@ SolidText3DComponent (MonoBehaviour)
 | `Font` | `UnityEngine.Font` | フォントの get/set（set で dirty 立て） | FR-001 |
 | `ExtrusionDepth` | `float` | 押し出し深さの get/set（set で dirty 立て） | FR-003 |
 | `OutlineWidth` | `float` | アウトライン幅の get/set（set で dirty 立て） | FR-004 |
+| `LetterSpacing` | `float` | 文字間隔の get/set（em 単位、set で dirty 立て） | FR-013 |
+| `LineSpacing` | `float` | 行間倍率の get/set（em 倍率、set で dirty 立て） | FR-014 |
 
 #### ライフサイクルメソッド
 
