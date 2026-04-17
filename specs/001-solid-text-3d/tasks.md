@@ -19,7 +19,7 @@
 **目的**: Unity UPM パッケージの基本ディレクトリ構造・設定ファイルをすべて作成し、コアロジック実装の土台を整える
 
 - [ ] T001 パッケージルートディレクトリ構造を作成（`Packages/com.yourcompany.solidtext3d/` 配下に `Runtime/Plugins/`, `Editor/`, `Tests/Editor/`, `Tests/Runtime/`, `Samples~/BasicUsage/`, `Samples~/CJKExample/`, `Documentation~/` を含む全フォルダを作成）
-- [ ] T002 `Packages/com.yourcompany.solidtext3d/package.json` を作成（`name`, `version: "1.0.0"`, `unity: "6000.0"`, `description`, `author` を記載）
+- [ ] T002 `Packages/com.yourcompany.solidtext3d/package.json` を作成（`name`, `version: "1.0.0"`, `unity: "6000.0"`, `displayName`, `description`, `keywords`, `author` を記載）
 - [ ] T003 [P] `Packages/com.yourcompany.solidtext3d/Runtime/com.yourcompany.solidtext3d.Runtime.asmdef` を作成（`overrideReferences: true`, `precompiledReferences: ["SixLabors.Fonts.dll", "LibTessDotNet.dll"]` を設定）
 - [ ] T004 [P] `Packages/com.yourcompany.solidtext3d/Editor/com.yourcompany.solidtext3d.Editor.asmdef` を作成（`includePlatforms: ["Editor"]`, Runtime asmdef への参照を設定）
 - [ ] T005 [P] `Packages/com.yourcompany.solidtext3d/Tests/Editor/com.yourcompany.solidtext3d.Tests.Editor.asmdef` を作成（`optionalUnityReferences: ["TestAssemblies"]`, Runtime asmdef への参照を設定）
@@ -112,7 +112,7 @@
 
 ### US3 実装
 
-- [ ] T027 [US3] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphMeshBuilder.cs` にフォント未収録グリフのフォールバック処理を追加（グリフが null / 空コンターの場合は `AdvanceWidth` のみ確保して空グリフとしてスキップし、エラー停止しない。data-model.md バリデーションルール参照）
+- [ ] T027 [US3] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphMeshBuilder.cs` にフォント未収録グリフのフォールバック処理を追加（グリフが null / 空コンターの場合は `AdvanceWidth` のみ確保して空グリフとしてスキップし、**`Debug.LogWarning` を出力する**、エラー停止しない。data-model.md バリデーションルール参照）
 - [ ] T028 [US3] `Packages/com.yourcompany.solidtext3d/Runtime/MeshExtruder.cs` の `LibTessDotNet.Tess` 呼び出しで `WindingRule.EvenOdd` が設定されていることを確認・修正（CJK グリフの穴コンター「口」「O」等を正しく三角分割するため。research.md 研究結果 2 参照）
 
 **チェックポイント**: この時点で CJK 文字・混在テキストの全テストが PASS し、穴を持つ CJK グリフが正しく 3D メッシュ化されること
@@ -149,6 +149,10 @@
 - [ ] T035 [P] `Packages/com.yourcompany.solidtext3d/Samples~/CJKExample/CJKExample.cs` を作成（日本語・中国語・韓国語を含む文字列を SolidText3DComponent に設定するサンプルコード）
 - [ ] T036 `Packages/com.yourcompany.solidtext3d/Documentation~/index.md` を作成（API リファレンス・パラメータ一覧・エディタ/ランタイムの使用ガイド・トラブルシューティング（ランタイムでのフォントバイト制限）を記載。quickstart.md を参照）
 - [ ] T037 `quickstart.md` の手動検証チェックリスト（M-1〜M-5）を実施し、Unity 6 で正常にビルド・動作することを確認（DLL Platform 設定、Test Runner 動作、シーンへの配置、エディタプレビュー、ビルド通過）
+- [ ] T038 [P] `Packages/com.yourcompany.solidtext3d/Tests/Editor/PerformanceTests.cs` を作成（エディタでのパラメータ変更から 2 秒以内にシーンビューが更新されることを `Stopwatch` で計測し Assert する SC-001 対応 Edit Mode パフォーマンステスト。plan.md §C PerformanceTests.cs 参照）
+- [ ] T039 [P] `Packages/com.yourcompany.solidtext3d/Tests/Runtime/PerformanceRuntimeTests.cs` を作成（同一シーン内に 20 個の SolidText3D オブジェクト（各 50 文字）を生成し、60fps 維持を `Time.deltaTime` で検証する SC-004 対応 Play Mode パフォーマンステスト。plan.md §D PerformanceRuntimeTests.cs 参照）
+- [ ] T040 `Packages/com.yourcompany.solidtext3d/CHANGELOG.md` に v1.0.0 のリリース内容を記入（Added セクション: 主要機能一覧・TTF/OTF フォント対応・CJK サポート・LetterSpacing/LineSpacing・デフォルト埋め込みフォント（Noto Sans JP）。憲法 IV 準拠）
+- [ ] T041 Unity Test Framework のコードカバレッジ計測を実施し、ランタイムロジックのカバレッジが 80% 以上であることを確認・記録する（Window > Analysis > Code Coverage を使用。憲法 III 準拠）
 - [ ] T038 [P] `Packages/com.yourcompany.solidtext3d/Tests/Editor/PerformanceTests.cs` に SC-001 ベンチマークテストを作成（50文字テキストのメッシュ生成時間を `System.Diagnostics.Stopwatch` で計測し、`Assert.Less(elapsedMs, 2000)` で 2000ms 未満を検証。メッシュ生成のみを計測し Unity Editor の起動コストを含めない。SC-001 対応）
 - [ ] T039 [P] `Packages/com.yourcompany.solidtext3d/Tests/Runtime/PerformanceRuntimeTests.cs` に SC-004 ベンチマークテストを作成（20個の SolidText3DComponent（各50文字）を同一シーンに配置し、`Time.deltaTime` の連続 30 フレーム平均値が 16.7ms 未満（60fps 相当）であることを `Assert.Less` で検証。SC-004 対応）- [ ] T040 `Packages/com.yourcompany.solidtext3d/Tests/` 配下の全テストを Unity Test Runner で実行し、ランタイムロジックのテストカバレッジを確認する（Edit Mode: `BezierSubdivider`, `GlyphContourBuilder`, `MeshExtruder`, `GlyphMeshBuilder`（80%以上を目安）・ Play Mode: `SolidText3DRuntimeTests` が全 PASS であることを確認。カバレッジ計測には `com.unity.test-framework.performance`（Unity Code Coverage パッケージ）の導入を推奨する（未導入の場合は手動目視で主要パスをすべてカバーしていることを確認すること）。不足しているケースがあれば `specs/001-solid-text-3d/tests-coverage-gap.md` に記録する。標準: 憲法第 III 「ランタイムロジック 80% 以上」準拠）
 

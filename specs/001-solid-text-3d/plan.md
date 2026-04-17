@@ -95,6 +95,7 @@ Packages/
     │   SolidText3DComponent.cs    ← MonoBehaviour メインコンポーネント（公開 API）
     │   MeshGenerationParams.cs    ← メッシュ生成パラメータ（struct）
     │   GlyphContour.cs            ← グリフ輪郭データ（class）
+    │   GlyphMeshData.cs           ← グリフメッシュデータ（struct）
     │   GlyphContourBuilder.cs     ← IGlyphRenderer 実装（SixLabors.Fonts コールバック）
     │   BezierSubdivider.cs        ← Bezier 離散化（static utility）
     │   MeshExtruder.cs            ← 押し出し + 三角形分割（LibTessDotNet 使用）
@@ -297,4 +298,4 @@ Packages/
 | `specs/001-solid-text-3d/data-model.md` | エンティティ定義・データモデル | ✅ 完了 |
 | `specs/001-solid-text-3d/contracts/public-api.md` | 公開 C# API コントラクト | ✅ 完了 |
 | `specs/001-solid-text-3d/quickstart.md` | セットアップ・使用方法 | ✅ 完了 |
-| `specs/001-solid-text-3d/tasks.md` | 実装タスクリスト | ⏳ `/speckit.tasks` で生成 |
+| `specs/001-solid-text-3d/tasks.md` | 実装タスクリスト | ✅ 完了 |
