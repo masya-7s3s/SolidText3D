@@ -1,18 +1,16 @@
 <!--
 SYNC IMPACT REPORT
 ===================
-バージョン変更: 1.0.1 → 2.0.0（MAJOR: Unity 最小対応バージョン引き上げ）
+バージョン変更: 2.0.0 → 2.1.0（MINOR: 死文化した依存記述の削除）
 変更された原則: なし
 追加セクション: なし
 削除セクション: なし
 変更セクション:
-  - 技術的制約 > 対応プラットフォーム: モバイル（iOS/Android）をオプション扱いに
-  - 技術的制約 > Unity バージョンポリシー: 最小対応バージョンを Unity 6 LTS (6000.x) に引き上げ（I3 修正）
-  - 開発ワークフロー > PR マージ前の必須ゲート §6: Unity 6 LTS のみに更新（I3 修正）
+  - 技術的制約 > 依存関係ポリシー: `TextMeshPro`（`com.unity.textmeshpro`）の記述を削除。spec/plan/tasks に依存実績がなく死文となっていたため（C1 修正）
 テンプレート更新状況:
-  - plan-template.md: ✅ 整合確認済み（plan.md の Unity 6 記載と一致）
-  - spec-template.md: ✅ 整合確認済み（spec.md の「Unity 6 以降」記載と一致）
-  - tasks-template.md: ✅ 整合確認済み（tasks.md T037 の Unity 6 検証と一致）
+  - plan-template.md: ✅ 整合確認済み
+  - spec-template.md: ✅ 整合確認済み
+  - tasks-template.md: ✅ 整合確認済み
 延期事項:
   - なし
 -->
@@ -119,7 +117,6 @@ SYNC IMPACT REPORT
 
 - ランタイムの外部依存は最小限に抑える（ユーザーのプロジェクトへの衝突リスク軽減）
 - `com.unity.*` パッケージへの依存は機能上の必要性を PR で説明する
-- `TextMeshPro`（`com.unity.textmeshpro`）は現バージョンの中核依存として許可する
 - 依存パッケージは `package.json` の `dependencies` に必ずバージョン範囲を明記する
 
 ## 開発ワークフローと品質ゲート
@@ -168,4 +165,4 @@ SYNC IMPACT REPORT
 - **MINOR**: 新原則の追加、セクションの実質的な拡張
 - **PATCH**: 文言の明確化、誤字修正、非意味論的な改善
 
-**Version**: 2.0.0 | **Ratified**: 2026-04-17 | **Last Amended**: 2026-04-17
+**Version**: 2.1.0 | **Ratified**: 2026-04-17 | **Last Amended**: 2026-04-17
