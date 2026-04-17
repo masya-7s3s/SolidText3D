@@ -25,6 +25,7 @@
 - [ ] T005 [P] `Packages/com.yourcompany.solidtext3d/Tests/Editor/com.yourcompany.solidtext3d.Tests.Editor.asmdef` を作成（`optionalUnityReferences: ["TestAssemblies"]`, Runtime asmdef への参照を設定）
 - [ ] T006 [P] `Packages/com.yourcompany.solidtext3d/Tests/Runtime/com.yourcompany.solidtext3d.Tests.Runtime.asmdef` を作成（`optionalUnityReferences: ["TestAssemblies"]`, Runtime asmdef への参照を設定）
 - [ ] T007 NuGet.org から `SixLabors.Fonts.dll`（MIT）と `LibTessDotNet.dll`（SGI Free B v2）を取得し `Packages/com.yourcompany.solidtext3d/Runtime/Plugins/` に配置（各 `.meta` ファイルも含む）（※ quickstart.md ステップ 1-1 参照）
+- [ ] T007b デフォルト埋め込みフォント **Noto Sans JP Regular**（SIL Open Font License 1.1）を Google Fonts（<https://fonts.google.com/noto/specimen/Noto+Sans+JP>）から取得し `Packages/com.yourcompany.solidtext3d/Runtime/Plugins/Fonts/NotoSansJP-Regular.ttf` に配置。OFL 1.1 ライセンス全文を `Third Party Notices.md` 用に保存する（spec.md § 前提条件「デフォルト埋め込みフォント」参照）
 - [ ] T008 [P] ルートドキュメントプレースホルダーを作成（`Packages/com.yourcompany.solidtext3d/` 直下に `README.md`, `CHANGELOG.md`, `LICENSE.md`, `Third Party Notices.md` を空ファイルとして作成）
 
 > ⚠️ **手動作業 M-1**: T007 完了後、Unity エディタで Plugin Import Settings を開き DLL の Platform 設定を確認する  
@@ -104,8 +105,8 @@
 
 ### US3 テスト（先行作成・FAIL 確認必須）
 
-- [ ] T025 [P] [US3] `Packages/com.yourcompany.solidtext3d/Tests/Editor/GlyphMeshBuilderTests.cs` に日本語（「立体文字」）・中国語（「汉字」）・韓国語（「한글」）の CJK テストケースを追加（各文字の頂点数 > 0・メッシュ生成エラーなしを検証）
-- [ ] T026 [P] [US3] `Packages/com.yourcompany.solidtext3d/Tests/Editor/GlyphMeshBuilderTests.cs` に混在テキスト（"Hello 世界"）のテストケースを追加（全文字の頂点が含まれることを検証）
+- [ ] T025 [P] [US3] `Packages/com.yourcompany.solidtext3d/Tests/Editor/GlyphMeshBuilderTests.cs` に日本語（「立体文字」）・中国語（「汉字」）・韓国語（「한글」）の CJK テストケースを追加（各文字の頂点数 > 0・メッシュ生成エラーなしを検証）（**T018 完了後に実行可能**）
+- [ ] T026 [P] [US3] `Packages/com.yourcompany.solidtext3d/Tests/Editor/GlyphMeshBuilderTests.cs` に混在テキスト（"Hello 世界"）のテストケースを追加（全文字の頂点が含まれることを検証）（**T018 完了後に実行可能**）
 
 ### US3 実装
 
@@ -140,7 +141,7 @@
 **目的**: 複数ユーザーストーリーにまたがる改善・ドキュメント整備・サンプル作成・最終検証
 
 - [ ] T032 [P] `Packages/com.yourcompany.solidtext3d/README.md` を完成させる（インストール手順・基本的な使い方・主要 API 一覧・カスタムフォントの割り当て方・既知の制限事項を記載。contracts/public-api.md の使用例を含める）
-- [ ] T033 `Packages/com.yourcompany.solidtext3d/Third Party Notices.md` に SixLabors.Fonts（MIT ライセンス全文）と LibTessDotNet（SGI Free Software License B v2.0 全文）を記載（research.md のライセンス欄参照）
+- [ ] T033 `Packages/com.yourcompany.solidtext3d/Third Party Notices.md` に SixLabors.Fonts（MIT ライセンス全文）・LibTessDotNet（SGI Free Software License B v2.0 全文）・Noto Sans JP Regular（SIL Open Font License 1.1 全文）を記載（research.md のライセンス欄・spec.md § 前提条件「デフォルト埋め込みフォント」参照）
 - [ ] T034 [P] `Packages/com.yourcompany.solidtext3d/Samples~/BasicUsage/BasicUsageExample.cs` を作成（スコア表示サンプル。スクリプトから `SolidText3DComponent.Text` を変更するコード例。contracts/public-api.md「使用例」参照）
 - [ ] T035 [P] `Packages/com.yourcompany.solidtext3d/Samples~/CJKExample/CJKExample.cs` を作成（日本語・中国語・韓国語を含む文字列を SolidText3DComponent に設定するサンプルコード）
 - [ ] T036 `Packages/com.yourcompany.solidtext3d/Documentation~/index.md` を作成（API リファレンス・パラメータ一覧・エディタ/ランタイムの使用ガイド・トラブルシューティング（ランタイムでのフォントバイト制限）を記載。quickstart.md を参照）
@@ -190,7 +191,7 @@
 - フェーズ 1: T003・T004・T005・T006・T008 は T001・T002 完了後に並行実行可能
 - フェーズ 2: T009・T010・T011 は同時に並行実行可能
 - フェーズ 3 テスト: T012・T014・T016・T018 は同時に並行作成可能（実装は依存順を守ること）
-- フェーズ 5 テスト: T025・T026 は同時に並行実行可能
+- フェーズ 5 テスト: T025・T026 は同時に並行実行可能（ただし T018 完了後）
 - フェーズ 7: T032・T034・T035・T038・T039 は同時に並行実行可能
 
 ---
@@ -240,11 +241,11 @@ US1 完了時点で:
 
 | フェーズ | タスク数 | ユーザーストーリー |
 | --- | --- | --- |
-| フェーズ 1: セットアップ | 8 タスク（T001–T008） | — |
+| フェーズ 1: セットアップ | 9 タスク（T001–T007b, T008） | — |
 | フェーズ 2: 基盤 | 3 タスク（T009–T011） | — |
 | フェーズ 3: US1（P1） | 10 タスク（T012–T021） | US1（MVP） |
 | フェーズ 4: US2（P2） | 3 タスク（T022–T024） | US2 |
 | フェーズ 5: US3（P2） | 4 タスク（T025–T028） | US3 |
 | フェーズ 6: US4（P3） | 3 タスク（T029–T031） | US4 |
 | フェーズ 7: ポリッシュ | 8 タスク（T032–T039） | — |
-| **合計** | **39 タスク** | 4 ユーザーストーリー |
+| **合計** | **40 タスク** | 4 ユーザーストーリー |

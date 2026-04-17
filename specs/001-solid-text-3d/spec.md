@@ -139,6 +139,7 @@ UIキャンバスではなくWorld Space上の3Dメッシュとして機能し�
 - フォントの著作権は開発者が管理するものとし、本拡張はフォントライセンスの管理を行わない
 - グリフ輪郭データの取得には **SixLabors.Fonts**（純粋 C#、MIT）を使用する。`IGlyphRenderer` コールバック API 経由でベジェ輪郭を取得することで、グリフ精度とCJK対応の柔軟性を確保する
 - ランタイムビルドにおけるカスタムフォント（TTF/OTF）のバイトデータ取得は **v1スコープ外** とする。フォントバイトの読み込みはエディタ環境（`AssetDatabase` 経由）でのみサポートし、ランタイムビルドではデフォルト埋め込みフォントで動作する
+- デフォルト埋め込みフォントとして **Noto Sans JP Regular**（Google、SIL Open Font License 1.1）を採用する。`Runtime/Plugins/Fonts/NotoSansJP-Regular.ttf` に配置し、`GlyphMeshBuilder` の `#else` ブロックからバイト配列として参照する。日本語（ひらがな・カタカナ・漢字）・Latin を含む幅広い Unicode をカバーし、OFL 1.1 は Asset Store 配布および商用利用に適合する。ライセンス全文は `Third Party Notices.md` に記載する（取得元: <https://fonts.google.com/noto/specimen/Noto+Sans+JP>）
 
 ---
 
