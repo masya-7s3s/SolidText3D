@@ -64,13 +64,14 @@
 - [ ] T014 [P] [US1] `Packages/com.yourcompany.solidtext3d/Tests/Editor/GlyphContourBuilderTests.cs` を作成（`BeginFigure`/`MoveTo`/`LineTo`/`QuadraticBezierTo`/`CubicBezierTo`/`EndFigure`/`EndGlyph` の IGlyphRenderer コールバック動作テスト。data-model.md § 4 参照）
 - [ ] T016 [P] [US1] `Packages/com.yourcompany.solidtext3d/Tests/Editor/MeshExtruderTests.cs` を作成（前面ポリゴン三角分割・背面複製・側面クワッド生成・アウトライン帯生成・押し出し深さ 0 の平面メッシュ・全頂点数/インデックス数の検証テスト。data-model.md § 6 参照）
 - [ ] T018 [P] [US1] `Packages/com.yourcompany.solidtext3d/Tests/Editor/GlyphMeshBuilderTests.cs` を作成（ASCII 文字 "A"・"Hello" の統合メッシュ生成テスト・頂点数 > 0 の検証・null パラメータ時の安全性テスト。data-model.md § 7 参照）
+- [ ] T018b [P] [US1] `Packages/com.yourcompany.solidtext3d/Tests/Editor/GlyphMeshBuilderTests.cs` に `LetterSpacing` / `LineSpacing` レイアウト計算テストを追加（`LetterSpacing > 0` 時に各グリフの X オフセットが `LetterSpacing` 分だけ広がることを頂点位置で検証・`LineSpacing` 変更時に改行後グリフの Y オフセットが `LineSpacing × UnitsPerEm` に比例して変化することを検証。FR-013/FR-014 対応。data-model.md § 2 参照）
 
 ### US1 実装（各テスト FAIL 確認後に実施）
 
 - [ ] T013 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/BezierSubdivider.cs` を実装（静的クラス。`SubdivideQuadratic(Vector2 p0, p1, p2, float threshold, List<Vector2> output): void` と `SubdivideCubic(Vector2 p0, p1, p2, p3, float threshold, List<Vector2> output): void` を再帰的 De Casteljau 法で実装。research.md 研究結果 3 参照）
 - [ ] T015 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphContourBuilder.cs` を実装（`SixLabors.Fonts.IGlyphRenderer` 実装クラス。7 つのコールバックメソッドで `List<GlyphContour>` を構築。`System.Numerics.Vector2` ↔ `UnityEngine.Vector2` 変換を含む。research.md 研究結果 1 参照）
 - [ ] T017 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/MeshExtruder.cs` を実装（静的クラス。`Build(List<GlyphContour>, MeshGenerationParams): Mesh` と `BuildGlyphMesh(GlyphContour, float, float): GlyphMeshData` を実装。LibTessDotNet `AddContour` / `Tessellate`（EvenOdd WindingRule）による前面三角分割・背面頂点複製・側面クワッド生成・アウトライン帯生成を含む。`mesh.indexFormat = IndexFormat.UInt32` を設定。research.md 研究結果 2・4・5 参照）
-- [ ] T019 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphMeshBuilder.cs` を実装（静的クラス。`Build(MeshGenerationParams): Mesh` を実装。`SixLabors.Fonts.FontCollection` でフォントを読み込み、`GlyphContourBuilder` でグリフ輪郭を収集し、`MeshExtruder.Build()` で 3D メッシュを生成。`#if UNITY_EDITOR` ガード内で `UnityEditor.AssetDatabase.GetAssetPath` + `File.ReadAllBytes` でフォントバイト取得、`#else` ブロックでは埋め込みデフォルトフォントバイトにフォールバック（FR-009 準拠）。フォントなし・グリフ欠損時のフォールバック処理を含む。data-model.md § 7 参照）
+- [ ] T019 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphMeshBuilder.cs` を実装（静的クラス。`Build(MeshGenerationParams): Mesh` を実装。`SixLabors.Fonts.FontCollection` でフォントを読み込み、`GlyphContourBuilder` でグリフ輪郭を収集し、`MeshExtruder.Build()` で 3D メッシュを生成。`#if UNITY_EDITOR` ガード内で `UnityEditor.AssetDatabase.GetAssetPath` + `File.ReadAllBytes` でフォントバイト取得、`#else` ブロックでは **スタブとして空メッシュを返却**（Noto Sans JP の埋め込みバイトによる完全実装は T031 で行う）。グリフ欠損時の空グリフスキップ処理を含む。data-model.md § 7 参照）
 - [ ] T020 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/SolidText3DComponent.cs` を実装（MonoBehaviour。`_text`, `_font`, `_extrusionDepth`, `_outlineWidth`, `_letterSpacing`, `_lineSpacing` シリアライズフィールド・`_isDirty` / `_meshFilter` 非シリアライズフィールド。`Text`, `Font`, `ExtrusionDepth`, `OutlineWidth`, `LetterSpacing`（FR-013）, `LineSpacing`（FR-014）公開プロパティ（set で `_isDirty = true`）。`Awake()` で MeshFilter/MeshRenderer を GetComponent または AddComponent。`OnValidate()` で `_isDirty = true`。`LateUpdate()` でダーティフラグをチェックし `RegenerateMesh()` を呼び出し。contracts/public-api.md の XML ドキュメントコメントを付与。data-model.md § 1 参照）
 - [ ] T021 [US1] `Packages/com.yourcompany.solidtext3d/Editor/SolidText3DInspector.cs` を実装（`[CustomEditor(typeof(SolidText3DComponent))]` 属性付き Editor クラス。`serializedObject.ApplyModifiedProperties()` 後に `EditorApplication.QueuePlayerLoopUpdate()` を呼び出してシーンビューを再描画。`#if UNITY_EDITOR` ガードは asmdef で不要だが `UnityEditor` 名前空間使用を明示。data-model.md § 8 参照）
 
@@ -190,7 +191,7 @@
 
 - フェーズ 1: T003・T004・T005・T006・T008 は T001・T002 完了後に並行実行可能
 - フェーズ 2: T009・T010・T011 は同時に並行実行可能
-- フェーズ 3 テスト: T012・T014・T016・T018 は同時に並行作成可能（実装は依存順を守ること）
+- フェーズ 3 テスト: T012・T014・T016・T018・T018b は同時に並行作成可能（実装は依存順を守ること）
 - フェーズ 5 テスト: T025・T026 は同時に並行実行可能（ただし T018 完了後）
 - フェーズ 7: T032・T034・T035・T038・T039 は同時に並行実行可能
 
@@ -243,9 +244,9 @@ US1 完了時点で:
 | --- | --- | --- |
 | フェーズ 1: セットアップ | 9 タスク（T001–T007b, T008） | — |
 | フェーズ 2: 基盤 | 3 タスク（T009–T011） | — |
-| フェーズ 3: US1（P1） | 10 タスク（T012–T021） | US1（MVP） |
+| フェーズ 3: US1（P1） | 11 タスク（T012–T018b, T019–T021） | US1（MVP） |
 | フェーズ 4: US2（P2） | 3 タスク（T022–T024） | US2 |
 | フェーズ 5: US3（P2） | 4 タスク（T025–T028） | US3 |
 | フェーズ 6: US4（P3） | 3 タスク（T029–T031） | US4 |
 | フェーズ 7: ポリッシュ | 8 タスク（T032–T039） | — |
-| **合計** | **40 タスク** | 4 ユーザーストーリー |
+| **合計** | **41 タスク** | 4 ユーザーストーリー |
