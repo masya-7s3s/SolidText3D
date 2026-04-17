@@ -49,8 +49,8 @@ SolidText3DComponent (MonoBehaviour)
 | `_font` | `UnityEngine.Font` | `null` | 使用フォント（TTF/OTF） | FR-001, FR-009 |
 | `_extrusionDepth` | `float` | `0.1f` | 押し出し深さ（0 以上） | FR-003 |
 | `_outlineWidth` | `float` | `0.0f` | アウトライン幅（0 以上） | FR-004 |
-| `_letterSpacing` | `float` | `0.0f` | 文字間隔（em 単位） | — |
-| `_lineSpacing` | `float` | `1.2f` | 行間（em 倍率） | — |
+| `_letterSpacing` | `float` | `0.0f` | 文字間隔（em 単位） | FR-013 |
+| `_lineSpacing` | `float` | `1.2f` | 行間（em 倍率） | FR-014 |
 
 #### 非シリアライズフィールド
 

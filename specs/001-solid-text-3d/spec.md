@@ -93,7 +93,7 @@ UIキャンバスではなくWorld Space上の3Dメッシュとして機能し�
 - **FR-001**: システムはTTFおよびOTF形式のフォントファイルをフォントソースとして使用できなければならない
 - **FR-002**: 開発者はInspectorおよびスクリプトAPIからテキスト文字列を設定できなければならない
 - **FR-003**: 開発者は文字の押し出し深さ（奥行き）を数値パラメータとして設定できなければならない（0以上の任意の値）
-- **FR-004**: 開発者はアウトライン幅を数値パラメータとして設定できなければならない（0以上の任意の値、0はアウトラインなしを意味する）。アウトライン帯は Miter join で生成される（詳細アルゴリズムは plan.md §C-3 MeshExtruder 参照）
+- **FR-004**: 開発者はアウトライン幅を数値パラメータとして設定できなければならない（0以上の任意の値、0はアウトラインなしを意味する）。アウトライン帯は Miter join で生成される（詳細アルゴリズムは research.md 「研究結果 5: アウトライン幾何生成」参照）
 - **FR-005**: システムはテキスト・フォント・押し出し深さ・アウトライン幅のいずれかが変更された際に3Dメッシュを自動的に再生成しなければならない
 - **FR-006**: 生成される3DテキストはユニティのゲームオブジェクトにアタッチされたMeshFilterおよびMeshRendererとして機能しなければならない（UIキャンバス要素ではない）
 - **FR-007**: ランタイム中にスクリプトAPIを通じてテキストを動的に変更でき、次フレームまでにメッシュが更新されなければならない。内部実装はダーティフラグを使用し、同一フレーム内の複数プロパティ変更を `LateUpdate` で1回のメッシュ再生成に集約する
@@ -139,7 +139,7 @@ UIキャンバスではなくWorld Space上の3Dメッシュとして機能し�
 - フォントの著作権は開発者が管理するものとし、本拡張はフォントライセンスの管理を行わない
 - グリフ輪郭データの取得には **SixLabors.Fonts**（純粋 C#、MIT）を使用する。`IGlyphRenderer` コールバック API 経由でベジェ輪郭を取得することで、グリフ精度とCJK対応の柔軟性を確保する
 - ランタイムビルドにおけるカスタムフォント（TTF/OTF）のバイトデータ取得は **v1スコープ外** とする。フォントバイトの読み込みはエディタ環境（`AssetDatabase` 経由）でのみサポートし、ランタイムビルドではデフォルト埋め込みフォントで動作する
-- デフォルト埋め込みフォントとして **Noto Sans JP Regular**（Google、SIL Open Font License 1.1）を採用する。`Runtime/Plugins/Fonts/NotoSansJP-Regular.ttf` に配置し、`GlyphMeshBuilder` の `#else` ブロックからバイト配列として参照する。日本語（ひらがな・カタカナ・漢字）・Latin を含む幅広い Unicode をカバーし、OFL 1.1 は Asset Store 配布および商用利用に適合する。ライセンス全文は `Third Party Notices.md` に記載する（取得元: <https://fonts.google.com/noto/specimen/Noto+Sans+JP>）
+- デフォルト埋め込みフォントとして **Noto Sans JP Regular**（Google、SIL Open Font License 1.1）を採用する。`Runtime/Resources/Fonts/NotoSansJP-Regular.ttf` に配置し、`GlyphMeshBuilder` の `#else` ブロックから `Resources.Load<TextAsset>("Fonts/NotoSansJP-Regular").bytes` で取得する。Unity 標準の `Resources/` フォルダを用いることで `Assembly.GetManifestResourceStream` などアセンブリ埋め込みの設定不要でランタイムビルドで動作する。日本語（ひらがな・カタカナ・漢字）・Latin を含む幅広い Unicode をカバーし、OFL 1.1 は Asset Store 配布および商用利用に適合する。ライセンス全文は `Third Party Notices.md` に記載する（取得元: <https://fonts.google.com/noto/specimen/Noto+Sans+JP>）
 
 ---
 

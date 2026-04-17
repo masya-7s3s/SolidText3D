@@ -36,8 +36,8 @@
 - [ ] T004 [P] `Packages/com.yourcompany.solidtext3d/Editor/com.yourcompany.solidtext3d.Editor.asmdef` を作成（`includePlatforms: ["Editor"]`, Runtime asmdef への参照を設定）
 - [ ] T005 [P] `Packages/com.yourcompany.solidtext3d/Tests/Editor/com.yourcompany.solidtext3d.Tests.Editor.asmdef` を作成（`optionalUnityReferences: ["TestAssemblies"]`, Runtime asmdef への参照を設定）
 - [ ] T006 [P] `Packages/com.yourcompany.solidtext3d/Tests/Runtime/com.yourcompany.solidtext3d.Tests.Runtime.asmdef` を作成（`optionalUnityReferences: ["TestAssemblies"]`, Runtime asmdef への参照を設定）
-- [ ] T007 NuGet.org から `SixLabors.Fonts.dll`（MIT、**取得時にバージョンをピン留めし README に記録すること**）と `LibTessDotNet.dll` v1.1.15（SGI Free B v2）を取得し `Packages/com.yourcompany.solidtext3d/Runtime/Plugins/` に配置（各 `.meta` ファイルも含む）（※ quickstart.md ステップ 1-1 参照）
-- [ ] T007b デフォルト埋め込みフォント **Noto Sans JP Regular**（SIL Open Font License 1.1）を Google Fonts（<https://fonts.google.com/noto/specimen/Noto+Sans+JP>）から取得し `Packages/com.yourcompany.solidtext3d/Runtime/Plugins/Fonts/NotoSansJP-Regular.ttf` に配置。OFL 1.1 ライセンス全文を `Third Party Notices.md` 用に保存する（spec.md § 前提条件「デフォルト埋め込みフォント」参照）
+- [ ] T007 NuGet.org から `SixLabors.Fonts.dll`（MIT、**取得時にバージョンをピン留めし README に記録すること**）と `LibTessDotNet.dll` v1.1.15（SGI Free B v2）を取得し `Packages/com.yourcompany.solidtext3d/Runtime/Plugins/` に配置（各 `.meta` ファイルも含む）。あわせて **SixLabors.Fonts の MIT ライセンス全文**を NuGet ページ（または GitHub リポジトリの LICENSE ファイル）から取得し `Third Party Notices.md` 用に保存する（T033 で記載するため）（※ quickstart.md ステップ 1-1 参照）
+- [ ] T007b デフォルト埋め込みフォント **Noto Sans JP Regular**（SIL Open Font License 1.1）を Google Fonts（<https://fonts.google.com/noto/specimen/Noto+Sans+JP>）から取得し `Packages/com.yourcompany.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Regular.ttf` に配置（Unity `Resources.Load<TextAsset>` でランタイム取得するため `Resources/` 配下に配置する）。OFL 1.1 ライセンス全文を `Third Party Notices.md` 用に保存する（spec.md § 前提条件「デフォルト埋め込みフォント」参照）
 - [ ] T008 [P] ルートドキュメントプレースホルダーを作成（`Packages/com.yourcompany.solidtext3d/` 直下に `README.md`, `CHANGELOG.md`, `LICENSE.md`, `Third Party Notices.md` を空ファイルとして作成）
 
 > ⚠️ **手動作業 M-1**: T007 完了後、Unity エディタで Plugin Import Settings を開き DLL の Platform 設定を確認する  
@@ -77,18 +77,20 @@
 - [ ] T014 [P] [US1] `Packages/com.yourcompany.solidtext3d/Tests/Editor/GlyphContourBuilderTests.cs` を作成（`BeginFigure`/`MoveTo`/`LineTo`/`QuadraticBezierTo`/`CubicBezierTo`/`EndFigure`/`EndGlyph` の IGlyphRenderer コールバック動作テスト。data-model.md § 4 参照）
 - [ ] T016 [P] [US1] `Packages/com.yourcompany.solidtext3d/Tests/Editor/MeshExtruderTests.cs` を作成（前面ポリゴン三角分割・背面複製・側面クワッド生成・アウトライン帯生成・押し出し深さ 0 の平面メッシュ・全頂点数/インデックス数の検証テスト。data-model.md § 6 参照）
 - [ ] T018 [P] [US1] `Packages/com.yourcompany.solidtext3d/Tests/Editor/GlyphMeshBuilderTests.cs` を作成（ASCII 文字 "A"・"Hello" の統合メッシュ生成テスト・頂点数 > 0 の検証・null パラメータ時の安全性テスト。data-model.md § 7 参照）
-- [ ] T018b [P] [US1] `Packages/com.yourcompany.solidtext3d/Tests/Editor/GlyphMeshBuilderTests.cs` に `LetterSpacing` / `LineSpacing` レイアウト計算テストを追加（`LetterSpacing > 0` 時に各グリフの X オフセットが `LetterSpacing` 分だけ広がることを頂点位置で検証・`LineSpacing` 変更時に改行後グリフの Y オフセットが `LineSpacing × UnitsPerEm` に比例して変化することを検証。FR-013/FR-014 対応。data-model.md § 2 参照）
+- [ ] T018b [P] [US1] `Packages/com.yourcompany.solidtext3d/Tests/Editor/GlyphMeshBuilderTests.cs` に以下のテストケースを追加:
+  - `LetterSpacing` / `LineSpacing` レイアウト計算テスト（`LetterSpacing > 0` 時に各グリフの X オフセットが `LetterSpacing` 分だけ広がることを頂点位置で検証・`LineSpacing` 変更時に改行後グリフの Y オフセットが `LineSpacing × UnitsPerEm` に比例して変化することを検証。FR-013/FR-014 対応。data-model.md § 2 参照）
+  - **FR-005 ダーティフラグ検証テスト**（`Font` プロパティを変更したとき・`ExtrusionDepth` を変更したとき・`OutlineWidth` を変更したときに、それぞれ `_isDirty` が `true` になることを `SolidText3DComponent` の内部状態で検証。各パラメータ変更 → `LateUpdate` 相当の `RegenerateMesh()` 呼び出し後にメッシュが更新されることを頂点数で確認。FR-005 対応）
 
 ### US1 実装（各テスト FAIL 確認後に実施）
 
 - [ ] T013 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/BezierSubdivider.cs` を実装（静的クラス。`SubdivideQuadratic(Vector2 p0, p1, p2, float threshold, List<Vector2> output): void` と `SubdivideCubic(Vector2 p0, p1, p2, p3, float threshold, List<Vector2> output): void` を再帰的 De Casteljau 法で実装。research.md 研究結果 3 参照）
 - [ ] T015 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphContourBuilder.cs` を実装（`SixLabors.Fonts.IGlyphRenderer` 実装クラス。7 つのコールバックメソッドで `List<GlyphContour>` を構築。`System.Numerics.Vector2` ↔ `UnityEngine.Vector2` 変換を含む。research.md 研究結果 1 参照）
 - [ ] T017 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/MeshExtruder.cs` を実装（静的クラス。`Build(List<GlyphContour>, MeshGenerationParams): Mesh` と `BuildGlyphMesh(GlyphContour, float, float): GlyphMeshData` を実装。LibTessDotNet `AddContour` / `Tessellate`（EvenOdd WindingRule）による前面三角分割・背面頂点複製・側面クワッド生成・アウトライン帯生成を含む。`mesh.indexFormat = IndexFormat.UInt32` を設定。research.md 研究結果 2・4・5 参照）
-- [ ] T019 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphMeshBuilder.cs` を実装（静的クラス。`Build(MeshGenerationParams): Mesh` を実装。`SixLabors.Fonts.FontCollection` でフォントを読み込み、`GlyphContourBuilder` でグリフ輪郭を収集し、`MeshExtruder.Build()` で 3D メッシュを生成。`#if UNITY_EDITOR` ガード内で `UnityEditor.AssetDatabase.GetAssetPath` + `File.ReadAllBytes` でフォントバイト取得、`#else` ブロックでは **スタブとして空メッシュを返却**（Noto Sans JP の埋め込みバイトによる完全実装は T031 で行う）。グリフ欠損時の空グリフスキップ処理を含む。data-model.md § 7 参照）
+- [ ] T019 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphMeshBuilder.cs` を実装（静的クラス。`Build(MeshGenerationParams): Mesh` を実装。`SixLabors.Fonts.FontCollection` でフォントを読み込み、`GlyphContourBuilder` でグリフ輪郭を収集し、`MeshExtruder.Build()` で 3D メッシュを生成。`#if UNITY_EDITOR` ガード内で `UnityEditor.AssetDatabase.GetAssetPath` + `File.ReadAllBytes` でフォントバイト取得、`#else` ブロックでは **スタブとして空メッシュを返却**（`Resources.Load<TextAsset>` による Noto Sans JP バイト取得の完全実装は T031 で行う）。グリフ欠損時の空グリフスキップ処理を含む。data-model.md § 7 参照）
 - [ ] T020 [US1] `Packages/com.yourcompany.solidtext3d/Runtime/SolidText3DComponent.cs` を実装（MonoBehaviour。`_text`, `_font`, `_extrusionDepth`, `_outlineWidth`, `_letterSpacing`, `_lineSpacing` シリアライズフィールド・`_isDirty` / `_meshFilter` 非シリアライズフィールド。`Text`, `Font`, `ExtrusionDepth`, `OutlineWidth`, `LetterSpacing`（FR-013）, `LineSpacing`（FR-014）公開プロパティ（set で `_isDirty = true`）。`Awake()` で MeshFilter/MeshRenderer を GetComponent または AddComponent。`OnValidate()` で `_isDirty = true`。`LateUpdate()` でダーティフラグをチェックし `RegenerateMesh()` を呼び出し。contracts/public-api.md の XML ドキュメントコメントを付与。data-model.md § 1 参照）
 - [ ] T021 [US1] `Packages/com.yourcompany.solidtext3d/Editor/SolidText3DInspector.cs` を実装（`[CustomEditor(typeof(SolidText3DComponent))]` 属性付き Editor クラス。`serializedObject.ApplyModifiedProperties()` 後に `EditorApplication.QueuePlayerLoopUpdate()` を呼び出してシーンビューを再描画。`#if UNITY_EDITOR` ガードは asmdef で不要だが `UnityEditor` 名前空間使用を明示。data-model.md § 8 参照）
 
-**チェックポイント**: この時点で US1 の全テストが PASS し、エディタ上でテキスト設定 → 3D メッシュ生成 → シーンビュー表示が動作すること（受け入れシナリオ 1〜4 を手動確認）
+**チェックポイント**: この時点で US1 の全テストが PASS し、エディタ上でテキスト設定 → 3D メッシュ生成 → シーンビュー表示が動作すること（受け入れシナリオ 1〜4 を手動確認）。**注意**: テスト PASS の条件は `#if UNITY_EDITOR` ブランチが有効なエディタ環境（Unity Test Framework の Edit Mode 実行）での確認とする。CI/非エディタビルドでは T019 の `#else` スタブが適用され、完全なメッシュ生成は T031 完了後に保証される
 
 ---
 
@@ -144,7 +146,7 @@
 ### US4 実装
 
 - [ ] T030 [US4] `Packages/com.yourcompany.solidtext3d/Runtime/SolidText3DComponent.cs` の `Awake()` および `RegenerateMesh()` にフォント null / フォントファイル削除時のデフォルトフォールバックロジックを完全実装（`_font == null` 時に `Debug.LogWarning` を出力し内部デフォルトフォントバイト（埋め込みリソース）を使用。FR-009 参照）
-- [ ] T031 [US4] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphMeshBuilder.cs` のフォントバイト取得ロジックを完全実装（エディタ実行時: `#if UNITY_EDITOR` ガード内で `UnityEditor.AssetDatabase.GetAssetPath(font)` + `System.IO.File.ReadAllBytes()` でフォントバイト取得 / ランタイム（ビルド済み）: `#else` ブロックで `Assembly.GetExecutingAssembly().GetManifestResourceStream("NotoSansJP-Regular.ttf")` によるアセンブリ埋め込みリソースとして Noto Sans JP のバイトを取得しメッシュを生成（FR-009 準拠・エラー停止なし・Warning 出力あり）。**前提: T007b 完了（NotoSansJP-Regular.ttf 配置済みであること）**。data-model.md § 7 実装上の注意参照）
+- [ ] T031 [US4] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphMeshBuilder.cs` のフォントバイト取得ロジックを完全実装（エディタ実行時: `#if UNITY_EDITOR` ガード内で `UnityEditor.AssetDatabase.GetAssetPath(font)` + `System.IO.File.ReadAllBytes()` でフォントバイト取得 / ランタイム（ビルド済み）: `#else` ブロックで `Resources.Load<TextAsset>("Fonts/NotoSansJP-Regular")` + `.bytes` により Noto Sans JP のバイト配列を取得してメッシュを生成（FR-009 準拠・エラー停止なし・Warning 出力あり）。`Resources.Load` が null を返した場合は `Debug.LogWarning` を出力してゼロポリゴンを返す。**前提: T007b 完了（`Runtime/Resources/Fonts/NotoSansJP-Regular.ttf` 配置済みであること）**。data-model.md § 7 実装上の注意参照）
 - [ ] T031b [US4] `Packages/com.yourcompany.solidtext3d/Tests/Runtime/SolidText3DRuntimeTests.cs` にランタイムフォント切り替えテストを追加（実行中に `SolidText3DComponent.Font` を別のフォントに変更したとき、`yield return null;` 後に新フォントのグリフでメッシュが再生成されることを検証。spec.md エッジケース「ランタイムでフォント自体を変更した場合、メッシュは正しく再生成されるか？」対応）
 
 **チェックポイント**: この時点でカスタムフォントの割り当て・null フォールバック・全テストの PASS が確認できること
@@ -161,16 +163,16 @@
 - [ ] T035 [P] `Packages/com.yourcompany.solidtext3d/Samples~/CJKExample/CJKExample.cs` を作成（日本語・中国語・韓国語を含む文字列を SolidText3DComponent に設定するサンプルコード）
 - [ ] T036 `Packages/com.yourcompany.solidtext3d/Documentation~/index.md` を作成（API リファレンス・パラメータ一覧・エディタ/ランタイムの使用ガイド・トラブルシューティング（ランタイムでのフォントバイト制限）を記載。quickstart.md を参照）
 - [ ] T037 `quickstart.md` の手動検証チェックリスト（M-1〜M-5）を実施し、Unity 6 で正常にビルド・動作することを確認（DLL Platform 設定、Test Runner 動作、シーンへの配置、エディタプレビュー、ビルド通過）
-- [ ] T038 [P] `Packages/com.yourcompany.solidtext3d/Tests/Editor/PerformanceTests.cs` に SC-001 ベンチマークテストを作成（50文字テキストのメッシュ生成時間を `System.Diagnostics.Stopwatch` で計測し、`Assert.Less(elapsedMs, 2000)` で 2000ms 未満を検証。メッシュ生成のみを計測し Unity Editor の起動コストを含めない。SC-001 対応）
+- [ ] T038 [P] `Packages/com.yourcompany.solidtext3d/Tests/Editor/PerformanceTests.cs` に SC-001 ベンチマークテストを作成（50文字テキストのメッシュ生成時間を `System.Diagnostics.Stopwatch` で計測し、`Assert.Less(elapsedMs, 2000)` で 2000ms 未満を検証。**計測方法**: `GlyphMeshBuilder.Build()` を 2 回実行し、JIT ウォームアップコストを含む 1 回目は計測対象外として破棄し、2 回目以降の実行時間のみを計測する。Unity Editor 起動コストおよびアセンブリロードコストを計測値に含めない。SC-001 対応）
 - [ ] T039 [P] `Packages/com.yourcompany.solidtext3d/Tests/Runtime/PerformanceRuntimeTests.cs` に SC-004 ベンチマークテストを作成（20個の SolidText3DComponent（各50文字）を同一シーンに配置し、`Time.deltaTime` の連続 30 フレーム平均値が 16.7ms 未満（60fps 相当）であることを `Assert.Less` で検証。SC-004 対応）
 - [ ] T040 `Packages/com.yourcompany.solidtext3d/CHANGELOG.md` に v1.0.0 のリリース内容を記入（Added セクション: 主要機能一覧・TTF/OTF フォント対応・CJK サポート・LetterSpacing/LineSpacing・デフォルト埋め込みフォント（Noto Sans JP）。憲法 IV 準拠）
-- [ ] T041 Unity Test Framework のコードカバレッジ計測を実施し、ランタイムロジックのカバレッジが 80% 以上であることを確認・記録する（Window > Analysis > Code Coverage を使用。憲法 III 準拠。カバレッジ計測が技術的に不可能な場合は `specs/001-solid-text-3d/tests-coverage-gap.md` に不足ケースを記録し次スプリントで補う）
-- [ ] T042 `Packages/com.yourcompany.solidtext3d/Tests/` 配下の全テストを Unity Test Runner で実行し、ランタイムロジックのテストカバレッジを確認する（Edit Mode: `BezierSubdivider`, `GlyphContourBuilder`, `MeshExtruder`, `GlyphMeshBuilder`（80%以上を目安）・Play Mode: `SolidText3DRuntimeTests` が全 PASS であることを確認。カバレッジ計測には Unity Code Coverage パッケージ（`com.unity.testtools.codecoverage`）の導入を推奨する（未導入の場合はカバレッジ不足ケースを `specs/001-solid-text-3d/tests-coverage-gap.md` に記録し次スプリントで補う）。標準: 憲法第 III 「ランタイムロジック 80% 以上」準拠）
+- [ ] T041 `Packages/com.yourcompany.solidtext3d/Tests/` 配下の全テストを Unity Test Runner で実行し、全テスト PASS およびカバレッジ目標を最終確認する（Edit Mode: `BezierSubdivider`, `GlyphContourBuilder`, `MeshExtruder`, `GlyphMeshBuilder` が全 PASS・Play Mode: `SolidText3DRuntimeTests` が全 PASS。カバレッジ計測には Unity Code Coverage パッケージ（`com.unity.testtools.codecoverage`）を使用し（Window > Analysis > Code Coverage）、ランタイムロジックのカバレッジが **80% 以上**であることを確認・記録する。計測が技術的に不可能な場合は `specs/001-solid-text-3d/tests-coverage-gap.md` に不足ケースを記録し次スプリントで補う。標準: 憲法第 III 「ランタイムロジック 80% 以上」準拠）
+- [ ] T042 [P] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphMeshBuilder.cs` の主要メッシュ生成パス（`Build()` および `BuildGlyphMesh()` の入口・出口）に `Profiler.BeginSample` / `Profiler.EndSample` を追加し、Unity Profiler でホットパスの計測ができる状態にする。プロファイル結果（サンプリングキャプチャ）を PR またはチケットに添付する（憲法 V 準拠）
 
 > ⚠️ **手動作業 M-4**: `Samples~/BasicUsage/` と `Samples~/CJKExample/` の `.unity` シーンファイル作成・GameObject 配置・保存は Unity エディタ操作が必要  
 > ⚠️ **手動作業 M-5**: Unity 6（6000.x LTS）で PC スタンドアロンビルドを実行して動作確認
 
-**チェックポイント**: Asset Store 提出可能な状態。全テスト PASS・ビルド通過・ドキュメント整備完了・SC-001/SC-004 ベンチマーク PASS・カバレッジ目視確認完了
+**チェックポイント**: Asset Store 提出可能な状態。全テスト PASS・ビルド通過・ドキュメント整備完了・SC-001/SC-004 ベンチマーク PASS・カバレッジ 80% 以上確認完了・Profiler サンプリングキャプチャ添付済み
 
 ---
 
@@ -210,7 +212,7 @@
 - フェーズ 2: T009・T010・T011 は同時に並行実行可能
 - フェーズ 3 テスト: T012・T014・T016・T018・T018b は同時に並行作成可能（実装は依存順を守ること）
 - フェーズ 5 テスト: T025・T026 は同時に並行実行可能（ただし T018 完了後）
-- フェーズ 7: T032・T034・T035・T038・T039 は T037 通過後に並行実行可能（T040・T041・T042 は全テスト PASS 後に実施）
+- フェーズ 7: T032・T034・T035・T038・T039・T042 は T037 通過後に並行実行可能（T040・T041 は全テスト PASS 後に実施）
 
 ---
 
@@ -264,6 +266,6 @@ US1 完了時点で:
 | フェーズ 3: US1（P1） | 11 タスク（T012–T018b, T019–T021） | US1（MVP） |
 | フェーズ 4: US2（P2） | 3 タスク（T022–T024） | US2 |
 | フェーズ 5: US3（P2） | 4 タスク（T025–T028） | US3 |
-| フェーズ 6: US4（P3） | 3 タスク（T029–T031） | US4 |
+| フェーズ 6: US4（P3） | 4 タスク（T029–T031b） | US4 |
 | フェーズ 7: ポリッシュ | 11 タスク（T032–T042） | — |
-| **合計** | **44 タスク** | 4 ユーザーストーリー |
+| **合計** | **45 タスク** | 4 ユーザーストーリー |

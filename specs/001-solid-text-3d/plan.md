@@ -275,7 +275,7 @@ Packages/
 | 違反 | 必要な理由 | より単純な代替案を却下した理由 |
 | --- | --- | --- |
 | `LateUpdate` でのメッシュ生成（GC.Alloc 発生） | ランタイムでの動的テキスト変更（FR-007）に対応するため。変更時のみ実行 | 変更検知がない場合は毎フレーム再生成が必要になり、パフォーマンスがより悪化する |
-| `GlyphMeshBuilder` の `#if UNITY_EDITOR` によるフォントバイト取得（カスタムフォントのランタイム非対応） | ランタイムビルドで `AssetDatabase` が使用不可のため。v1 ではエディタ環境専用に限定し、ランタイムは埋め込みデフォルトフォントで動作（spec.md 前提条件参照） | ランタイムでのフォント配布には `StreamingAssets` や `Resources` の設計変更が必要であり、v2 以降のスコープとする |
+| `GlyphMeshBuilder` の `#if UNITY_EDITOR` によるフォントバイト取得（カスタムフォントのランタイム非対応） | ランタイムビルドで `AssetDatabase` が使用不可のため。v1 ではエディタ環境専用に限定し、ランタイムは `Resources.Load<TextAsset>("Fonts/NotoSansJP-Regular")` で取得する埋め込みデフォルトフォントで動作（spec.md 前提条件参照） | ランタイムでのカスタムフォント配布には `StreamingAssets` の設計変更が必要であり、v2 以降のスコープとする |
 
 ---
 
