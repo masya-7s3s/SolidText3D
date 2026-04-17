@@ -12,6 +12,18 @@
 - **[Story]**: 所属ユーザーストーリー（例: US1, US2, US3）
 - 説明には正確なファイルパスを含める
 
+### plan.md フェーズ↔タスクフェーズ対応
+
+| タスクフェーズ | plan.md 対応フェーズ | 概要 |
+| ------------- | ------------------- | ------ |
+| フェーズ 1 (T001–T008) | フェーズ A | UPM パッケージスケルトン構築 |
+| フェーズ 2 (T009–T011) | フェーズ B | データ構造ファイル作成 |
+| フェーズ 3 (T012–T021) | フェーズ C + D | コアロジック実装（US1） |
+| フェーズ 4 (T022–T024) | フェーズ D | ランタイム動的変更（US2） |
+| フェーズ 5 (T025–T028) | フェーズ C | CJK 対応（US3） |
+| フェーズ 6 (T029–T031b) | フェーズ C + D | カスタムフォント対応（US4） |
+| フェーズ 7 (T032–T042) | フェーズ E | ドキュメント・ポリッシュ |
+
 ---
 
 ## フェーズ 1: セットアップ（UPM パッケージスケルトン構築）
@@ -92,7 +104,7 @@
 
 ### US2 実装
 
-- [ ] T023 [US2] `Packages/com.yourcompany.solidtext3d/Runtime/SolidText3DComponent.cs` の `RegenerateMesh()` に空文字列時のゼロポリゴン処理を追加（`string.IsNullOrEmpty(_text)` の場合は `meshFilter.sharedMesh.Clear()` を実行してエラーを発生させない）
+- [ ] T023 [US2] `Packages/com.yourcompany.solidtext3d/Runtime/SolidText3DComponent.cs` の `RegenerateMesh()` に空文字列時のゼロポリゴン処理を追加（`string.IsNullOrEmpty(_text)` の場合は `meshFilter.sharedMesh.Clear()` を実行してエラーを発生させない）（**前提: T022 の空文字列テストケースが FAIL していることを確認済みであること — 憲法 III TDD Red 準拠**）
 - [ ] T024 [US2] `Packages/com.yourcompany.solidtext3d/Runtime/SolidText3DComponent.cs` の `Text` setter で `null` 値を空文字に正規化する処理を追加し、Play Mode テスト（T022）がすべて PASS することを確認（**T023 完了後に実施**）
 
 **チェックポイント**: この時点で Play Mode でスクリプトからテキストを変更すると 1 フレーム以内でメッシュが更新され、空文字列でエラーが発生しないこと
@@ -132,7 +144,7 @@
 ### US4 実装
 
 - [ ] T030 [US4] `Packages/com.yourcompany.solidtext3d/Runtime/SolidText3DComponent.cs` の `Awake()` および `RegenerateMesh()` にフォント null / フォントファイル削除時のデフォルトフォールバックロジックを完全実装（`_font == null` 時に `Debug.LogWarning` を出力し内部デフォルトフォントバイト（埋め込みリソース）を使用。FR-009 参照）
-- [ ] T031 [US4] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphMeshBuilder.cs` のフォントバイト取得ロジックを完全実装（エディタ実行時: `#if UNITY_EDITOR` ガード内で `UnityEditor.AssetDatabase.GetAssetPath(font)` + `System.IO.File.ReadAllBytes()` でフォントバイト取得 / ランタイム（ビルド済み）: `#else` ブロックで埋め込みデフォルトフォントバイトを使用してメッシュを生成（FR-009 準拠・エラー停止なし・Warning 出力あり）。data-model.md § 7 実装上の注意参照）
+- [ ] T031 [US4] `Packages/com.yourcompany.solidtext3d/Runtime/GlyphMeshBuilder.cs` のフォントバイト取得ロジックを完全実装（エディタ実行時: `#if UNITY_EDITOR` ガード内で `UnityEditor.AssetDatabase.GetAssetPath(font)` + `System.IO.File.ReadAllBytes()` でフォントバイト取得 / ランタイム（ビルド済み）: `#else` ブロックで `Assembly.GetExecutingAssembly().GetManifestResourceStream("NotoSansJP-Regular.ttf")` によるアセンブリ埋め込みリソースとして Noto Sans JP のバイトを取得しメッシュを生成（FR-009 準拠・エラー停止なし・Warning 出力あり）。**前提: T007b 完了（NotoSansJP-Regular.ttf 配置済みであること）**。data-model.md § 7 実装上の注意参照）
 - [ ] T031b [US4] `Packages/com.yourcompany.solidtext3d/Tests/Runtime/SolidText3DRuntimeTests.cs` にランタイムフォント切り替えテストを追加（実行中に `SolidText3DComponent.Font` を別のフォントに変更したとき、`yield return null;` 後に新フォントのグリフでメッシュが再生成されることを検証。spec.md エッジケース「ランタイムでフォント自体を変更した場合、メッシュは正しく再生成されるか？」対応）
 
 **チェックポイント**: この時点でカスタムフォントの割り当て・null フォールバック・全テストの PASS が確認できること
@@ -149,12 +161,11 @@
 - [ ] T035 [P] `Packages/com.yourcompany.solidtext3d/Samples~/CJKExample/CJKExample.cs` を作成（日本語・中国語・韓国語を含む文字列を SolidText3DComponent に設定するサンプルコード）
 - [ ] T036 `Packages/com.yourcompany.solidtext3d/Documentation~/index.md` を作成（API リファレンス・パラメータ一覧・エディタ/ランタイムの使用ガイド・トラブルシューティング（ランタイムでのフォントバイト制限）を記載。quickstart.md を参照）
 - [ ] T037 `quickstart.md` の手動検証チェックリスト（M-1〜M-5）を実施し、Unity 6 で正常にビルド・動作することを確認（DLL Platform 設定、Test Runner 動作、シーンへの配置、エディタプレビュー、ビルド通過）
-- [ ] T038 [P] `Packages/com.yourcompany.solidtext3d/Tests/Editor/PerformanceTests.cs` を作成（エディタでのパラメータ変更から 2 秒以内にシーンビューが更新されることを `Stopwatch` で計測し Assert する SC-001 対応 Edit Mode パフォーマンステスト。plan.md §C PerformanceTests.cs 参照）
-- [ ] T039 [P] `Packages/com.yourcompany.solidtext3d/Tests/Runtime/PerformanceRuntimeTests.cs` を作成（同一シーン内に 20 個の SolidText3D オブジェクト（各 50 文字）を生成し、60fps 維持を `Time.deltaTime` で検証する SC-004 対応 Play Mode パフォーマンステスト。plan.md §D PerformanceRuntimeTests.cs 参照）
-- [ ] T040 `Packages/com.yourcompany.solidtext3d/CHANGELOG.md` に v1.0.0 のリリース内容を記入（Added セクション: 主要機能一覧・TTF/OTF フォント対応・CJK サポート・LetterSpacing/LineSpacing・デフォルト埋め込みフォント（Noto Sans JP）。憲法 IV 準拠）
-- [ ] T041 Unity Test Framework のコードカバレッジ計測を実施し、ランタイムロジックのカバレッジが 80% 以上であることを確認・記録する（Window > Analysis > Code Coverage を使用。憲法 III 準拠）
 - [ ] T038 [P] `Packages/com.yourcompany.solidtext3d/Tests/Editor/PerformanceTests.cs` に SC-001 ベンチマークテストを作成（50文字テキストのメッシュ生成時間を `System.Diagnostics.Stopwatch` で計測し、`Assert.Less(elapsedMs, 2000)` で 2000ms 未満を検証。メッシュ生成のみを計測し Unity Editor の起動コストを含めない。SC-001 対応）
-- [ ] T039 [P] `Packages/com.yourcompany.solidtext3d/Tests/Runtime/PerformanceRuntimeTests.cs` に SC-004 ベンチマークテストを作成（20個の SolidText3DComponent（各50文字）を同一シーンに配置し、`Time.deltaTime` の連続 30 フレーム平均値が 16.7ms 未満（60fps 相当）であることを `Assert.Less` で検証。SC-004 対応）- [ ] T040 `Packages/com.yourcompany.solidtext3d/Tests/` 配下の全テストを Unity Test Runner で実行し、ランタイムロジックのテストカバレッジを確認する（Edit Mode: `BezierSubdivider`, `GlyphContourBuilder`, `MeshExtruder`, `GlyphMeshBuilder`（80%以上を目安）・ Play Mode: `SolidText3DRuntimeTests` が全 PASS であることを確認。カバレッジ計測には `com.unity.test-framework.performance`（Unity Code Coverage パッケージ）の導入を推奨する（未導入の場合は手動目視で主要パスをすべてカバーしていることを確認すること）。不足しているケースがあれば `specs/001-solid-text-3d/tests-coverage-gap.md` に記録する。標準: 憲法第 III 「ランタイムロジック 80% 以上」準拠）
+- [ ] T039 [P] `Packages/com.yourcompany.solidtext3d/Tests/Runtime/PerformanceRuntimeTests.cs` に SC-004 ベンチマークテストを作成（20個の SolidText3DComponent（各50文字）を同一シーンに配置し、`Time.deltaTime` の連続 30 フレーム平均値が 16.7ms 未満（60fps 相当）であることを `Assert.Less` で検証。SC-004 対応）
+- [ ] T040 `Packages/com.yourcompany.solidtext3d/CHANGELOG.md` に v1.0.0 のリリース内容を記入（Added セクション: 主要機能一覧・TTF/OTF フォント対応・CJK サポート・LetterSpacing/LineSpacing・デフォルト埋め込みフォント（Noto Sans JP）。憲法 IV 準拠）
+- [ ] T041 Unity Test Framework のコードカバレッジ計測を実施し、ランタイムロジックのカバレッジが 80% 以上であることを確認・記録する（Window > Analysis > Code Coverage を使用。憲法 III 準拠。カバレッジ計測が技術的に不可能な場合は `specs/001-solid-text-3d/tests-coverage-gap.md` に不足ケースを記録し次スプリントで補う）
+- [ ] T042 `Packages/com.yourcompany.solidtext3d/Tests/` 配下の全テストを Unity Test Runner で実行し、ランタイムロジックのテストカバレッジを確認する（Edit Mode: `BezierSubdivider`, `GlyphContourBuilder`, `MeshExtruder`, `GlyphMeshBuilder`（80%以上を目安）・Play Mode: `SolidText3DRuntimeTests` が全 PASS であることを確認。カバレッジ計測には Unity Code Coverage パッケージ（`com.unity.testtools.codecoverage`）の導入を推奨する（未導入の場合はカバレッジ不足ケースを `specs/001-solid-text-3d/tests-coverage-gap.md` に記録し次スプリントで補う）。標準: 憲法第 III 「ランタイムロジック 80% 以上」準拠）
 
 > ⚠️ **手動作業 M-4**: `Samples~/BasicUsage/` と `Samples~/CJKExample/` の `.unity` シーンファイル作成・GameObject 配置・保存は Unity エディタ操作が必要  
 > ⚠️ **手動作業 M-5**: Unity 6（6000.x LTS）で PC スタンドアロンビルドを実行して動作確認
@@ -172,7 +183,7 @@
 - **US1（フェーズ 3）**: フェーズ 2 完了後に開始 — US2・US3・US4 をブロック
 - **US2・US3（フェーズ 4・5）**: フェーズ 3 完了後に並行実行可能（スタッフが複数いる場合）
 - **US4（フェーズ 6）**: フェーズ 3 完了後に開始可能
-- **ポリッシュ（フェーズ 7）**: 全ユーザーストーリーフェーズ完了後
+- **ポリッシュ（フェーズ 7）**: 全ユーザーストーリーフェーズ完了後。T037（手動ビルド確認・SC-006）はフェーズ 7 内の T038〜T042 の前に通過するブロッキングチェックポイントとして扱う
 
 ### ユーザーストーリー依存関係
 
@@ -195,11 +206,11 @@
 
 ### 並行実行可能なタスク
 
-- フェーズ 1: T003・T004・T005・T006・T008 は T001・T002 完了後に並行実行可能
+- フェーズ 1: T003・T004・T005・T006・T008 は T001・T002 完了後に並行実行可能。ただし `Third Party Notices.md` 完成には **T008 → T007b → T033** の順序が必要（T008: 空ファイル作成 → T007b: OFL ライセンス保存 → T033: 全ライセンス記載）
 - フェーズ 2: T009・T010・T011 は同時に並行実行可能
 - フェーズ 3 テスト: T012・T014・T016・T018・T018b は同時に並行作成可能（実装は依存順を守ること）
 - フェーズ 5 テスト: T025・T026 は同時に並行実行可能（ただし T018 完了後）
-- フェーズ 7: T032・T034・T035・T038・T039 は同時に並行実行可能（T040 は全テスト PASS 後に実施）
+- フェーズ 7: T032・T034・T035・T038・T039 は T037 通過後に並行実行可能（T040・T041・T042 は全テスト PASS 後に実施）
 
 ---
 
@@ -254,5 +265,5 @@ US1 完了時点で:
 | フェーズ 4: US2（P2） | 3 タスク（T022–T024） | US2 |
 | フェーズ 5: US3（P2） | 4 タスク（T025–T028） | US3 |
 | フェーズ 6: US4（P3） | 3 タスク（T029–T031） | US4 |
-| フェーズ 7: ポリッシュ | 9 タスク（T032–T040） | — |
-| **合計** | **42 タスク** | 4 ユーザーストーリー |
+| フェーズ 7: ポリッシュ | 11 タスク（T032–T042） | — |
+| **合計** | **44 タスク** | 4 ユーザーストーリー |
