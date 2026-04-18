@@ -29,7 +29,11 @@ namespace MasaChuang.SolidText3D.Tests.Runtime
             Assert.IsNotNull(mf);
             Assert.Greater(mf.sharedMesh.vertexCount, 0, "テキスト変更後 1 フレームでメッシュが更新されること");
 
+#if UNITY_EDITOR
+            Object.DestroyImmediate(go);
+#else
             Object.Destroy(go);
+#endif
         }
 
         [UnityTest]
@@ -46,7 +50,11 @@ namespace MasaChuang.SolidText3D.Tests.Runtime
             Assert.IsNotNull(mf);
             Assert.AreEqual(0, mf.sharedMesh.vertexCount, "空テキストで頂点数が 0 であること");
 
+#if UNITY_EDITOR
+            Object.DestroyImmediate(go);
+#else
             Object.Destroy(go);
+#endif
         }
 
         [UnityTest]
@@ -69,7 +77,11 @@ namespace MasaChuang.SolidText3D.Tests.Runtime
             // 1 フレーム後はダーティフラグがクリアされていること
             Assert.IsFalse(comp.IsDirty, "LateUpdate 実行後はダーティフラグがクリアされること");
 
+#if UNITY_EDITOR
+            Object.DestroyImmediate(go);
+#else
             Object.Destroy(go);
+#endif
         }
 
         // T031b: ランタイムフォント切り替えテスト ─────────────────────────
@@ -95,7 +107,11 @@ namespace MasaChuang.SolidText3D.Tests.Runtime
             // メッシュが再生成されたこと（頂点数が存在すること）
             Assert.Greater(mf.sharedMesh.vertexCount, 0, "フォント切り替え後もメッシュが生成されること");
 
+#if UNITY_EDITOR
+            Object.DestroyImmediate(go);
+#else
             Object.Destroy(go);
+#endif
         }
     }
 }
