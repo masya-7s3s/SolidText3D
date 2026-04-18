@@ -64,7 +64,13 @@ namespace MasaChuang.SolidText3D.Tests.Runtime
             for (int i = 0; i < ComponentCount; i++)
             {
                 if (objects[i] != null)
+                {
+#if UNITY_EDITOR
+                    Object.DestroyImmediate(objects[i]);
+#else
                     Object.Destroy(objects[i]);
+#endif
+                }
             }
 
             Assert.Less(averageDeltaMs, MaxAverageDeltaMs,

@@ -6,6 +6,11 @@ namespace MasaChuang.SolidText3D
     /// Unity GameObject に 3D テキストメッシュを追加する MonoBehaviour コンポーネント。
     /// Inspector でパラメータを設定すると、次のフレームで自動的にメッシュが再生成される。
     /// </summary>
+    /// <remarks>
+    /// [ExecuteAlways] により Edit Mode でも LateUpdate() が実行される。
+    /// これにより Inspector 変更時のリアルタイムプレビューと Edit Mode テストの両方をサポートする。
+    /// </remarks>
+    [ExecuteAlways]
     [RequireComponent(typeof(MeshFilter))]
     [RequireComponent(typeof(MeshRenderer))]
     public sealed class SolidText3DComponent : MonoBehaviour

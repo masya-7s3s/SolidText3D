@@ -183,17 +183,33 @@ namespace MasaChuang.SolidText3D.Tests.Editor
         public void BuildGlyphMesh_DonutContour_EvenOddHoleCorrect()
         {
             // 「口」「O」相当の外枠 + 内側の穴を持つ形状
+            // depth=0 で前面のみ生成（側面なし）し、面積で EvenOdd 穴を検証する
             var contour = MakeDonutContour();
-            var data = MeshExtruder.BuildGlyphMesh(contour, 1f, 0f);
-
-            // 穴がくり抜かれている場合、ソリッドな正方形（MakeSquareContour）よりも
-            // 前面ポリゴンのトライアングル数が少なくなるはず
-            var solidData = MeshExtruder.BuildGlyphMesh(MakeSquareContour(2f), 1f, 0f);
+            var data = MeshExtruder.BuildGlyphMesh(contour, 0f, 0f);
 
             Assert.Greater(data.Vertices.Count, 0, "穴あり形状で頂点が生成されること");
-            // EvenOdd により穴がくり抜かれた場合、2x2 ソリッドより三角形数が少ない
-            Assert.Less(data.Triangles.Count, solidData.Triangles.Count,
-                "EvenOdd WindingRule で穴がくり抜かれ、ソリッドより三角形数が少ないこと");
+            Assert.Greater(data.Triangles.Count, 0, "穴あり形状でインデックスが生成されること");
+
+            // 前面三角形の総面積を計算
+            float frontArea = 0f;
+            for (int i = 0; i < data.Triangles.Count; i += 3)
+            {
+                var v0 = data.Vertices[data.Triangles[i + 0]];
+                var v1 = data.Vertices[data.Triangles[i + 1]];
+                var v2 = data.Vertices[data.Triangles[i + 2]];
+                // 2D 三角形面積 = 0.5 × |外積|
+                float area = Mathf.Abs(
+                    (v1.x - v0.x) * (v2.y - v0.y) -
+                    (v2.x - v0.x) * (v1.y - v0.y)) * 0.5f;
+                frontArea += area;
+            }
+
+            // 外側正方形面積 = 2×2 = 4
+            // 内側穴面積    = 1×1 = 1
+            // EvenOdd リング面積 = 4 - 1 = 3 < 4
+            const float outerArea = 4f;
+            Assert.Less(frontArea, outerArea,
+                $"EvenOdd WindingRule で穴がくり抜かれ、前面面積（{frontArea:F3}）が外側正方形面積（{outerArea}）より小さいこと");
         }
     }
 }
