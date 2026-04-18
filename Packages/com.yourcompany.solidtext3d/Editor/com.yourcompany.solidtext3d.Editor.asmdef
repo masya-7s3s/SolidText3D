@@ -1,0 +1,18 @@
+﻿{
+    "name": "com.masachuang.solidtext3d.Editor",
+    "rootNamespace": "MasaChuang.SolidText3D.Editor",
+    "references": [
+        "com.masachuang.solidtext3d.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

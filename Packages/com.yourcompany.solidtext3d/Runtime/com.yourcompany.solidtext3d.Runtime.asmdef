@@ -1,0 +1,17 @@
+﻿{
+    "name": "com.masachuang.solidtext3d.Runtime",
+    "rootNamespace": "MasaChuang.SolidText3D",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "SixLabors.Fonts.dll",
+        "LibTessDotNet.dll"
+    ],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

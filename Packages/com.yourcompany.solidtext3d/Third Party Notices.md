@@ -1,0 +1,90 @@
+# Third Party Notices
+
+このパッケージは以下のサードパーティソフトウェアを使用しています。
+
+---
+
+## 1. SixLabors.Fonts
+
+**バージョン**: 2.1.3  
+**用途**: フォントファイル（TTF/OTF）の解析とグリフ輪郭データの取得  
+**ライセンス**: Six Labors Split License Version 1.0  
+**URL**: https://github.com/SixLabors/Fonts
+
+### ライセンス全文
+
+Six Labors Split License
+Version 1.0, June 2022
+Copyright (c) Six Labors
+
+Works in Source or Object form are split licensed and may be licensed under the Apache License, Version 2.0 or a
+Six Labors Commercial Use License.
+
+Works in Source or Object form are licensed to You under the Apache License, Version 2.0 if:
+- You are consuming the Work as a Direct Package Dependency in the capacity of a For-profit company/individual with
+  less than 1M USD annual gross revenue.
+- You are consuming the Work as a Non-profit organization or Registered Charity.
+- You are consuming the Work as a Transitive Package Dependency.
+
+For all other scenarios, works are licensed under the Six Labors Commercial License.
+See: https://sixlabors.com/pricing/
+
+---
+
+## 2. LibTessDotNet
+
+**バージョン**: 1.1.15  
+**用途**: ポリゴンの三角分割（EvenOdd WindingRule による穴あき形状の処理）  
+**ライセンス**: SGI FREE SOFTWARE LICENSE B (Version 2.0, Sept. 18, 2008)  
+**URL**: https://github.com/speps/LibTessDotNet
+
+### ライセンス全文
+
+SGI FREE SOFTWARE LICENSE B (Version 2.0, Sept. 18, 2008)
+
+Copyright (C) Silicon Graphics, Inc. All Rights Reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice including the dates of first publication and either this permission notice or a
+reference to http://oss.sgi.com/projects/FreeB/ shall be included in all copies or substantial portions of the
+Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+SILICON GRAPHICS, INC. BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+---
+
+## 3. Noto Sans JP Regular
+
+**バージョン**: v53  
+**用途**: デフォルト埋め込みフォント（日本語・CJK 文字のサポート）  
+**ライセンス**: SIL Open Font License 1.1  
+**URL**: https://fonts.google.com/noto/specimen/Noto+Sans+JP  
+**著作権**: Copyright 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'
+
+### ライセンス全文
+
+SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of the Font Software, to use,
+study, copy, merge, embed, modify, redistribute, and sell modified and unmodified copies of the Font Software,
+subject to the following conditions:
+
+1) Neither the Font Software nor any of its individual components, in Original or Modified Versions, may be
+   sold by itself.
+2) Original or Modified Versions may be bundled, redistributed and/or sold with any software, provided that
+   each copy contains the above copyright notice and this license.
+3) No Modified Version may use the Reserved Font Name(s) unless explicit written permission is granted.
+4) The name(s) of the Copyright Holder(s) shall not be used to promote any Modified Version without permission.
+5) The Font Software must be distributed entirely under this license.
+
+THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND. IN NO EVENT SHALL THE COPYRIGHT HOLDER
+BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM THE USE OF THE FONT SOFTWARE.
+

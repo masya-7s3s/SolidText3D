@@ -1,0 +1,21 @@
+﻿{
+    "name": "com.masachuang.solidtext3d.Tests.Editor",
+    "rootNamespace": "MasaChuang.SolidText3D.Tests.Editor",
+    "references": [
+        "com.masachuang.solidtext3d.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
+}

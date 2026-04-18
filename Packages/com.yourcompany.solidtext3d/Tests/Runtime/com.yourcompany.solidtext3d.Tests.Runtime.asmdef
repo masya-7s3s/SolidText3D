@@ -1,0 +1,21 @@
+﻿{
+    "name": "com.masachuang.solidtext3d.Tests.Runtime",
+    "rootNamespace": "MasaChuang.SolidText3D.Tests.Runtime",
+    "references": [
+        "com.masachuang.solidtext3d.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
+}
