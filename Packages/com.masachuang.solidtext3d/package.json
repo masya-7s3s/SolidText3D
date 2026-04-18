@@ -18,5 +18,17 @@
     "url": "https://masachuang.example"
   },
   "license": "MIT",
-  "dependencies": {}
+  "dependencies": {},
+  "samples": [
+    {
+      "displayName": "Basic Usage",
+      "description": "SolidText3DComponent をスクリプトから操作する基本サンプル。スペースキーでスコアテキストを動的に更新します。",
+      "path": "Samples~/BasicUsage"
+    },
+    {
+      "displayName": "CJK Example",
+      "description": "日本語・中国語・韓国語テキストを 3D メッシュとして表示するサンプル。",
+      "path": "Samples~/CJKExample"
+    }
+  ]
 }
