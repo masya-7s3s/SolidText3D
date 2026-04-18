@@ -87,10 +87,10 @@ namespace MasaChuang.SolidText3D
                         Position = new Vec3 { X = contour[i].x, Y = contour[i].y, Z = 0f }
                     };
                 }
-                tess.AddContour(tessVertices, ContourOrientation.Original);
+                tess.AddContour(tessVertices, ContourOrientation.CounterClockwise);
             }
 
-            tess.Tessellate(WindingRule.EvenOdd, ElementType.Polygons, 3);
+            tess.Tessellate(WindingRule.NonZero, ElementType.Polygons, 3);
 
             int frontStart = data.Vertices.Count;
             // 前面頂点（z=0）
@@ -102,15 +102,19 @@ namespace MasaChuang.SolidText3D
             }
 
             // 前面インデックス
+            // CounterClockwise で全輪郭を CCW 統一後、LibTessDotNet は CCW で出力する。
+            // Unity の front face = CCW を前提とする場合、+Z 向き面の法線は +Z だが
+            // カメラが -Z にあるため CW（逆転）にする必要がある。
             int elemCount = tess.ElementCount;
             for (int i = 0; i < elemCount; i++)
             {
-                int idx0 = tess.Elements[i * 3 + 0] + frontStart;
-                int idx1 = tess.Elements[i * 3 + 1] + frontStart;
-                int idx2 = tess.Elements[i * 3 + 2] + frontStart;
-                data.Triangles.Add(idx0);
-                data.Triangles.Add(idx1);
-                data.Triangles.Add(idx2);
+                int e0 = tess.Elements[i * 3 + 0];
+                int e1 = tess.Elements[i * 3 + 1];
+                int e2 = tess.Elements[i * 3 + 2];
+                if (e0 < 0 || e1 < 0 || e2 < 0) continue;
+                data.Triangles.Add(e0 + frontStart);
+                data.Triangles.Add(e2 + frontStart);
+                data.Triangles.Add(e1 + frontStart);
             }
 
             if (extrusionDepth <= 0f)
@@ -125,15 +129,16 @@ namespace MasaChuang.SolidText3D
                 data.Normals.Add(Vector3.back);
             }
 
-            // 背面インデックス（前面と逆巻き）
+            // 背面インデックス（前面と逆巻き: CCW → 背面から見えるよう +Z 向き）
             for (int i = 0; i < elemCount; i++)
             {
-                int idx0 = tess.Elements[i * 3 + 0] + backStart;
-                int idx1 = tess.Elements[i * 3 + 1] + backStart;
-                int idx2 = tess.Elements[i * 3 + 2] + backStart;
-                data.Triangles.Add(idx0);
-                data.Triangles.Add(idx2);
-                data.Triangles.Add(idx1);
+                int e0 = tess.Elements[i * 3 + 0];
+                int e1 = tess.Elements[i * 3 + 1];
+                int e2 = tess.Elements[i * 3 + 2];
+                if (e0 < 0 || e1 < 0 || e2 < 0) continue;
+                data.Triangles.Add(e0 + backStart);
+                data.Triangles.Add(e1 + backStart);
+                data.Triangles.Add(e2 + backStart);
             }
 
             // 側面クワッドを輪郭エッジから生成
@@ -151,21 +156,20 @@ namespace MasaChuang.SolidText3D
                     var aBack = new Vector3(a.x, a.y, -extrusionDepth);
                     var bBack = new Vector3(b.x, b.y, -extrusionDepth);
 
-                    // エッジ法線（輪郭の外側方向）
+                    // CW 外輪郭の外向き法線 = 進行方向の左垂線 = (-edge.y, edge.x)
                     var edge = new Vector2(b.x - a.x, b.y - a.y);
-                    var normal = new Vector3(edge.y, -edge.x, 0f).normalized;
+                    var normal = new Vector3(-edge.y, edge.x, 0f).normalized;
 
                     int sideBase = data.Vertices.Count;
-                    data.Vertices.Add(aFront);
-                    data.Vertices.Add(bFront);
-                    data.Vertices.Add(bBack);
-                    data.Vertices.Add(aBack);
+                    data.Vertices.Add(aFront);  // 0
+                    data.Vertices.Add(bFront);  // 1
+                    data.Vertices.Add(bBack);   // 2
+                    data.Vertices.Add(aBack);   // 3
                     data.Normals.Add(normal);
                     data.Normals.Add(normal);
                     data.Normals.Add(normal);
                     data.Normals.Add(normal);
 
-                    // 2 つの三角形でクワッドを構成
                     data.Triangles.Add(sideBase + 0);
                     data.Triangles.Add(sideBase + 1);
                     data.Triangles.Add(sideBase + 2);

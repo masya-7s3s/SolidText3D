@@ -30,5 +30,11 @@ namespace MasaChuang.SolidText3D
 
         /// <summary>Bezier 離散化誤差（省略時: 0.0005f）</summary>
         public float BezierErrorThreshold;
+
+        /// <summary>
+        /// フォントサイズ（Unity ワールド単位）。1 = em スクエアの高さが 1 Unity unit。
+        /// デフォルト値: 1.0f
+        /// </summary>
+        public float FontSize;
     }
 }

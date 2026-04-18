@@ -22,6 +22,7 @@ namespace MasaChuang.SolidText3D
         [SerializeField] private float _letterSpacing = 0f;   // FR-013
         [SerializeField] private float _lineSpacing = 1.2f;   // FR-014
         [SerializeField] private float _bezierErrorThreshold = 0.0005f;
+        [SerializeField] private float _fontSize = 0.1f;
 
         private bool _isDirty = true;
         private MeshFilter _meshFilter;
@@ -71,6 +72,13 @@ namespace MasaChuang.SolidText3D
             set { _lineSpacing = value; _isDirty = true; }
         }
 
+        /// <summary>フォントサイズ（Unity ワールド単位）。1 = em スクエアの高さが 1 Unity unit。</summary>
+        public float FontSize
+        {
+            get => _fontSize;
+            set { _fontSize = Mathf.Max(0.001f, value); _isDirty = true; }
+        }
+
         /// <summary>ダーティフラグ（テスト・内部デバッグ用）。</summary>
         public bool IsDirty => _isDirty;
 
@@ -85,6 +93,22 @@ namespace MasaChuang.SolidText3D
             _meshRenderer = GetComponent<MeshRenderer>();
             if (_meshRenderer == null)
                 _meshRenderer = gameObject.AddComponent<MeshRenderer>();
+
+            // URP プロジェクトではデフォルトマテリアル（Standard シェーダー）が紫色になるため
+            // null・エラーシェーダー・ビルトインデフォルトの場合は URP 互換マテリアルに差し替える
+            var mat = _meshRenderer.sharedMaterial;
+            bool needsDefault = mat == null
+                || mat.shader == null
+                || mat.shader.name.StartsWith("Hidden/")
+                || mat.name == "Default-Material";
+
+            if (needsDefault)
+            {
+                var shader = Shader.Find("Universal Render Pipeline/Lit")
+                          ?? Shader.Find("Standard");
+                if (shader != null)
+                    _meshRenderer.sharedMaterial = new Material(shader) { name = "SolidText3D Default" };
+            }
         }
 
         private void OnValidate()
@@ -116,7 +140,8 @@ namespace MasaChuang.SolidText3D
                 OutlineWidth = _outlineWidth,
                 LetterSpacing = _letterSpacing,
                 LineSpacing = _lineSpacing,
-                BezierErrorThreshold = _bezierErrorThreshold
+                BezierErrorThreshold = _bezierErrorThreshold,
+                FontSize = _fontSize
             };
 
             // T030: フォント null 時のデフォルトフォールバックロジック（FR-009）

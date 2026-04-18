@@ -40,11 +40,13 @@ namespace MasaChuang.SolidText3D
                 family = collection.Add((Stream)ms);
             }
 
-            const float fontSize = 72f;
-            var font = family.CreateFont(fontSize);
+            const float renderFontSize = 72f;
+            var font = family.CreateFont(renderFontSize);
             var options = new TextOptions(font);
 
-            var renderer = new GlyphContourBuilder(p.BezierErrorThreshold);
+            // FontSize=1 のとき em スクエア(=renderFontSize)が 1 Unity unit になるようスケーリング
+            float scale = (p.FontSize > 0f ? p.FontSize : 1f) / renderFontSize;
+            var renderer = new GlyphContourBuilder(p.BezierErrorThreshold, scale);
             TextRenderer.RenderTextTo(renderer, p.Text, options);
 
             var glyphs = renderer.GlyphContours;
@@ -66,7 +68,8 @@ namespace MasaChuang.SolidText3D
         /// </summary>
         private static void ApplyLayout(List<GlyphContour> glyphs, MeshGenerationParams p, SixLabors.Fonts.Font font)
         {
-            float lineHeight = font.Size * p.LineSpacing;
+            float scale = (p.FontSize > 0f ? p.FontSize : 1f) / font.Size;
+            float lineHeight = font.Size * scale * p.LineSpacing;
             float cursorX = 0f;
             float cursorY = 0f;
             int lineGlyphIdx = 0;
@@ -116,13 +119,13 @@ namespace MasaChuang.SolidText3D
 
             // デフォルトの埋め込みフォントをリソースから読み込む
             var textAsset = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.TextAsset>(
-                "Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Regular.ttf");
+                "Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Black.ttf");
             if (textAsset != null)
                 return textAsset.bytes;
 
             // フォールバック: ファイルシステムから直接読み込む
             string defaultPath = Path.GetFullPath(
-                "Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Regular.ttf");
+                "Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Black.ttf");
             if (File.Exists(defaultPath))
                 return File.ReadAllBytes(defaultPath);
 
@@ -137,11 +140,11 @@ namespace MasaChuang.SolidText3D
                 if (ta != null) return ta.bytes;
             }
 
-            var defaultAsset = Resources.Load<TextAsset>("Fonts/NotoSansJP-Regular");
+            var defaultAsset = Resources.Load<TextAsset>("Fonts/NotoSansJP-Black");
             if (defaultAsset != null)
                 return defaultAsset.bytes;
 
-            Debug.LogWarning("[SolidText3D] Resources から NotoSansJP-Regular が見つかりませんでした。");
+            Debug.LogWarning("[SolidText3D] Resources から NotoSansJP-Black が見つかりませんでした。");
             return null;
 #endif
         }

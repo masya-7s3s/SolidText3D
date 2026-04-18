@@ -33,9 +33,13 @@ namespace MasaChuang.SolidText3D
         /// GlyphContourBuilder を生成する。
         /// </summary>
         /// <param name="bezierErrorThreshold">ベジェ曲線の適応分割誤差閾値。</param>
-        public GlyphContourBuilder(float bezierErrorThreshold)
+        // レンダリング用フォントサイズ（72pt 固定）に対するスケール係数
+        private readonly float _scale;
+
+        public GlyphContourBuilder(float bezierErrorThreshold, float scale = 1f)
         {
             _bezierErrorThreshold = bezierErrorThreshold;
+            _scale = scale;
         }
 
         /// <inheritdoc/>
@@ -95,7 +99,20 @@ namespace MasaChuang.SolidText3D
         {
             if (_currentContour != null && _currentContour.Count > 0)
             {
-                _currentContours.Add(_currentContour);
+                // SixLabors.Fonts は EndFigure 前に始点への LineTo を呼ぶ場合がある。
+                // 始点と終点が重複する場合は終点を除去して縮退エッジを防ぎ、
+                // テッセレータの誤動作を防止する。
+                while (_currentContour.Count > 1)
+                {
+                    var first = _currentContour[0];
+                    var last = _currentContour[_currentContour.Count - 1];
+                    if ((first - last).sqrMagnitude < 1e-10f)
+                        _currentContour.RemoveAt(_currentContour.Count - 1);
+                    else
+                        break;
+                }
+                if (_currentContour.Count >= 3)
+                    _currentContours.Add(_currentContour);
             }
             _currentContour = null;
         }
@@ -104,15 +121,15 @@ namespace MasaChuang.SolidText3D
         public void EndGlyph()
         {
             var bounds = new Rect(
-                _currentBounds.X,
-                _currentBounds.Y,
-                _currentBounds.Width,
-                _currentBounds.Height);
+                _currentBounds.X * _scale,
+                _currentBounds.Y * _scale,
+                _currentBounds.Width * _scale,
+                _currentBounds.Height * _scale);
 
             var contour = new GlyphContour
             {
                 Contours = _currentContours ?? new List<List<Vector2>>(),
-                AdvanceWidth = _currentBounds.Width,
+                AdvanceWidth = _currentBounds.Width * _scale,
                 Bounds = bounds
             };
             GlyphContours.Add(contour);
@@ -133,9 +150,10 @@ namespace MasaChuang.SolidText3D
         /// <inheritdoc/>
         public void SetDecoration(TextDecorations decorations, NumericsVector2 start, NumericsVector2 end, float thickness) { }
 
-        private static Vector2 ToUnity(NumericsVector2 v)
+        private Vector2 ToUnity(NumericsVector2 v)
         {
-            return new Vector2(v.X, v.Y);
+            // SixLabors.Fonts は Y 軸下向き（スクリーン座標）のため Y を反転する
+            return new Vector2(v.X * _scale, -v.Y * _scale);
         }
     }
 }
