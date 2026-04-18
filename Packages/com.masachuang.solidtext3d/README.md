@@ -6,7 +6,7 @@ TTF/OTF フォントのグリフから 3D ポリゴンメッシュを生成す�
 
 1. Unity Package Manager を開く（Window > Package Manager）
 2. 「+」ボタン → 「Add package from disk...」を選択
-3. `Packages/com.MasaChuang.SolidText3D/package.json` を選択
+3. `Packages/com.masachuang.solidtext3d/package.json` を選択
 
 または `Packages/manifest.json` に直接記述：
 
