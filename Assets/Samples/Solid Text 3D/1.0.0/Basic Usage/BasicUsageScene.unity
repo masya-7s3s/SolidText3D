@@ -136,8 +136,10 @@ Material:
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
+  stringTagMap:
+    RenderType: Opaque
+  disabledShaderPasses:
+  - MOTIONVECTORS
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
@@ -239,7 +241,7 @@ Material:
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
---- !u!43 &244032567
+--- !u!43 &98576702
 Mesh:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -451,7 +453,7 @@ MonoBehaviour:
   _text: "\u5C0F\u6797\u96C5\u4E5F"
   _font: 
   _extrusionDepth: 1
-  _outlineWidth: 0
+  _outlineWidth: 10
   _letterSpacing: -0.8
   _lineSpacing: 1.2
   _bezierErrorThreshold: 0.0005
@@ -512,7 +514,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 388340641}
-  m_Mesh: {fileID: 244032567}
+  m_Mesh: {fileID: 98576702}
 --- !u!4 &388340645
 Transform:
   m_ObjectHideFlags: 0
@@ -522,7 +524,7 @@ Transform:
   m_GameObject: {fileID: 388340641}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 8.48318, y: -4.48923, z: 7.06243}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

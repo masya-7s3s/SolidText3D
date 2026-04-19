@@ -56,7 +56,7 @@ public class ScoreDisplay : MonoBehaviour
 ### SolidText3DComponent
 
 | プロパティ | 型 | 説明 |
-|-----------|-----|------|
+| --------- | --- | ---- |
 | `Text` | `string` | 表示テキスト |
 | `Font` | `string` | フォントファイルパス |
 | `ExtrusionDepth` | `float` | 押し出し深さ |
@@ -98,4 +98,3 @@ Mesh mesh = GlyphMeshBuilder.Build(p);
 
 MIT License — 詳細は `LICENSE.md` を参照してください。  
 サードパーティライセンスは `Third Party Notices.md` を参照してください。
-
