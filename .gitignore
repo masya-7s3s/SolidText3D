@@ -73,3 +73,8 @@ docs/
 # SpecKit
 # =========================
 .github/
+
+# =========================
+# Profiler captures (binary, large)
+# =========================
+specs/*/profiler-captures/
