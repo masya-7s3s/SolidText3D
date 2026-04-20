@@ -11,7 +11,7 @@ namespace MasaChuang.SolidText3D.Tests.Editor
     public class GlyphMeshBuilderTests
     {
         private static string FontPath =>
-            Path.GetFullPath("Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Black.ttf");
+            Path.GetFullPath("Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Black.bytes");
 
         private static MeshGenerationParams ParamsFor(string text, float letterSpacing = 0f, float lineSpacing = 1.2f)
         {

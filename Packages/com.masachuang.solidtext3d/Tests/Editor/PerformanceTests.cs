@@ -11,7 +11,7 @@ namespace MasaChuang.SolidText3D.Tests.Editor
     public class PerformanceTests
     {
         private static string FontPath =>
-            Path.GetFullPath("Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Black.ttf");
+            Path.GetFullPath("Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Black.bytes");
 
         [Test]
         public void Build_50Chars_Under2000ms()

@@ -17,7 +17,7 @@ namespace MasaChuang.SolidText3D.Tests.Runtime
     public class PerformanceRuntimeTests
     {
         private static string FontPath =>
-            Path.GetFullPath("Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Black.ttf");
+            Path.GetFullPath("Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Black.bytes");
 
         private const int ComponentCount = 20;
         private const int MeasureFrames = 30;

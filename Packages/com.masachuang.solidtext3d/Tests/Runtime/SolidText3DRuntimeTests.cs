@@ -13,7 +13,7 @@ namespace MasaChuang.SolidText3D.Tests.Runtime
     public class SolidText3DRuntimeTests
     {
         private static string FontPath =>
-            Path.GetFullPath("Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Black.ttf");
+            Path.GetFullPath("Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Black.bytes");
 
         [UnityTest]
         public IEnumerator TextChange_UpdatesMeshNextFrame()

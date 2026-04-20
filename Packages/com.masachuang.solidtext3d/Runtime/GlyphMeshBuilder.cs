@@ -106,13 +106,13 @@ namespace MasaChuang.SolidText3D
 
             // デフォルトの埋め込みフォントをリソースから読み込む
             var textAsset = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.TextAsset>(
-                "Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Black.ttf");
+                "Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Black.bytes");
             if (textAsset != null)
                 return textAsset.bytes;
 
             // フォールバック: ファイルシステムから直接読み込む
             string defaultPath = Path.GetFullPath(
-                "Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Black.ttf");
+                "Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Black.bytes");
             if (File.Exists(defaultPath))
                 return File.ReadAllBytes(defaultPath);
 
