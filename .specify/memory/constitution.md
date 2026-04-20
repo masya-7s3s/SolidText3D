@@ -1,14 +1,12 @@
 <!--
 SYNC IMPACT REPORT
 ===================
-バージョン変更: 1.0.0 → 1.0.1
+バージョン変更: 2.0.0 → 2.1.0（MINOR: 死文化した依存記述の削除）
 変更された原則: なし
 追加セクション: なし
-削除セクション:
-  - ガバナンス > コンプライアンスレビュー（個人プロジェクトのため不要）
-  - 開発ワークフロー > コードレビュー（個人プロジェクトのため不要）
+削除セクション: なし
 変更セクション:
-  - ガバナンス > 改定手続きを個人プロジェクト向けに簡略化
+  - 技術的制約 > 依存関係ポリシー: `TextMeshPro`（`com.unity.textmeshpro`）の記述を削除。spec/plan/tasks に依存実績がなく死文となっていたため（C1 修正）
 テンプレート更新状況:
   - plan-template.md: ✅ 整合確認済み
   - spec-template.md: ✅ 整合確認済み
@@ -76,13 +74,13 @@ SYNC IMPACT REPORT
 - `Profiler.BeginSample` / `EndSample` を利用してホットパスのプロファイルを実施し、結果を PR に添付する
 - GC.Alloc が発生するパスは設計レビューで正当化しなければならない
 
-**根拠**: モバイルおよびローエンド PC でのフレームドロップは製品の評判に直結する。
+**根拠**: ローエンド PC でのフレームドロップは製品の評判に直結する。
 
 ### VI. Asset Store ガイドライン・法的要件への準拠
 
 アセットは Unity Asset Store の審査要件および法的ライセンス条件を満たさなければならない。
 
-- サードパーティのアセット・フォント・テクスチャを含める場合はライセンスを `Third-Party Notices.md` に明記する
+- サードパーティのアセット・フォント・テクスチャを含める場合はライセンスを `Third Party Notices.md` に明記する
 - Unity 公式パッケージ（`com.unity.*`）への依存は `package.json` の `dependencies` に正確に記載する
 - 独自に定義したアセンブリ名は `com.companyname.packagename.*` の逆ドメイン形式に統一する
 - Asset Store 提出前に Unity 公式の [Asset Store Submission Guidelines] チェックリストをすべて通過しなければならない
@@ -105,20 +103,20 @@ SYNC IMPACT REPORT
 ### 対応プラットフォーム
 
 - **エディタ**: Windows 10/11、macOS 12+、Ubuntu 20.04+
-- **ランタイムターゲット**: PC（Windows/macOS/Linux）、iOS 14+、Android API 22+
+- **ランタイムターゲット（v1）**: PC（Windows/macOS/Linux）のみ。モバイル（iOS/Android）はオプション対応
 - **グラフィックス API**: URP（Universal Render Pipeline）必須対応、Built-in RP はオプション対応
 
 ### Unity バージョンポリシー
 
-- **最小対応バージョン**: Unity 2022.3 LTS（SolidText3D が依存するパッケージの最小要件に準拠）
-- **推奨バージョン**: Unity 6 LTS（最新 LTS）
+- **最小対応バージョン**: Unity 6 LTS（6000.x）。`package.json` の `unity` フィールドは `"6000.0"` を設定する
+- **推奨バージョン**: Unity 6 最新 LTS パッチ
 - 新 LTS リリースから 3 ヶ月以内に動作確認を実施し、`package.json` の `unityRelease` を更新する
+- Unity 2022.3 LTS 以前は非対応。対応バージョン下限の引き上げは MAJOR バージョンアップとして扱う（原則 IV 準拠）
 
 ### 依存関係ポリシー
 
 - ランタイムの外部依存は最小限に抑える（ユーザーのプロジェクトへの衝突リスク軽減）
 - `com.unity.*` パッケージへの依存は機能上の必要性を PR で説明する
-- `TextMeshPro`（`com.unity.textmeshpro`）は現バージョンの中核依存として許可する
 - 依存パッケージは `package.json` の `dependencies` に必ずバージョン範囲を明記する
 
 ## 開発ワークフローと品質ゲート
@@ -137,7 +135,7 @@ SYNC IMPACT REPORT
 3. ✅ 公開 API の XML ドキュメントコメントが追加または更新されていること
 4. ✅ `CHANGELOG.md` が更新されていること
 5. ✅ 新規 GC アロケーションがある場合は設計上の正当化コメントがあること
-6. ✅ Unity 2022.3 LTS および Unity 6 で手動ビルド確認済みであること
+6. ✅ Unity 6 LTS（6000.x）で手動ビルド確認済みであること
 
 ### リリースフロー
 
@@ -167,4 +165,4 @@ SYNC IMPACT REPORT
 - **MINOR**: 新原則の追加、セクションの実質的な拡張
 - **PATCH**: 文言の明確化、誤字修正、非意味論的な改善
 
-**Version**: 1.0.1 | **Ratified**: 2026-04-17 | **Last Amended**: 2026-04-17
+**Version**: 2.1.0 | **Ratified**: 2026-04-17 | **Last Amended**: 2026-04-17
