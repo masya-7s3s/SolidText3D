@@ -42,7 +42,10 @@ namespace MasaChuang.SolidText3D
 
             const float renderFontSize = 72f;
             var font = family.CreateFont(renderFontSize);
-            var options = new TextOptions(font);
+            var options = new TextOptions(font)
+            {
+                LineSpacing = p.LineSpacing > 0f ? p.LineSpacing : 1f,
+            };
 
             // FontSize=1 のとき em スクエア(=renderFontSize)が 1 Unity unit になるようスケーリング
             float scale = (p.FontSize > 0f ? p.FontSize : 1f) / renderFontSize;
@@ -53,7 +56,7 @@ namespace MasaChuang.SolidText3D
             if (glyphs.Count == 0)
                 return new Mesh();
 
-            ApplyLayout(glyphs, p, font);
+            ApplyLayout(glyphs, p);
 
             return MeshExtruder.Build(glyphs, p);
             }
@@ -64,36 +67,20 @@ namespace MasaChuang.SolidText3D
         }
 
         /// <summary>
-        /// LetterSpacing / LineSpacing に基づいてグリフの Offset を設定する。
+        /// LetterSpacing を累積してグリフの Offset を設定する。
+        /// テキストレイアウト（文字位置）は SixLabors.Fonts が絶対座標で輪郭頂点に適用済みのため、
+        /// AdvanceWidth ベースの手動トラッキングは行わない。
         /// </summary>
-        private static void ApplyLayout(List<GlyphContour> glyphs, MeshGenerationParams p, SixLabors.Fonts.Font font)
+        private static void ApplyLayout(List<GlyphContour> glyphs, MeshGenerationParams p)
         {
-            float scale = (p.FontSize > 0f ? p.FontSize : 1f) / font.Size;
-            float lineHeight = font.Size * scale * p.LineSpacing;
-            float cursorX = 0f;
-            float cursorY = 0f;
-            int lineGlyphIdx = 0;
-
-            // テキストを行ごとに分解してオフセットを計算する
-            string text = p.Text ?? string.Empty;
-            int glyphIdx = 0;
-
-            for (int charIdx = 0; charIdx < text.Length && glyphIdx < glyphs.Count; charIdx++)
+            // SixLabors.Fonts は既にテキストレイアウトを行い、
+            // 輪郭頂点はテキストレイアウト座標（絶対座標）に配置されている。
+            // LetterSpacing のみ累積して適用する。
+            float extraX = 0f;
+            for (int i = 0; i < glyphs.Count; i++)
             {
-                char c = text[charIdx];
-                if (c == '\n')
-                {
-                    cursorX = 0f;
-                    cursorY -= lineHeight;
-                    lineGlyphIdx = 0;
-                    continue;
-                }
-
-                var glyph = glyphs[glyphIdx];
-                glyph.Offset = new Vector3(cursorX, cursorY, 0f);
-                cursorX += glyph.AdvanceWidth + p.LetterSpacing;
-                lineGlyphIdx++;
-                glyphIdx++;
+                glyphs[i].Offset = new Vector3(extraX, 0f, 0f);
+                extraX += p.LetterSpacing;
             }
         }
 

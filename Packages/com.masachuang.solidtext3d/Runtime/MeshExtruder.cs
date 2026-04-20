@@ -87,7 +87,7 @@ namespace MasaChuang.SolidText3D
                         Position = new Vec3 { X = contour[i].x, Y = contour[i].y, Z = 0f }
                     };
                 }
-                tess.AddContour(tessVertices, ContourOrientation.CounterClockwise);
+                tess.AddContour(tessVertices, ContourOrientation.Original);
             }
 
             tess.Tessellate(WindingRule.NonZero, ElementType.Polygons, 3);
