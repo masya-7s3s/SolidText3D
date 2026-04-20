@@ -102,8 +102,8 @@ SYNC IMPACT REPORT
 
 ### 対応プラットフォーム
 
-- **エディタ**: Windows 10/11、macOS 12+、Ubuntu 20.04+
-- **ランタイムターゲット（v1）**: PC（Windows/macOS/Linux）のみ。モバイル（iOS/Android）はオプション対応
+- **エディタ**: Windows 10/11 のみ。macOS 、Linux は対応することが好ましいがオプション。
+- **ランタイムターゲット（v1）**: Windows のみ。macOS 、Linux は対応することが好ましいがオプション。モバイル（iOS/Android）は不要
 - **グラフィックス API**: URP（Universal Render Pipeline）必須対応、Built-in RP はオプション対応
 
 ### Unity バージョンポリシー
@@ -165,4 +165,4 @@ SYNC IMPACT REPORT
 - **MINOR**: 新原則の追加、セクションの実質的な拡張
 - **PATCH**: 文言の明確化、誤字修正、非意味論的な改善
 
-**Version**: 2.1.0 | **Ratified**: 2026-04-17 | **Last Amended**: 2026-04-17
+**Version**: 3.0.0 | **Ratified**: 2026-04-17 | **Last Amended**: 2026-04-17
