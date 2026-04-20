@@ -17,12 +17,12 @@ namespace MasaChuang.SolidText3D
     {
         [SerializeField] private string _text = "Hello, World!";
         [SerializeField] private string _font = "";
-        [SerializeField] private float _extrusionDepth = 0.1f;
+        [SerializeField] private float _extrusionDepth = 0.25f;
         [SerializeField] private float _outlineWidth = 0f;
         [SerializeField] private float _letterSpacing = 0f;   // FR-013
-        [SerializeField] private float _lineSpacing = 1.2f;   // FR-014
+        [SerializeField] private float _lineSpacing = 1f;   // FR-014
         [SerializeField] private float _bezierErrorThreshold = 0.0005f;
-        [SerializeField] private float _fontSize = 0.1f;
+        [SerializeField] private float _fontSize = 1f;
 
         private bool _isDirty = true;
         private MeshFilter _meshFilter;
