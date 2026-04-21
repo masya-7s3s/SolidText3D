@@ -84,7 +84,7 @@
 
 ### ユーザーストーリー 3 のテスト
 
-- [ ] T010 [P] [US3] `Packages/com.masachuang.solidtext3d/Tests/Editor/LayoutEngineTests.cs` を新規作成し、以下のテストを実装する: `ApplyHorizontalLayout_EmptyGlyphs_DoesNotThrow`・`CalculateAnchorOffset_Center_ReturnsHalfExtents`
+- [ ] T010 [P] [US3] `Packages/com.masachuang.solidtext3d/Tests/Editor/LayoutEngineTests.cs` を新規作成し、以下のテストを実装する: `ApplyHorizontalLayout_EmptyGlyphs_DoesNotThrow`・`CalculateAnchorOffset_Center_ReturnsHalfExtents`。さらに `CalculateAnchorOffset_AllCombinations_BoundsMatchOrigin` パラメータ化テスト（`[TestCase]` 等）で `HorizontalAnchor`×3 × `VerticalAnchor`×3 × `DepthAnchor`×3 の全 27 組み合わせを列挙し、各組み合わせでメッシュの対応する頭点・辺・重心が原点に一致することを検証する（SC-005 全渔影保証）
 - [ ] T011 [P] [US3] `Packages/com.masachuang.solidtext3d/Tests/Editor/GlyphMeshBuilderTests.cs` に `Build_WithCenterAnchor_BoundsSymmetric` テストを追加する
 
 ### ユーザーストーリー 3 の実装
@@ -130,7 +130,7 @@
 
 ### ユーザーストーリー 5 の実装
 
-- [ ] T019 [US5] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` に `_lastParamHash (int)` フィールドを追加し、`RegenerateMesh()` の冒頭で現在パラメータのハッシュと `_lastParamHash` を比較して同一の場合は早期リターンするロジックを実装する（FR-007、research.md § R-007 参照）
+- [ ] T019 [US5] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` に `_lastParamHash (int)` フィールドを追加し、`RegenerateMesh()` の冒頭で現在パラメータのハッシュと `_lastParamHash` を比較して同一の場合は早期リターンするロジックを実装する。**GC 制約**: ハッシュ計算は `Text.GetHashCode() ^ 各 enum.GetHashCode()` の XOR 結合のみを使用し、`new`・ LINQ・文字列連結・`ToString()` 等の GC アロケーションを発生する処理を `LateUpdate()` 内で一切使用しないこと（憲法 V）（FR-007、data-model.md § `_lastParamHash` 属性表参照、research.md § R-007 参照）
 
 **チェックポイント**: ユーザーストーリー 5 完了 — テキスト未変更時の GC Alloc ゼロおよびフレームレート維持を単独で検証可能。
 
@@ -186,7 +186,7 @@
 **目的**: バージョン更新、CHANGELOG 記載、パッケージ最終整備。
 
 - [ ] T033 [P] `Packages/com.masachuang.solidtext3d/package.json` の `"version"` を `"1.0.0"` から `"2.0.0"` に更新する（破壊的変更: `string Font` 削除、contracts/SolidText3DComponent-API.md 参照）
-- [ ] T034 [P] `Packages/com.masachuang.solidtext3d/CHANGELOG.md` に v2.0.0 エントリを追記する: 破壊的変更（`Font (string)` 削除・`FontAsset (Object)` 追加）、追加機能（アンカー・縦書き・Per-Character・自動 .bytes 変換・デバウンス・パフォーマンス改善）を記載する（contracts/SolidText3DComponent-API.md § CHANGELOG エントリ 参照）
+- [ ] T034 [P] `Packages/com.masachuang.solidtext3d/CHANGELOG.md` に v2.0.0 エントリを追記する: 破壊的変更（`Font (string)` 削除・`FontAsset (Object)` 追加）、追加機能（アンカー・縦書き・Per-Character・自動 .bytes 変換・デバウンス・パフォーマンス改善）を記載する（contracts/SolidText3DComponent-API.md § CHANGELOG エントリ 参照）- [ ] T035 [P] `Packages/com.masachuang.solidtext3d/CHANGELOG.md` または `docs/BREAKING_CHANGES.md` に憲法 IV 例外正当化記録を追加する: `[SerializeField] string _font` → `UnityEngine.Object _fontAsset` は型が根本的に異なるため `[Obsolete]` による段階移行が技術的に困難であり、かつ spec Clarification にて開発者が破壊的変更を明示承認したため即時破壊的変更とする（憲法 IV 正当化記録 — Complexity Tracking）（plan.md § Constitution Check 参照）
 
 ---
 

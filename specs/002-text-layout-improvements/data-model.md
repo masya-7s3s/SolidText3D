@@ -128,7 +128,7 @@ namespace MasaChuang.SolidText3D
 | `_maxHeight` | `float` | `0f` | 縦書き自動折り返し高さ |
 | `_verticalColumnWidth` | `float` | `0f` | 縦書き列幅（0 = FontSize × 1.1f 自動） |
 | `_rotateAsciiInVertical` | `bool` | `false` | 縦書き時 ASCII 90 度回転 |
-| `_lastParamHash` | `int` | `0` | パラメータの変更検知ハッシュ（内部用）。[research.md § R-007](research.md#r-007-同一テキスト早期リターンパフォーマンス) 参照 |
+| `_lastParamHash` | `int` | `0` | パラメータの変更検知ハッシュ（内部用）。計算式: `Text.GetHashCode() ^ FontPath.GetHashCode() ^ HorizontalAnchor.GetHashCode() ^ VerticalAnchor.GetHashCode() ^ DepthAnchor.GetHashCode() ^ WritingMode.GetHashCode() ^ ObjectMode.GetHashCode()`（すべて XOR 結合）。`LateUpdate()` 内で `new`・LINQ・文字列連結を一切使用せず GC Alloc ゼロを保証すること。enum/int の `GetHashCode()` は値型のため GC Alloc なし。`string.GetHashCode()` は Unity ランタイムで GC Alloc なし（キャッシュ不要）。[research.md § R-007](research.md#r-007-同一テキスト早期リターンパフォーマンス) 参照 |
 | `_suppressAutoRegenerate` | `bool` | `false` | デバウンス中に `LateUpdate` の自動再生成を抑制するフラグ。`SolidText3DInspector` が設定する。[research.md § R-003](research.md#r-003-inspector-入力デバウンス) 参照 |
 | `_fontMissingWarningIssued` | `bool` | `false` | Missing フォント警告の重複出力防止フラグ（1 回のみ出力） |
 
