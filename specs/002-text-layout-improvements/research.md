@@ -67,7 +67,7 @@
 - テキストフィールドの変更検知: `EditorGUI.BeginChangeCheck()` / `EndChangeCheck()`。
 - フィールドが変更されたら `_lastChangeTime = EditorApplication.timeSinceStartup` を記録。
 - `EditorApplication.update` コールバックで `timeSinceStartup - _lastChangeTime >= 0.5` 秒（設定可能）経過したら `RegenerateMesh()` を呼び出す。
-- 既存の `OnValidate()` は `_isDirty = true` のままにし、デバウンス有効時は `SolidText3DComponent.DisableAutoRegenerate = true`（内部フラグ）でLateUpdate の自動再生成を一時抑制する。
+- 既存の `OnValidate()` は `_isDirty = true` のままにし、デバウンス有効時は `SolidText3DComponent._suppressAutoRegenerate = true`（`_suppressAutoRegenerate` フィールド、[data-model.md § SolidText3DComponent（修正）](data-model.md#solidtext3dcomponent修正) 参照）で `LateUpdate` の自動再生成を一時抑制する。
 
 ### 根拠
 
@@ -158,6 +158,7 @@
 
 - `string.GetHashCode()` で高速比較（衝突時は文字列比較でフォールバック）。
 - ハッシュのみ比較する場合、フォントやサイズが変わっても同一テキストならスキップされてしまうため、ハッシュの対象は「すべての描画パラメータを連結した文字列」とする（`_fontSize.ToString()` 等の文字列連結は更新時のみ許容）。
+- `SolidText3DComponent` の実装では `_lastParamHash (int)` という単一フィールドでハッシュを保持する（[data-model.md § SolidText3DComponent（修正）](data-model.md#solidtext3dcomponent修正) 参照）。
 
 ### 根拠
 

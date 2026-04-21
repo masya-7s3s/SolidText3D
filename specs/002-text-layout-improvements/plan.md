@@ -88,6 +88,137 @@ Packages/com.masachuang.solidtext3d/
 
 **Structure Decision**: 既存の単一パッケージ構造を継承。新ファイルはすべて既存の `Runtime/` または `Editor/` に配置する。テスト構造も既存 `Tests/` 配下に追加する形とする。
 
+## Implementation Sequence
+
+> 各ステップは前ステップへの依存を持つ。この順序で実装すること。
+
+### ステップ 1 — 新規 Enum 型の追加（依存なし）
+
+**対象ファイル（新規作成）**: `Runtime/TextAnchorEnums.cs`（または既存クラスに追記）  
+**参照**: [data-model.md § 新規 Enum 型](data-model.md#新規-enum-型)  
+**内容**: `HorizontalAnchor`, `VerticalAnchor`, `DepthAnchor`, `WritingMode`, `ObjectMode` の 5 enum を定義する。  
+**テスト**: なし（値の定義のみ）
+
+### ステップ 2 — `MeshGenerationParams` の更新（Enum 型に依存）
+
+**対象ファイル（修正）**: `Runtime/MeshGenerationParams.cs`  
+**参照**: [data-model.md § MeshGenerationParams（修正）](data-model.md#meshgenerationparams修正)、[contracts/SolidText3DComponent-API.md § MeshGenerationParams](contracts/SolidText3DComponent-API.md)  
+**内容**:
+
+- `FontPath (string)` フィールドを削除する
+- `HorizontalAnchor`, `VerticalAnchor`, `DepthAnchor`, `WritingMode`, `MaxWidth`, `MaxHeight`, `VerticalColumnWidth`, `RotateAsciiInVertical` を追加する  
+**注意**: `GlyphMeshBuilderTests.cs` が `FontPath` を使っているため、テストも同時に修正する（`FontPath` → `FontData = File.ReadAllBytes(...)` に書き換え）
+
+### ステップ 3 — `GlyphContour` の更新（依存なし）
+
+**対象ファイル（修正）**: `Runtime/GlyphContour.cs`  
+**参照**: [data-model.md § GlyphContour（修正）](data-model.md#glyphcontour修正)  
+**内容**: `AdvanceHeight (float)`, `CharIndex (int)`, `IsVisible (bool)` を追加する
+
+### ステップ 4 — `LayoutEngine` の新規作成（ステップ 2・3 に依存）
+
+**対象ファイル（新規作成）**: `Runtime/LayoutEngine.cs`  
+**参照**: [data-model.md § LayoutEngine](data-model.md#layoutengine新規-runtime-クラス)、[research.md § R-005](research.md#r-005-テキスト-3-軸アンカー計算)、[research.md § R-006](research.md#r-006-縦書きレイアウト)  
+**内容**:
+
+- `ApplyHorizontalLayout()`: 横書き座標計算（既存の `GlyphMeshBuilder.ApplyLayout()` を移植＋折り返し対応）
+- `ApplyVerticalLayout()`: 縦書き座標計算（上→下、列は右→左）
+- `CalculateAnchorOffset()`: `Mesh.bounds` からアンカーオフセットを計算  
+**アンカーオフセット計算式**: [research.md § R-005](research.md#r-005-テキスト-3-軸アンカー計算) を参照（水平: Left=0, Center=-width/2, Right=-width; 垂直: Upper=-height, Middle=-height/2, Lower=0; 奥行き: Front=0, Center=-depth/2, Back=-depth）  
+**テスト（Edit Mode）**: `Tests/Editor/LayoutEngineTests.cs` を新規作成
+- `ApplyHorizontalLayout_EmptyGlyphs_DoesNotThrow`
+- `CalculateAnchorOffset_Center_ReturnsHalfExtents`
+- `ApplyVerticalLayout_SingleChar_YIsNegative`
+
+### ステップ 5 — `GlyphMeshBuilder` の更新（ステップ 2・3・4 に依存）
+
+**対象ファイル（修正）**: `Runtime/GlyphMeshBuilder.cs`  
+**参照**: [data-model.md § データフロー概要](data-model.md#データフロー概要)、[contracts/SolidText3DComponent-API.md § GlyphMeshBuilder](contracts/SolidText3DComponent-API.md)  
+**内容**:
+
+1. `ApplyLayout()` プライベートメソッドを削除し、`LayoutEngine.ApplyHorizontalLayout()` / `ApplyVerticalLayout()` 呼び出しに置き換える
+2. `GetFontBytes()` から `FontPath` 参照を削除する（`FontData` のみ使用）
+3. `Build()` 内で `MeshExtruder.Build()` 後に `LayoutEngine.CalculateAnchorOffset()` を呼び出し、全頂点にオフセットを加算する
+4. `BuildPerCharacter()` メソッドを追加する（詳細: [data-model.md § BuildPerCharacter 設計](data-model.md#buildpercharacter-メソッド設計)）  
+**テスト（Edit Mode）**: `GlyphMeshBuilderTests.cs` に追記
+
+- `Build_WithCenterAnchor_BoundsSymmetric`
+- `Build_VerticalMode_YDecreases`
+- `BuildPerCharacter_ThreeChars_ReturnsThreeMeshes`
+
+### ステップ 6 — `CharacterObjectPool` の新規作成（ステップ 5 に依存）
+
+**対象ファイル（新規作成）**: `Runtime/CharacterObjectPool.cs`  
+**参照**: [data-model.md § CharacterObjectPool](data-model.md#characterobjectpool新規-runtime-クラス)、[research.md § R-004](research.md#r-004-per-character-オブジェクトプール)  
+**内容**:
+
+- `Sync(List<GlyphContour> visibleGlyphs, List<Mesh> perCharMeshes)` で `GlyphMeshBuilder.BuildPerCharacter()` の結果と `GlyphContour` のオフセットを使って子 GameObject を同期する
+- 子 GameObject には `MeshFilter` + `MeshRenderer` を付与する（初回のみ `AddComponent`）
+- `IsVisible == false` のグリフはスキップする  
+**テスト（Edit Mode）**: `Tests/Editor/CharacterObjectPoolTests.cs` を新規作成
+- `Sync_MoreChars_CreatesNewChildren`
+- `Sync_FewerChars_DeactivatesExcess`
+- `Sync_SameCount_ReusesExistingChildren`
+
+### ステップ 7 — `SolidText3DComponent` の更新（ステップ 1〜6 すべてに依存）
+
+**対象ファイル（修正）**: `Runtime/SolidText3DComponent.cs`  
+**参照**: [data-model.md § SolidText3DComponent（修正）](data-model.md#solidtext3dcomponent修正)、[research.md § R-007](research.md#r-007-同一テキスト早期リターンパフォーマンス)、[research.md § R-003](research.md#r-003-inspector-入力デバウンス)  
+**内容**:
+
+1. `[SerializeField] string _font` および `public string Font` プロパティを削除する
+2. `_fontAsset (UnityEngine.Object)`, `_fontBytesCache (TextAsset, HideInInspector)` を追加する
+3. アンカー・書字方向・モードの新フィールドとプロパティを追加する
+4. `_lastParamHash (int)` を追加し、`RegenerateMesh()` 冒頭でハッシュ比較による早期リターンを実装する（[research.md § R-007](research.md#r-007-同一テキスト早期リターンパフォーマンス) 参照）
+5. `_suppressAutoRegenerate (bool)` 内部フラグを追加し、デバウンス中は `LateUpdate` の自動再生成を抑制する（[research.md § R-003](research.md#r-003-inspector-入力デバウンス) 参照）
+6. `ObjectMode` 変更時の `CharacterObjectPool` 切り替えロジックを実装する（[data-model.md § 状態遷移: ObjectMode 切り替え](data-model.md#状態遷移-objectmode-切り替え) 参照）
+7. フォント Missing 時の動作（直前メッシュ維持・警告 1 回のみ）を実装する  
+**テスト（Edit Mode）**: `SolidText3DComponentTests.cs` に追記
+
+- `RegenerateMesh_SameParams_SkipsRegeneration`
+- `ObjectMode_PerCharacter_CreatesChildObjects`
+- `FontAsset_Missing_MaintainsPreviousMesh`
+
+### ステップ 8 — `FontAssetPostprocessor` の新規作成（Editor）
+
+**対象ファイル（新規作成）**: `Editor/FontAssetPostprocessor.cs`  
+**参照**: [data-model.md § FontAssetPostprocessor](data-model.md#fontassetpostprocessor新規-editor-クラス)、[research.md § R-002](research.md#r-002-ttfotf-ファイルの自動-bytes-変換)  
+**内容**:
+
+1. `OnPostprocessAllAssets` で `.ttf`/`.otf` を検知する
+2. `Assets/SolidText3DFonts/{assetGuid}.bytes` に一時ファイル経由でアトミック書き込みする
+3. `AssetDatabase.ImportAsset()` で `.bytes` を登録する
+4. シーン内の全 `SolidText3DComponent` を走査し、`_fontAsset` の GUID が一致するものに `_fontBytesCache` を自動設定してシリアライズする（`EditorUtility.SetDirty()` + `AssetDatabase.SaveAssets()`）  
+**注意**: ステップ 4 の「シーン内走査」は `FindObjectsByType<SolidText3DComponent>()` では Prefab アセットを見つけられないため、開いているシーン内のみ対象とし、Prefab は次回 Inspector 表示時に自動設定される（許容範囲の制限として明記）  
+**テスト（Edit Mode）**: `Tests/Editor/FontAssetPostprocessorTests.cs` を新規作成
+
+- `OnPostprocess_TtfFile_CreatesBytesFile`
+- `OnPostprocess_ExistingBytesFile_Skips`
+- `OnPostprocess_IoError_LogsError`
+
+### ステップ 9 — `SolidText3DInspector` の更新（ステップ 7・8 に依存）
+
+**対象ファイル（修正）**: `Editor/SolidText3DInspector.cs`  
+**参照**: [research.md § R-001](research.md#r-001-unity-inspector-での-object-フィールドによるフォント参照)、[research.md § R-003](research.md#r-003-inspector-入力デバウンス)  
+**内容**:
+
+1. `DrawDefaultInspector()` を廃止し、各フィールドを手動描画する（Object フィールドのフィルター設定のため）
+2. `EditorGUILayout.ObjectField("Font Asset", ..., typeof(UnityEngine.Object), false)` でフォントフィールドを表示する
+3. フォントが未アタッチの場合に `EditorGUILayout.HelpBox()` で警告を表示する
+4. `EditorGUI.BeginChangeCheck()` / `EndChangeCheck()` + `EditorApplication.update` でデバウンスを実装する
+5. テキストフィールドへのキー入力中は `_target.SuppressAutoRegenerate = true` を設定し、デバウンス後に `RegenerateMesh()` を呼び出して `SuppressAutoRegenerate = false` に戻す
+
+### ステップ 10 — `package.json` と `CHANGELOG.md` の更新（最終ステップ）
+
+**対象ファイル（修正）**: `Packages/com.masachuang.solidtext3d/package.json`、`CHANGELOG.md`  
+**参照**: [contracts/SolidText3DComponent-API.md § CHANGELOG エントリ](contracts/SolidText3DComponent-API.md#changelog-エントリv200-用)  
+**内容**:
+
+- `package.json`: `"version": "1.0.0"` → `"version": "2.0.0"`
+- `CHANGELOG.md`: contracts に記載の CHANGELOG エントリを追加する
+
+---
+
 ## Complexity Tracking
 
 | 違反 | 理由 | より単純な代替案を却下した理由 |

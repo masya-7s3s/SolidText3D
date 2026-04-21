@@ -128,7 +128,9 @@ namespace MasaChuang.SolidText3D
 | `_maxHeight` | `float` | `0f` | 縦書き自動折り返し高さ |
 | `_verticalColumnWidth` | `float` | `0f` | 縦書き列幅（0 = FontSize × 1.1f 自動） |
 | `_rotateAsciiInVertical` | `bool` | `false` | 縦書き時 ASCII 90 度回転 |
-| `_lastParamHash` | `int` | `0` | パラメータの変更検知ハッシュ（内部用） |
+| `_lastParamHash` | `int` | `0` | パラメータの変更検知ハッシュ（内部用）。[research.md § R-007](research.md#r-007-同一テキスト早期リターンパフォーマンス) 参照 |
+| `_suppressAutoRegenerate` | `bool` | `false` | デバウンス中に `LateUpdate` の自動再生成を抑制するフラグ。`SolidText3DInspector` が設定する。[research.md § R-003](research.md#r-003-inspector-入力デバウンス) 参照 |
+| `_fontMissingWarningIssued` | `bool` | `false` | Missing フォント警告の重複出力防止フラグ（1 回のみ出力） |
 
 **追加プロパティ（公開 API）:**
 
@@ -199,10 +201,12 @@ namespace MasaChuang.SolidText3D
         internal CharacterObjectPool(Transform parent);
 
         /// <summary>
-        /// 可視文字リストに対して子 GameObject を同期する。
+        /// 可視文字リストと対応するメッシュリストを使って子 GameObject を同期する。
         /// 不足分は生成・超過分は非アクティブ化する。
         /// </summary>
-        internal void Sync(List<GlyphContour> visibleGlyphs, MeshGenerationParams p);
+        /// <param name="visibleGlyphs">IsVisible == true のグリフのみのリスト。</param>
+        /// <param name="perCharMeshes">GlyphMeshBuilder.BuildPerCharacter() が返す文字ごとの Mesh リスト（visibleGlyphs と同順）。</param>
+        internal void Sync(List<GlyphContour> visibleGlyphs, List<Mesh> perCharMeshes);
 
         /// <summary>すべての子 GameObject を非アクティブ化する。</summary>
         internal void DeactivateAll();
@@ -257,12 +261,44 @@ namespace MasaChuang.SolidText3D.Editor
 4. 出力ファイルが既に存在する場合はスキップ
 5. 元ファイルの絶対パスを `Path.GetFullPath()` で取得 → `File.ReadAllBytes()`
 6. 一時ファイル（`.tmp`）に書き込み → `File.Move()` でリネーム（アトミック書き込み）
-7. `AssetDatabase.ImportAsset(outputPath)` で登録
+7. `AssetDatabase.ImportAsset(outputPath)` で `.bytes` アセットを登録する
+8. 開いているシーン内の全 `SolidText3DComponent` を `FindObjectsByType<SolidText3DComponent>(FindObjectsSortMode.None)` で走査し、`_fontAsset` の GUID が一致するものに `_fontBytesCache` を `AssetDatabase.LoadAssetAtPath<TextAsset>(outputPath)` で設定する（`EditorUtility.SetDirty()` + `AssetDatabase.SaveAssets()`）
+
+**制限事項**: 手順 8 は現在開いているシーン内のコンポーネントのみ対象。Prefab アセット内のコンポーネントは次回 Inspector で表示されたとき `OnValidate` 経由で自動再バインドされる（`SolidText3DComponent.OnValidate` に `_fontBytesCache` の再取得ロジックを追加する）。
 
 **エラー処理**:
 
 - I/O 例外: `Debug.LogError()` でコンソールに出力し処理を中断（Silent Fail しない）
 - 出力ディレクトリ作成失敗: 同上
+
+---
+
+## `BuildPerCharacter` メソッド設計
+
+`GlyphMeshBuilder.BuildPerCharacter()` は Per-Character モード専用のメソッドで、`Build()` と同じレイアウト計算を行いつつ、グリフごとに独立した `Mesh` を返す。
+
+```csharp
+/// <summary>
+/// Per-Character モード向けに、可視文字ごとの独立した Mesh リストを生成する。
+/// アンカーオフセットは各 Mesh の頂点ではなく、GlyphContour.Offset に格納される。
+/// CharacterObjectPool がこのオフセットを子 GameObject のローカル座標として設定する。
+/// </summary>
+/// <param name="p">メッシュ生成パラメータ。</param>
+/// <returns>
+///   要素数 = テキスト中の可視文字数（IsVisible == true のグリフ数）。
+///   各 Mesh は対応する文字の形状のみを含み、ローカル原点（0,0,0）基準で生成される。
+///   文字のワールド/ローカル配置は GlyphContour.Offset として返される（LayoutEngine が設定）。
+/// </returns>
+public static (List<Mesh> meshes, List<GlyphContour> visibleGlyphs) BuildPerCharacter(MeshGenerationParams p);
+```
+
+**実装ポイント**:
+
+- `LayoutEngine.ApplyHorizontalLayout()` / `ApplyVerticalLayout()` で全グリフの配置座標を計算する（`Build()` と共通）
+- `IsVisible == false` のグリフ（折り返し区切り等）は結果リストに含めない
+- 各グリフに対して `MeshExtruder.BuildGlyphMesh()` を呼び出し、ローカル原点基準の `Mesh` を生成する（`GlyphContour.Offset` は Mesh 頂点に加算しない）
+- アンカーオフセット（`LayoutEngine.CalculateAnchorOffset()`）は `GlyphContour.Offset` 全体に加算して返す（子 GameObject のローカル座標として使用）
+- 戻り値の `List<Mesh>` と `List<GlyphContour>` は同じインデックスが同じ文字に対応する
 
 ---
 
