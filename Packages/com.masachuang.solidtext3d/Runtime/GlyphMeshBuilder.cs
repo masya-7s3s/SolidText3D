@@ -33,11 +33,92 @@ namespace MasaChuang.SolidText3D
                 return new Mesh();
             }
 
+            var glyphs = RenderGlyphs(fontBytes, p);
+            if (glyphs == null || glyphs.Count == 0)
+                return new Mesh();
+
+            // レイアウト適用
+            if (p.WritingMode == WritingMode.Vertical)
+                LayoutEngine.ApplyVerticalLayout(glyphs, p);
+            else
+                LayoutEngine.ApplyHorizontalLayout(glyphs, p);
+
+            var mesh = MeshExtruder.Build(glyphs, p);
+
+            // アンカーオフセットを全頂点に加算
+            if (mesh != null && mesh.vertexCount > 0)
+            {
+                var offset = LayoutEngine.CalculateAnchorOffset(mesh.bounds, p);
+                if (offset != Vector3.zero)
+                {
+                    var verts = mesh.vertices;
+                    for (int i = 0; i < verts.Length; i++)
+                        verts[i] += offset;
+                    mesh.vertices = verts;
+                    mesh.RecalculateBounds();
+                }
+            }
+
+            return mesh;
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
+        }
+
+        /// <summary>
+        /// Per-Character モード用のメッシュリストを生成する。
+        /// IsVisible == true のグリフのみを対象に、1文字ずつ個別 Mesh を生成する。
+        /// </summary>
+        /// <param name="p">メッシュ生成パラメータ。</param>
+        /// <returns>グリフリストと対応するメッシュリストのペア。</returns>
+        public static PerCharacterResult BuildPerCharacter(MeshGenerationParams p)
+        {
+            if (string.IsNullOrEmpty(p.Text))
+                return new PerCharacterResult(new List<GlyphContour>(), new List<Mesh>());
+
+            byte[] fontBytes = GetFontBytes(p);
+            if (fontBytes == null || fontBytes.Length == 0)
+                return new PerCharacterResult(new List<GlyphContour>(), new List<Mesh>());
+
+            var allGlyphs = RenderGlyphs(fontBytes, p);
+            if (allGlyphs == null || allGlyphs.Count == 0)
+                return new PerCharacterResult(new List<GlyphContour>(), new List<Mesh>());
+
+            // レイアウト適用（全グリフに座標を割り当て）
+            if (p.WritingMode == WritingMode.Vertical)
+                LayoutEngine.ApplyVerticalLayout(allGlyphs, p);
+            else
+                LayoutEngine.ApplyHorizontalLayout(allGlyphs, p);
+
+            var visibleGlyphs = new List<GlyphContour>();
+            var meshes = new List<Mesh>();
+
+            foreach (var glyph in allGlyphs)
+            {
+                if (!glyph.IsVisible) continue;
+
+                // 1文字分のパラメータでメッシュを生成
+                var singleGlyphList = new List<GlyphContour> { glyph };
+                var mesh = MeshExtruder.Build(singleGlyphList, p);
+                if (mesh != null && mesh.vertexCount > 0)
+                {
+                    visibleGlyphs.Add(glyph);
+                    meshes.Add(mesh);
+                }
+            }
+
+            return new PerCharacterResult(visibleGlyphs, meshes);
+        }
+
+        private static List<GlyphContour> RenderGlyphs(byte[] fontBytes, MeshGenerationParams p)
+        {
             var collection = new FontCollection();
             FontFamily family;
             using (var ms = new MemoryStream(fontBytes))
             {
-                family = collection.Add((Stream)ms);
+                family = collection.Add((System.IO.Stream)ms);
             }
 
             const float renderFontSize = 72f;
@@ -52,36 +133,7 @@ namespace MasaChuang.SolidText3D
             var renderer = new GlyphContourBuilder(p.BezierErrorThreshold, scale);
             TextRenderer.RenderTextTo(renderer, p.Text, options);
 
-            var glyphs = renderer.GlyphContours;
-            if (glyphs.Count == 0)
-                return new Mesh();
-
-            ApplyLayout(glyphs, p);
-
-            return MeshExtruder.Build(glyphs, p);
-            }
-            finally
-            {
-                Profiler.EndSample();
-            }
-        }
-
-        /// <summary>
-        /// LetterSpacing を累積してグリフの Offset を設定する。
-        /// テキストレイアウト（文字位置）は SixLabors.Fonts が絶対座標で輪郭頂点に適用済みのため、
-        /// AdvanceWidth ベースの手動トラッキングは行わない。
-        /// </summary>
-        private static void ApplyLayout(List<GlyphContour> glyphs, MeshGenerationParams p)
-        {
-            // SixLabors.Fonts は既にテキストレイアウトを行い、
-            // 輪郭頂点はテキストレイアウト座標（絶対座標）に配置されている。
-            // LetterSpacing のみ累積して適用する。
-            float extraX = 0f;
-            for (int i = 0; i < glyphs.Count; i++)
-            {
-                glyphs[i].Offset = new Vector3(extraX, 0f, 0f);
-                extraX += p.LetterSpacing;
-            }
+            return renderer.GlyphContours;
         }
 
         private static byte[] GetFontBytes(MeshGenerationParams p)
@@ -91,19 +143,6 @@ namespace MasaChuang.SolidText3D
                 return p.FontData;
 
 #if UNITY_EDITOR
-            // エディタ実行時: FontPath からバイトを読み込む
-            string path = p.FontPath;
-            if (!string.IsNullOrEmpty(path))
-            {
-                if (File.Exists(path))
-                    return File.ReadAllBytes(path);
-
-                // Unity アセットパスの場合は絶対パスに変換
-                string absPath = Path.GetFullPath(path);
-                if (File.Exists(absPath))
-                    return File.ReadAllBytes(absPath);
-            }
-
             // デフォルトの埋め込みフォントをリソースから読み込む
             var textAsset = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.TextAsset>(
                 "Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Black.bytes");
@@ -119,14 +158,6 @@ namespace MasaChuang.SolidText3D
             return null;
 #else
             // ランタイム（ビルド済み）: Resources.Load で Noto Sans JP を取得
-            // T031 で完全実装される。このスタブは非エディタビルド向けのフォールバック
-            if (!string.IsNullOrEmpty(p.FontPath))
-            {
-                // FontPath を Resources パスとして解釈する試み
-                var ta = Resources.Load<TextAsset>(p.FontPath);
-                if (ta != null) return ta.bytes;
-            }
-
             var defaultAsset = Resources.Load<TextAsset>("Fonts/NotoSansJP-Black");
             if (defaultAsset != null)
                 return defaultAsset.bytes;
@@ -134,6 +165,23 @@ namespace MasaChuang.SolidText3D
             Debug.LogWarning("[SolidText3D] Resources から NotoSansJP-Black が見つかりませんでした。");
             return null;
 #endif
+        }
+    }
+
+    /// <summary>
+    /// BuildPerCharacter の戻り値型。グリフリストと対応するメッシュリストを保持する。
+    /// </summary>
+    public sealed class PerCharacterResult
+    {
+        /// <summary>可視グリフのリスト。</summary>
+        public List<GlyphContour> Glyphs { get; }
+        /// <summary>各グリフに対応するメッシュのリスト。</summary>
+        public List<Mesh> Meshes { get; }
+
+        internal PerCharacterResult(List<GlyphContour> glyphs, List<Mesh> meshes)
+        {
+            Glyphs = glyphs;
+            Meshes = meshes;
         }
     }
 }

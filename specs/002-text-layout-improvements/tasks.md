@@ -1,300 +1,300 @@
-# タスク: Solid Text 3D — レイアウト・フォント・パフォーマンス改善
+# タスク: Solid Text 3D  Eレイアウト�Eフォント�Eパフォーマンス改喁E
 
 **Input**: `specs/002-text-layout-improvements/` の設計文書  
 **Branch**: `002-text-layout-improvements`  
 **Date**: 2026-04-21  
-**Prerequisites**: plan.md ✅ / spec.md ✅ / data-model.md ✅ / contracts/ ✅ / quickstart.md ✅
+**Prerequisites**: plan.md ✁E/ spec.md ✁E/ data-model.md ✁E/ contracts/ ✁E/ quickstart.md ✁E
 
 ---
 
-## フォーマット: `[ID] [P?] [Story?] 説明`
+## フォーマッチE `[ID] [P?] [Story?] 説明`
 
-- **[P]**: 並列実行可（異なるファイル・未完了タスクに非依存）
-- **[Story]**: 対応するユーザーストーリー（US1〜US7）
-- 各タスクの説明には対象ファイルの正確なパスを記載
-
----
-
-## Phase 1: セットアップ（共有インフラ）
-
-**目的**: 既存の UPM パッケージ構造を前提とするため、追加のプロジェクト初期化は不要。
-この機能では新規ファイルはすべて既存の `Runtime/`・`Editor/`・`Tests/` に配置する。
-
-> _（新規プロジェクトスキャフォールドなし — Phase 2 の基盤タスクへ直接移行）_
+- **[P]**: 並列実行可�E�異なるファイル・未完亁E��スクに非依存！E
+- **[Story]**: 対応するユーザースト�Eリー�E�ES1〜US7�E�E
+- 吁E��スクの説明には対象ファイルの正確なパスを記輁E
 
 ---
 
-## Phase 2: 基盤（全ユーザーストーリーの前提条件）
+## Phase 1: セチE��アチE�E�E��E有インフラ�E�E
 
-**目的**: 全ユーザーストーリーが依存する型定義・データモデル変更を先行実装する。
+**目皁E*: 既存�E UPM パッケージ構造を前提とするため、追加のプロジェクト�E期化は不要、E
+こ�E機�Eでは新規ファイルはすべて既存�E `Runtime/`・`Editor/`・`Tests/` に配置する、E
 
-**⚠️ 重要**: このフェーズが完了するまで、いかなるユーザーストーリーも着手できない。
-
-- [ ] T001 `Packages/com.masachuang.solidtext3d/Runtime/TextAnchorEnums.cs` を新規作成し、`HorizontalAnchor`・`VerticalAnchor`・`DepthAnchor`・`WritingMode`・`ObjectMode` の 5 つの enum を `MasaChuang.SolidText3D` 名前空間に定義する（data-model.md § 新規 Enum 型 参照）
-- [ ] T002 `Packages/com.masachuang.solidtext3d/Runtime/MeshGenerationParams.cs` を更新する: `FontPath (string)` フィールドを削除し、`HorizontalAnchor`・`VerticalAnchor`・`DepthAnchor`・`WritingMode`・`MaxWidth`・`MaxHeight`・`VerticalColumnWidth`・`RotateAsciiInVertical` の 8 フィールドを追加する（data-model.md § MeshGenerationParams 参照）
-- [ ] T003 [P] `Packages/com.masachuang.solidtext3d/Runtime/GlyphContour.cs` を更新する: `AdvanceHeight (float)`・`CharIndex (int)`・`IsVisible (bool)` の 3 フィールドを追加する（data-model.md § GlyphContour 参照）
-- [ ] T004 `Packages/com.masachuang.solidtext3d/Tests/Editor/GlyphMeshBuilderTests.cs` を修正する: `FontPath` 参照をすべて `FontData = File.ReadAllBytes(...)` に置き換え、T002 の破壊的変更に対応させる
-
-**チェックポイント**: 基盤完了 — 以降の各フェーズは独立して着手可能。
+> _�E�新規�EロジェクトスキャフォールドなぁE EPhase 2 の基盤タスクへ直接移行）_
 
 ---
 
-## Phase 3: ユーザーストーリー 1 — フォントのインスペクタアタッチ (P1) 🎯 MVP
+## Phase 2: 基盤�E��Eユーザースト�Eリーの前提条件�E�E
 
-**目標**: インスペクタの Object フィールドに `.ttf`/`.otf` ファイルをアタッチするだけでフォントを指定できる。旧 `string Font` API を完全削除し、MAJOR バンプ（1.0.0 → 2.0.0）とする。
+**目皁E*: 全ユーザースト�Eリーが依存する型定義・チE�EタモチE��変更を�E行実裁E��る、E
 
-**独立テスト**: フォントフィールドにアセットをアタッチすると 3D テキストがそのフォントで表示される。フォント Missing 時は直前メッシュを維持し、警告を 1 回だけ出力することを単独で確認できる。
+**⚠�E�E重要E*: こ�Eフェーズが完亁E��るまで、いかなるユーザースト�Eリーも着手できなぁE��E
 
-### ユーザーストーリー 1 のテスト
+- [X] T001 `Packages/com.masachuang.solidtext3d/Runtime/TextAnchorEnums.cs` を新規作�Eし、`HorizontalAnchor`・`VerticalAnchor`・`DepthAnchor`・`WritingMode`・`ObjectMode` の 5 つの enum めE`MasaChuang.SolidText3D` 名前空間に定義する�E�Eata-model.md § 新要EEnum 垁E参�E�E�E
+- [X] T002 `Packages/com.masachuang.solidtext3d/Runtime/MeshGenerationParams.cs` を更新する: `FontPath (string)` フィールドを削除し、`HorizontalAnchor`・`VerticalAnchor`・`DepthAnchor`・`WritingMode`・`MaxWidth`・`MaxHeight`・`VerticalColumnWidth`・`RotateAsciiInVertical` の 8 フィールドを追加する�E�Eata-model.md § MeshGenerationParams 参�E�E�E
+- [X] T003 [P] `Packages/com.masachuang.solidtext3d/Runtime/GlyphContour.cs` を更新する: `AdvanceHeight (float)`・`CharIndex (int)`・`IsVisible (bool)` の 3 フィールドを追加する�E�Eata-model.md § GlyphContour 参�E�E�E
+- [X] T004 `Packages/com.masachuang.solidtext3d/Tests/Editor/GlyphMeshBuilderTests.cs` を修正する: `FontPath` 参�Eをすべて `FontData = File.ReadAllBytes(...)` に置き換え、T002 の破壊的変更に対応させる
 
-- [ ] T005 [P] [US1] `Packages/com.masachuang.solidtext3d/Tests/Editor/SolidText3DComponentTests.cs` に以下 4 テストを追加する: `FontAsset_Missing_MaintainsPreviousMesh`（FR-016: フォント Missing 時に直前メッシュ維持・LogWarning 1 回のみ）・`Text_Empty_ClearsMesh`（FR-015: テキストが空文字列のときメッシュがクリアされ、警告なし・PerCharacter モードでは全子 GameObject が非アクティブ化されること）・`FontAsset_Changed_AtRuntime_Regenerates`（US1 Scenario 3: フォントアセットが実行時に変更された場合、次フレームの更新で新しいフォントで再描画されること）・`FontAsset_NotSet_SkipsMeshGeneration`（FR-012: フォントが未設定の場合に `RegenerateMesh()` が即座にリターンしてメッシュ生成を行わないことをランタイム側で単体検証する）
-
-### ユーザーストーリー 1 の実装
-
-- [ ] T006 [US1] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` を修正する: `[SerializeField] string _font` と `public string Font` プロパティを完全削除し、`_fontAsset (UnityEngine.Object)`・`_fontBytesCache (TextAsset, HideInInspector)`・`_fontMissingWarningIssued (bool)` を追加する。`FontAsset` プロパティ（get/set）を実装し、`RegenerateMesh()` 内にフォント未設定（FR-012: メッシュ生成スキップ）・**空文字列（FR-015: メッシュクリア・PerCharacter 全子 GameObject 非アクティブ化・警告なし）**・Missing（FR-016: 直前メッシュ維持・LogWarning 1 回）の処理を追加する。新規追加する `public FontAsset` プロパティに XML ドキュメントコメント（`<summary>`, `<param>`, `<returns>`）を付与する（憲法 VII）（data-model.md § SolidText3DComponent 参照）
-- [ ] T007 [US1] `Packages/com.masachuang.solidtext3d/Editor/SolidText3DInspector.cs` を修正する: `DrawDefaultInspector()` を廃止して手動描画に切り替え、`EditorGUILayout.ObjectField("Font Asset", ..., typeof(UnityEngine.Object), false)` でフォントフィールドを追加し、フォント未アタッチ時に `EditorGUILayout.HelpBox()` で警告を表示する（research.md § R-001 参照）
-
-**チェックポイント**: ユーザーストーリー 1 完了 — インスペクタ Object フィールドでのフォント指定と Missing 動作を単独で検証可能。
+**チェチE��ポインチE*: 基盤完亁E E以降�E吁E��ェーズは独立して着手可能、E
 
 ---
 
-## Phase 4: ユーザーストーリー 2 — フォントファイルの自動 .bytes 変換 (P2)
+## Phase 3: ユーザースト�Eリー 1  Eフォント�EインスペクタアタチE�� (P1) 🎯 MVP
 
-**目標**: `.ttf`/`.otf` ファイルをプロジェクトにインポートするだけで `.bytes` ファイルが自動生成される。ユーザーは手動変換不要。
+**目樁E*: インスペクタの Object フィールドに `.ttf`/`.otf` ファイルをアタチE��するだけでフォントを持E��できる。旧 `string Font` API を完�E削除し、MAJOR バンプ！E.0.0 ↁE2.0.0�E�とする、E
 
-**独立テスト**: `.ttf` ファイルをインポートして `.bytes` ファイルが `Assets/SolidText3DFonts/` に生成されることを単独で確認できる。
+**独立テスチE*: フォントフィールドにアセチE��をアタチE��すると 3D チE��ストがそ�Eフォントで表示される。フォンチEMissing 時�E直前メチE��ュを維持し、警告を 1 回だけ�E力することを単独で確認できる、E
 
-### ユーザーストーリー 2 のテスト
+### ユーザースト�Eリー 1 のチE��チE
 
-- [ ] T008 [P] [US2] `Packages/com.masachuang.solidtext3d/Tests/Editor/FontAssetPostprocessorTests.cs` を新規作成し、以下 3 テストを実装する: `OnPostprocess_TtfFile_CreatesBytesFile`（.ttf インポートで .bytes 生成 — **SC-004 検証**: テストコメントにドラッグ＆ドロップ 1 操作でセットアップが完了するフローであることを明記すること）・`OnPostprocess_ExistingBytesFile_Skips`（既存 .bytes 再変換スキップ）・`OnPostprocess_IoError_LogsError`（I/O エラー時の LogError）
+- [X] T005 [P] [US1] `Packages/com.masachuang.solidtext3d/Tests/Editor/SolidText3DComponentTests.cs` に以丁E4 チE��トを追加する: `FontAsset_Missing_MaintainsPreviousMesh`�E�ER-016: フォンチEMissing 時に直前メチE��ュ維持�ELogWarning 1 回�Eみ�E��E`Text_Empty_ClearsMesh`�E�ER-015: チE��ストが空斁E���EのときメチE��ュがクリアされ、警告なし�EPerCharacter モードでは全孁EGameObject が非アクチE��ブ化されること�E��E`FontAsset_Changed_AtRuntime_Regenerates`�E�ES1 Scenario 3: フォントアセチE��が実行時に変更された場合、次フレームの更新で新しいフォントで再描画されること�E��E`FontAsset_NotSet_SkipsMeshGeneration`�E�ER-012: フォントが未設定�E場合に `RegenerateMesh()` が即座にリターンしてメチE��ュ生�Eを行わなぁE��とをランタイム側で単体検証する�E�E
 
-### ユーザーストーリー 2 の実装
+### ユーザースト�Eリー 1 の実裁E
 
-- [ ] T009 [US2] `Packages/com.masachuang.solidtext3d/Editor/FontAssetPostprocessor.cs` を新規作成する: `AssetPostprocessor` を継承し、`OnPostprocessAllAssets` で `.ttf`/`.otf` を検知する。`Assets/SolidText3DFonts/{assetGuid}.bytes` へ一時ファイル経由のアトミック書き込み（FR-017）を実装し、`AssetDatabase.ImportAsset()` で登録する。シーン内の `SolidText3DComponent` を走査して `_fontBytesCache` を自動設定し `EditorUtility.SetDirty()` + `AssetDatabase.SaveAssets()` でシリアライズする（data-model.md § FontAssetPostprocessor 参照、research.md § R-002 参照）。**制限**: `FindObjectsByType<SolidText3DComponent>()` による走査は開いているシーン内のみ対象。Prefab アセットは対象外となり、次回 Inspector 表示時に自動設定される（plan.md ステップ 8 の注記参照）
+- [X] T006 [US1] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` を修正する: `[SerializeField] string _font` と `public string Font` プロパティを完�E削除し、`_fontAsset (UnityEngine.Object)`・`_fontBytesCache (TextAsset, HideInInspector)`・`_fontMissingWarningIssued (bool)` を追加する。`FontAsset` プロパティ�E�Eet/set�E�を実裁E��、`RegenerateMesh()` 冁E��フォント未設定！ER-012: メチE��ュ生�EスキチE�E�E��E**空斁E���E�E�ER-015: メチE��ュクリア・PerCharacter 全孁EGameObject 非アクチE��ブ化・警告なし！E*・Missing�E�ER-016: 直前メチE��ュ維持�ELogWarning 1 回）�E処琁E��追加する。新規追加する `public FontAsset` プロパティに XML ドキュメントコメント！E<summary>`, `<param>`, `<returns>`�E�を付与する（�E況EVII�E�！Eata-model.md § SolidText3DComponent 参�E�E�E
+- [X] T007 [US1] `Packages/com.masachuang.solidtext3d/Editor/SolidText3DInspector.cs` を修正する: `DrawDefaultInspector()` を廁E��して手動描画に刁E��替え、`EditorGUILayout.ObjectField("Font Asset", ..., typeof(UnityEngine.Object), false)` でフォントフィールドを追加し、フォント未アタチE��時に `EditorGUILayout.HelpBox()` で警告を表示する�E�Eesearch.md § R-001 参�E�E�E
 
-**チェックポイント**: ユーザーストーリー 2 完了 — .ttf アタッチから .bytes 自動生成までの流れを単独で検証可能。
-
----
-
-## Phase 5: ユーザーストーリー 3 — テキスト配置のアンカー指定 (P3)
-
-**目標**: Horizontal / Vertical / Depth の 3 軸アンカーをそれぞれ独立したフィールドで設定し、メッシュをアンカー位置に合わせてオフセットできる。
-
-**独立テスト**: 各軸のアンカーを切り替え、メッシュの bounds が原点に対して期待どおりにオフセットされることを単独で確認できる。
-
-### ユーザーストーリー 3 のテスト
-
-- [ ] T010 [P] [US3] `Packages/com.masachuang.solidtext3d/Tests/Editor/LayoutEngineTests.cs` を新規作成し、以下のテストを実装する: `ApplyHorizontalLayout_EmptyGlyphs_DoesNotThrow`・`CalculateAnchorOffset_Center_ReturnsHalfExtents`。さらに `CalculateAnchorOffset_AllCombinations_BoundsMatchOrigin` パラメータ化テスト（`[TestCase]` 等）で `HorizontalAnchor`×3 × `VerticalAnchor`×3 × `DepthAnchor`×3 の全 27 組み合わせを列挙し、各組み合わせでメッシュの対応する頭点・辺・重心が原点に一致することを検証する（SC-005 全組み合わせ保証）。加えて以下 2 テストを追加する: `AnchorChange_SetsDirtyFlag`（FR-005: アンカープロパティの setter が `_isDirty = true` を設定し、次フレームのメッシュ再計算が発動することを検証する）・`Layout_MaxWidthZero_NoWordWrap`（FR-014: `MaxWidth` が 0 の場合に自動折り返しが行われず、改行コードのみで行が制御されることを検証する）
-- [ ] T011 [P] [US3] `Packages/com.masachuang.solidtext3d/Tests/Editor/GlyphMeshBuilderTests.cs` に `Build_WithCenterAnchor_BoundsSymmetric` テストを追加する
-
-### ユーザーストーリー 3 の実装
-
-- [ ] T012 [US3] `Packages/com.masachuang.solidtext3d/Runtime/LayoutEngine.cs` を新規作成する: `internal static class LayoutEngine` に `ApplyHorizontalLayout(List<GlyphContour> glyphs, MeshGenerationParams p)` と `CalculateAnchorOffset(Bounds meshBounds, MeshGenerationParams p)` を実装する。アンカーオフセット計算式（水平: Left=0, Center=-width/2, Right=-width; 垂直: Upper=-height, Middle=-height/2, Lower=0; 奥行き: Front=0, Center=-depth/2, Back=-depth）を適用する。既存 `GlyphMeshBuilder.ApplyLayout()` のロジックを移植し、`MaxWidth` による自動折り返しに対応する。**FR-013 折り返し粒度の言語判定**: 各文字の Unicode コードポイントが下記いずれかの範囲に含まれる場合は文字単位で折り返し、それ以外（ラテン文字・ASCII 等）はスペース・区切り文字を基準とした単語単位で折り返す: `\u2E80`–`\u9FFF`（CJK統合漢字・ひらがな・カタカナ等）、`\uAC00`–`\uD7AF`（ハングル音節）、`\uFF00`–`\uFF60`（全角英数字・記号）（research.md § R-005 参照）
-- [ ] T013 [US3] `Packages/com.masachuang.solidtext3d/Runtime/GlyphMeshBuilder.cs` を修正する: `ApplyLayout()` プライベートメソッドを削除して `LayoutEngine.ApplyHorizontalLayout()` 呼び出しに置き換え、`GetFontBytes()` から `FontPath` 参照を削除する。`Build()` 内で `MeshExtruder.Build()` 後に `LayoutEngine.CalculateAnchorOffset()` を呼び出して全頂点にオフセットを加算する（data-model.md § データフロー概要 参照）
-- [ ] T014 [US3] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` を修正する: `_horizontalAnchor`・`_verticalAnchor`・`_depthAnchor` の 3 フィールドとそれぞれのプロパティ（`HorizontalAnchor`・`VerticalAnchor`・`DepthAnchor`）、`_maxWidth`・`_maxHeight` フィールドと `MaxWidth`・`MaxHeight` プロパティを追加する。プロパティ setter で `_isDirty = true` を設定する。新規追加するすべての `public` プロパティに XML ドキュメントコメント（`<summary>`, `<param>`, `<returns>`）を付与する（憲法 VII）
-- [ ] T015 [US3] `Packages/com.masachuang.solidtext3d/Editor/SolidText3DInspector.cs` に `HorizontalAnchor`・`VerticalAnchor`・`DepthAnchor` の 3 つのドロップダウンフィールドと `MaxWidth`・`MaxHeight` の数値フィールドを手動描画で追加する（FR-004 参照）
-
-**チェックポイント**: ユーザーストーリー 3 完了 — 3 軸アンカー設定とメッシュ位置オフセットを単独で検証可能。
+**チェチE��ポインチE*: ユーザースト�Eリー 1 完亁E Eインスペクタ Object フィールドでのフォント指定と Missing 動作を単独で検証可能、E
 
 ---
 
-## Phase 6: ユーザーストーリー 4 — インスペクタ入力レイテンシの改善 (P4)
+## Phase 4: ユーザースト�Eリー 2  Eフォントファイルの自勁E.bytes 変換 (P2)
 
-**目標**: テキストフィールド入力中はメッシュ再生成を抑制し、Enter キーまたはフォーカスアウトのタイミングでのみ再生成する。
+**目樁E*: `.ttf`/`.otf` ファイルを�Eロジェクトにインポ�Eトするだけで `.bytes` ファイルが�E動生成される。ユーザーは手動変換不要、E
 
-**独立テスト**: テキストフィールドに長い文字列を素早く入力し、入力中に再生成が走らないことを確認できる。
+**独立テスチE*: `.ttf` ファイルをインポ�Eトして `.bytes` ファイルぁE`Assets/SolidText3DFonts/` に生�Eされることを単独で確認できる、E
 
-### ユーザーストーリー 4 のテスト
+### ユーザースト�Eリー 2 のチE��チE
 
-- [ ] T016 [P] [US4] `Packages/com.masachuang.solidtext3d/Tests/Editor/SolidText3DInspectorTests.cs` を新規作成または更新し、`SuppressAutoRegenerate_WhileFocused_BlocksRegeneration` テストを実装する: `SuppressAutoRegenerate` フラグが `true` の間は `RegenerateMesh()` が呼び出されず、フォーカスアウト後に呼び出されることを検証する（FR-006、SC-001 の基礎条件確認）
+- [X] T008 [P] [US2] `Packages/com.masachuang.solidtext3d/Tests/Editor/FontAssetPostprocessorTests.cs` を新規作�Eし、以丁E3 チE��トを実裁E��めE `OnPostprocess_TtfFile_CreatesBytesFile`�E�Ettf インポ�Eトで .bytes 生�E  E**SC-004 検証**: チE��トコメントにドラチE���E�E��ロチE�E 1 操作でセチE��アチE�Eが完亁E��るフローであることを�E記すること�E��E`OnPostprocess_ExistingBytesFile_Skips`�E�既孁E.bytes 再変換スキチE�E�E��E`OnPostprocess_IoError_LogsError`�E�E/O エラー時�E LogError�E�E
 
-### ユーザーストーリー 4 の実装
+### ユーザースト�Eリー 2 の実裁E
 
-- [ ] T036 [US4] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` に `_suppressAutoRegenerate (bool)` フィールドと `SuppressAutoRegenerate` プロパティ（get/set）を追加し、`LateUpdate()` 内で `_suppressAutoRegenerate` が true の場合は `RegenerateMesh()` を呼び出さないよう制御を追加する。`SuppressAutoRegenerate` プロパティに XML ドキュメントコメント（`<summary>` のみ。bool プロパティは引数・戻り値を持たないため `<param>` / `<returns>` は省略可）を付与する（憲法 VII）（FR-006、research.md § R-003 参照）
-- [ ] T017 [US4] `Packages/com.masachuang.solidtext3d/Editor/SolidText3DInspector.cs` のテキストフィールドに `EditorGUI.BeginChangeCheck()` / `EndChangeCheck()` を用いて入力変化を検知する: 入力検知時に `_target.SuppressAutoRegenerate = true` を設定する。`EditorApplication.update` はフォーカス状態のポーリング（`EditorGUIUtility.editingTextField` の監視）にのみ使用し、タイマーカウントダウンは実装しない。フォーカスアウトまたは Enter キー確定時のみ `RegenerateMesh()` を呼び出して `SuppressAutoRegenerate = false` に戻す（FR-006: 時間経過による自動確定なし、research.md § R-003 参照）
+- [X] T009 [US2] `Packages/com.masachuang.solidtext3d/Editor/FontAssetPostprocessor.cs` を新規作�Eする: `AssetPostprocessor` を継承し、`OnPostprocessAllAssets` で `.ttf`/`.otf` を検知する。`Assets/SolidText3DFonts/{assetGuid}.bytes` へ一時ファイル経由のアトミチE��書き込み�E�ER-017�E�を実裁E��、`AssetDatabase.ImportAsset()` で登録する。シーン冁E�E `SolidText3DComponent` を走査して `_fontBytesCache` を�E動設定し `EditorUtility.SetDirty()` + `AssetDatabase.SaveAssets()` でシリアライズする�E�Eata-model.md § FontAssetPostprocessor 参�E、research.md § R-002 参�E�E�、E*制陁E*: `FindObjectsByType<SolidText3DComponent>()` による走査は開いてぁE��シーン冁E�Eみ対象。Prefab アセチE��は対象外となり、次囁EInspector 表示時に自動設定される�E�Elan.md スチE��チE8 の注記参照�E�E
 
-**チェックポイント**: ユーザーストーリー 4 完了 — 入力デバウンスによるレイテンシ改善を単独で確認可能（SC-001: 50ms 未満の入力遅延）。
-
----
-
-## Phase 7: ユーザーストーリー 5 — 頻繁な文字列更新のパフォーマンス改善 (P5)
-
-**目標**: テキストが毎フレーム変更される UI ユースケースで GC Alloc を抑制し、同一パラメータ時のメッシュ再生成をスキップして 60fps を維持する。
-
-**独立テスト**: 毎フレームテキストを変更するシナリオで再生成コストを計測し、同一テキスト時にスキップが発動することを単独で確認できる。
-
-### ユーザーストーリー 5 のテスト
-
-- [ ] T018 [P] [US5] `Packages/com.masachuang.solidtext3d/Tests/Editor/SolidText3DComponentTests.cs` に以下 2 テストを追加する: `RegenerateMesh_SameParams_SkipsRegeneration`（同一パラメータハッシュ時に再生成がスキップされること）・`RegenerateMesh_SameParams_ZeroGCAlloc`（同一パラメータ時に `GC.GetTotalMemory(false)` 前後の差分がゼロであること— SC-003 検証）
-- [ ] T037 [P] [US5] `Packages/com.masachuang.solidtext3d/Tests/Runtime/PerformanceTests.cs` を新規作成し、`TextUpdate_EveryFrame_Under2msFrameTime` Play Mode テストを実装する: 毎フレームテキストを変更するシナリオで `Profiler.BeginSample` / `EndSample` を使用してメッシュ再生成処理の所要時間を計測し、200 文字以下の標準的な文字数で 2ms 未満であることを検証する（SC-002 検証）
-
-### ユーザーストーリー 5 の実装
-
-- [ ] T019 [US5] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` に `_lastParamHash (int)` フィールドを追加し、`RegenerateMesh()` の冒頭で現在パラメータのハッシュと `_lastParamHash` を比較して同一の場合は早期リターンするロジックを実装する。**GC 制約**: ハッシュ計算は `Text.GetHashCode() ^ 各 enum.GetHashCode()` の XOR 結合のみを使用し、`new`・ LINQ・文字列連結・`ToString()` 等の GC アロケーションを発生する処理を `LateUpdate()` 内で一切使用しないこと（憲法 V）。**例外**: 空文字列（`""`）は FR-015 の規定により常にダーティ扱いとし、ハッシュ一致でも早期リターンしないこと（FR-007 の「空文字列は常にダーティとして扱う」規定を必ず守ること）（FR-007、data-model.md § `_lastParamHash` 属性表参照、research.md § R-007 参照）
-
-**チェックポイント**: ユーザーストーリー 5 完了 — テキスト未変更時の GC Alloc ゼロおよびフレームレート維持を単独で検証可能。
+**チェチE��ポインチE*: ユーザースト�Eリー 2 完亁E E.ttf アタチE��から .bytes 自動生成までの流れを単独で検証可能、E
 
 ---
 
-## Phase 8: ユーザーストーリー 6 — 文字ごとの個別オブジェクト化 (P6)
+## Phase 5: ユーザースト�Eリー 3  EチE��スト�E置のアンカー持E��E(P3)
 
-**目標**: `ObjectMode.PerCharacter` 時に各文字に対応する子 GameObject を生成しオブジェクトプールで管理する。可視文字のみが対象で、切り替え時はプールを正しく制御する。
+**目樁E*: Horizontal / Vertical / Depth の 3 軸アンカーをそれぞれ独立したフィールドで設定し、メチE��ュをアンカー位置に合わせてオフセチE��できる、E
 
-**独立テスト**: Per-Character モードで "ABC" を設定し、3 つの子 GameObject が生成されることを単独で確認できる。
+**独立テスチE*: 吁E��のアンカーを�Eり替え、メチE��ュの bounds が原点に対して期征E��おりにオフセチE��されることを単独で確認できる、E
 
-### ユーザーストーリー 6 のテスト
+### ユーザースト�Eリー 3 のチE��チE
 
-- [ ] T020 [P] [US6] `Packages/com.masachuang.solidtext3d/Tests/Editor/CharacterObjectPoolTests.cs` を新規作成し、以下 3 テストを実装する: `Sync_MoreChars_CreatesNewChildren`・`Sync_FewerChars_DeactivatesExcess`・`Sync_SameCount_ReusesExistingChildren`
-- [ ] T021 [P] [US6] `Packages/com.masachuang.solidtext3d/Tests/Editor/GlyphMeshBuilderTests.cs` に `BuildPerCharacter_ThreeChars_ReturnsThreeMeshes` テストを追加する
-- [ ] T022 [P] [US6] `Packages/com.masachuang.solidtext3d/Tests/Editor/SolidText3DComponentTests.cs` に以下 2 テストを追加する: `ObjectMode_PerCharacter_CreatesChildObjects`・`PerCharacter_IndependentMaterial_CanBeSet`（SC-006: Per-Character モードで各子 GameObject に独立した `MeshRenderer.material` を設定できることを検証— US6 Scenario 4 対応）
+- [X] T010 [P] [US3] `Packages/com.masachuang.solidtext3d/Tests/Editor/LayoutEngineTests.cs` を新規作�Eし、以下�EチE��トを実裁E��めE `ApplyHorizontalLayout_EmptyGlyphs_DoesNotThrow`・`CalculateAnchorOffset_Center_ReturnsHalfExtents`。さらに `CalculateAnchorOffset_AllCombinations_BoundsMatchOrigin` パラメータ化テスト！E[TestCase]` 等）で `HorizontalAnchor`ÁE ÁE`VerticalAnchor`ÁE ÁE`DepthAnchor`ÁE の全 27 絁E��合わせを列挙し、各絁E��合わせでメチE��ュの対応する頭点・辺・重忁E��原点に一致することを検証する�E�EC-005 全絁E��合わせ保証�E�。加えて以丁E2 チE��トを追加する: `AnchorChange_SetsDirtyFlag`�E�ER-005: アンカープロパティの setter ぁE`_isDirty = true` を設定し、次フレームのメチE��ュ再計算が発動することを検証する�E��E`Layout_MaxWidthZero_NoWordWrap`�E�ER-014: `MaxWidth` ぁE0 の場合に自動折り返しが行われず、改行コード�Eみで行が制御されることを検証する�E�E
+- [X] T011 [P] [US3] `Packages/com.masachuang.solidtext3d/Tests/Editor/GlyphMeshBuilderTests.cs` に `Build_WithCenterAnchor_BoundsSymmetric` チE��トを追加する
 
-### ユーザーストーリー 6 の実装
+### ユーザースト�Eリー 3 の実裁E
 
-- [ ] T023 [US6] `Packages/com.masachuang.solidtext3d/Runtime/GlyphMeshBuilder.cs` に `BuildPerCharacter(MeshGenerationParams p)` メソッドを追加する: `IsVisible == true` のグリフのみを対象に、1 文字ずつ `GlyphContourBuilder` + `MeshExtruder` で個別 Mesh を生成して `List<Mesh>` として返す（data-model.md § BuildPerCharacter 設計 参照）
-- [ ] T024 [US6] `Packages/com.masachuang.solidtext3d/Runtime/CharacterObjectPool.cs` を新規作成する: `internal sealed class CharacterObjectPool` に `Sync(List<GlyphContour> visibleGlyphs, List<Mesh> perCharMeshes)` を実装する。文字数増加時のみ新規 GameObject を生成（`MeshFilter` + `MeshRenderer` を `AddComponent`）し、文字数減少時は余剰を `SetActive(false)` で非アクティブ化する。**`visibleGlyphs` が空の場合（空文字列: FR-015）はプール内の全 GameObject を `SetActive(false)` にする。** Destroy は行わない（FR-009b、FR-015、research.md § R-004 参照）
-- [ ] T025 [US6] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` に `_objectMode (ObjectMode)` フィールドと `ObjectMode` プロパティを追加し、`CharacterObjectPool` インスタンスを保持する `_characterPool` フィールドを追加する。`ObjectMode` 変更時の切り替えロジック（PerCharacter → SingleObject 切り替え時に子 GameObject を全て非アクティブ化、SingleObject → PerCharacter 切り替え時にプールを初期化）を実装する。`ObjectMode` プロパティに XML ドキュメントコメント（`<summary>`）を付与する（憲法 VII）（data-model.md § 状態遷移: ObjectMode 切り替え 参照）
-- [ ] T026 [US6] `Packages/com.masachuang.solidtext3d/Editor/SolidText3DInspector.cs` に `ObjectMode` の選択ドロップダウンを手動描画で追加する（FR-008 参照）
+- [X] T012 [US3] `Packages/com.masachuang.solidtext3d/Runtime/LayoutEngine.cs` を新規作�Eする: `internal static class LayoutEngine` に `ApplyHorizontalLayout(List<GlyphContour> glyphs, MeshGenerationParams p)` と `CalculateAnchorOffset(Bounds meshBounds, MeshGenerationParams p)` を実裁E��る。アンカーオフセチE��計算式（水平: Left=0, Center=-width/2, Right=-width; 垂直: Upper=-height, Middle=-height/2, Lower=0; 奥行き: Front=0, Center=-depth/2, Back=-depth�E�を適用する。既孁E`GlyphMeshBuilder.ApplyLayout()` のロジチE��を移植し、`MaxWidth` による自動折り返しに対応する、E*FR-013 折り返し粒度の言語判宁E*: 吁E��字�E Unicode コード�Eイントが下記いずれか�E篁E��に含まれる場合�E斁E��単位で折り返し、それ以外（ラチE��斁E���EASCII 等）�Eスペ�Eス・区刁E��斁E��を基準とした単語単位で折り返す: `\u2E80`–`\u9FFF`�E�EJK統合漢字�Eひらがな・カタカナ等）、`\uAC00`–`\uD7AF`�E�ハングル音節�E�、`\uFF00`–`\uFF60`�E��E角英数字�E記号�E�！Eesearch.md § R-005 参�E�E�E
+- [X] T013 [US3] `Packages/com.masachuang.solidtext3d/Runtime/GlyphMeshBuilder.cs` を修正する: `ApplyLayout()` プライベ�EトメソチE��を削除して `LayoutEngine.ApplyHorizontalLayout()` 呼び出しに置き換え、`GetFontBytes()` から `FontPath` 参�Eを削除する。`Build()` 冁E�� `MeshExtruder.Build()` 後に `LayoutEngine.CalculateAnchorOffset()` を呼び出して全頂点にオフセチE��を加算する！Eata-model.md § チE�Eタフロー概要E参�E�E�E
+- [X] T014 [US3] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` を修正する: `_horizontalAnchor`・`_verticalAnchor`・`_depthAnchor` の 3 フィールドとそれぞれのプロパティ�E�EHorizontalAnchor`・`VerticalAnchor`・`DepthAnchor`�E�、`_maxWidth`・`_maxHeight` フィールドと `MaxWidth`・`MaxHeight` プロパティを追加する。�Eロパティ setter で `_isDirty = true` を設定する。新規追加するすべての `public` プロパティに XML ドキュメントコメント！E<summary>`, `<param>`, `<returns>`�E�を付与する（�E況EVII�E�E
+- [X] T015 [US3] `Packages/com.masachuang.solidtext3d/Editor/SolidText3DInspector.cs` に `HorizontalAnchor`・`VerticalAnchor`・`DepthAnchor` の 3 つのドロチE�Eダウンフィールドと `MaxWidth`・`MaxHeight` の数値フィールドを手動描画で追加する�E�ER-004 参�E�E�E
 
-**チェックポイント**: ユーザーストーリー 6 完了 — Per-Character モードの子 GameObject 生成・プール管理・モード切り替えを単独で検証可能。
-
----
-
-## Phase 9: ユーザーストーリー 7 — 縦書きテキストの対応 (P7)
-
-**目標**: `WritingMode.Vertical` 時に文字を上から下・列を右から左に並べる縦書きレイアウトを実現する。アンカー指定・Per-Character モードとの同時使用に対応する。
-
-**独立テスト**: 縦書きモードで「あいうえお」を設定し、文字が縦に並ぶことを単独で確認できる。
-
-### ユーザーストーリー 7 のテスト
-
-- [ ] T027 [P] [US7] `Packages/com.masachuang.solidtext3d/Tests/Editor/LayoutEngineTests.cs` に以下 2 テストを追加する: `ApplyVerticalLayout_SingleChar_YIsNegative`（縦書き時に Y 座標が負方向に進むこと）・`ApplyVerticalLayout_MultipleJapaneseChars_PositionsDecreasing`（SC-007: 日本語複数文字で各 Y 座標が前の文字より小さくなり、列間隔・最大高さによる折り返しも正しく動作することを検証— `[TestCase]` パラメータ化で複数ケースを列挙すること）
-- [ ] T028 [P] [US7] `Packages/com.masachuang.solidtext3d/Tests/Editor/GlyphMeshBuilderTests.cs` に `Build_VerticalMode_YDecreases` テストを追加する
-
-### ユーザーストーリー 7 の実装
-
-- [ ] T029 [US7] `Packages/com.masachuang.solidtext3d/Runtime/LayoutEngine.cs` に `ApplyVerticalLayout(List<GlyphContour> glyphs, MeshGenerationParams p)` を実装する: 各文字を上から下（Y は減少方向）に並べ、`MaxHeight` を超えたら次の列（X は左方向）へ折り返す。**`MaxHeight` が 0 または未設定の場合は自動折り返しを行わず、改行コード（`\n`）のみで列の切り替えを制御する（FR-014）。** 各列内の文字は `VerticalColumnWidth`（0 の場合は `FontSize × 1.1f`）を基準に水平中央揃えとする。`RotateAsciiInVertical` が true の場合は ASCII 英数字グリフの回転フラグを設定する。複数行（改行コード）は次列への折り返しとして処理する（FR-010、FR-011、FR-011b、FR-011c、FR-014、research.md § R-006 参照）
-- [ ] T030 [US7] `Packages/com.masachuang.solidtext3d/Runtime/GlyphMeshBuilder.cs` を修正する: `Build()` / `BuildPerCharacter()` 内で `MeshGenerationParams.WritingMode` を参照し、`Vertical` の場合は `LayoutEngine.ApplyVerticalLayout()` を呼び出すよう分岐を追加する
-- [ ] T031 [US7] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` に `_writingMode (WritingMode)` フィールドと `WritingMode` プロパティ、`_verticalColumnWidth (float)` フィールドと `VerticalColumnWidth` プロパティ、`_rotateAsciiInVertical (bool)` フィールドと `RotateAsciiInVertical` プロパティを追加する。プロパティ setter で `_isDirty = true` を設定する。新規追加するすべての `public` プロパティ（`WritingMode`, `VerticalColumnWidth`, `RotateAsciiInVertical`）に XML ドキュメントコメント（`<summary>`, `<param>`, `<returns>`）を付与する（憲法 VII）
-- [ ] T032 [US7] `Packages/com.masachuang.solidtext3d/Editor/SolidText3DInspector.cs` に `WritingMode` ドロップダウン、`VerticalColumnWidth` 数値フィールド、`RotateAsciiInVertical` トグルを手動描画で追加する（FR-010、FR-011b、FR-011c 参照）
-
-**チェックポイント**: ユーザーストーリー 7 完了 — 縦書きレイアウト、列折り返し、ASCII 回転オプション、アンカーとの組み合わせを単独で検証可能。
+**チェチE��ポインチE*: ユーザースト�Eリー 3 完亁E E3 軸アンカー設定とメチE��ュ位置オフセチE��を単独で検証可能、E
 
 ---
 
-## Final Phase: ポリッシュ・横断的関心事
+## Phase 6: ユーザースト�Eリー 4  Eインスペクタ入力レイチE��シの改喁E(P4)
 
-**目的**: バージョン更新、CHANGELOG 記載、パッケージ最終整備。
+**目樁E*: チE��ストフィールド�E力中はメチE��ュ再生成を抑制し、Enter キーまた�Eフォーカスアウト�Eタイミングでのみ再生成する、E
 
-- [ ] T033 [P] `Packages/com.masachuang.solidtext3d/package.json` の `"version"` を `"1.0.0"` から `"2.0.0"` に更新する（破壊的変更: `string Font` 削除、contracts/SolidText3DComponent-API.md 参照）
-- [ ] T034 [P] `Packages/com.masachuang.solidtext3d/CHANGELOG.md` に v2.0.0 エントリを追記する: 破壊的変更（`Font (string)` 削除・`FontAsset (Object)` 追加）、追加機能（アンカー・縦書き・Per-Character・自動 .bytes 変換・デバウンス・パフォーマンス改善）を記載する（contracts/SolidText3DComponent-API.md § CHANGELOG エントリ 参照）
-- [ ] T035 [P] `Packages/com.masachuang.solidtext3d/Documentation~/BREAKING_CHANGES.md` を新規作成し、法典 IV 例外正当化記録を記載する: `[SerializeField] string _font` → `UnityEngine.Object _fontAsset` は型が根本的に異なるため `[Obsolete]` による段階移行が技術的に困難である理由を詳述するとともに、spec Clarification にて開発者が破壊的変更を明示承認した旨を記録する。**このタスクは Final Phase の必須実施事項であり、完了チェックポイントとして扱う**（UPM 慣例: ドキュメントは `Documentation~/` 配下に配置 — 憲法 I 準拠）（plan.md § Constitution Check 参照）
+**独立テスチE*: チE��ストフィールドに長ぁE��字�Eを素早く�E力し、�E力中に再生成が走らなぁE��とを確認できる、E
+
+### ユーザースト�Eリー 4 のチE��チE
+
+- [X] T016 [P] [US4] `Packages/com.masachuang.solidtext3d/Tests/Editor/SolidText3DInspectorTests.cs` を新規作�Eまた�E更新し、`SuppressAutoRegenerate_WhileFocused_BlocksRegeneration` チE��トを実裁E��めE `SuppressAutoRegenerate` フラグぁE`true` の間�E `RegenerateMesh()` が呼び出されず、フォーカスアウト後に呼び出されることを検証する�E�ER-006、SC-001 の基礎条件確認！E
+
+### ユーザースト�Eリー 4 の実裁E
+
+- [X] T036 [US4] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` に `_suppressAutoRegenerate (bool)` フィールドと `SuppressAutoRegenerate` プロパティ�E�Eet/set�E�を追加し、`LateUpdate()` 冁E�� `_suppressAutoRegenerate` ぁEtrue の場合�E `RegenerateMesh()` を呼び出さなぁE��ぁE��御を追加する。`SuppressAutoRegenerate` プロパティに XML ドキュメントコメント！E<summary>` のみ。bool プロパティは引数・戻り値を持たなぁE��めE`<param>` / `<returns>` は省略可�E�を付与する（�E況EVII�E�！ER-006、research.md § R-003 参�E�E�E
+- [X] T017 [US4] `Packages/com.masachuang.solidtext3d/Editor/SolidText3DInspector.cs` のチE��ストフィールドに `EditorGUI.BeginChangeCheck()` / `EndChangeCheck()` を用ぁE��入力変化を検知する: 入力検知時に `_target.SuppressAutoRegenerate = true` を設定する。`EditorApplication.update` はフォーカス状態�Eポ�Eリング�E�EEditorGUIUtility.editingTextField` の監視）にのみ使用し、タイマ�Eカウントダウンは実裁E��なぁE��フォーカスアウトまた�E Enter キー確定時のみ `RegenerateMesh()` を呼び出して `SuppressAutoRegenerate = false` に戻す！ER-006: 時間経過による自動確定なし、research.md § R-003 参�E�E�E
+
+**チェチE��ポインチE*: ユーザースト�Eリー 4 完亁E E入力デバウンスによるレイチE��シ改喁E��単独で確認可能�E�EC-001: 50ms 未満の入力遅延�E�、E
 
 ---
 
-## 依存関係グラフ（ユーザーストーリー間）
+## Phase 7: ユーザースト�Eリー 5  E頻繁な斁E���E更新のパフォーマンス改喁E(P5)
+
+**目樁E*: チE��ストが毎フレーム変更されめEUI ユースケースで GC Alloc を抑制し、同一パラメータ時�EメチE��ュ再生成をスキチE�Eして 60fps を維持する、E
+
+**独立テスチE*: 毎フレームチE��ストを変更するシナリオで再生成コストを計測し、同一チE��スト時にスキチE�Eが発動することを単独で確認できる、E
+
+### ユーザースト�Eリー 5 のチE��チE
+
+- [X] T018 [P] [US5] `Packages/com.masachuang.solidtext3d/Tests/Editor/SolidText3DComponentTests.cs` に以丁E2 チE��トを追加する: `RegenerateMesh_SameParams_SkipsRegeneration`�E�同一パラメータハッシュ時に再生成がスキチE�Eされること�E��E`RegenerateMesh_SameParams_ZeroGCAlloc`�E�同一パラメータ時に `GC.GetTotalMemory(false)` 前後�E差刁E��ゼロであること ESC-003 検証�E�E
+- [ ] T037 [P] [US5] `Packages/com.masachuang.solidtext3d/Tests/Runtime/PerformanceTests.cs` を新規作�Eし、`TextUpdate_EveryFrame_Under2msFrameTime` Play Mode チE��トを実裁E��めE 毎フレームチE��ストを変更するシナリオで `Profiler.BeginSample` / `EndSample` を使用してメチE��ュ再生成�E琁E�E所要時間を計測し、E00 斁E��以下�E標準的な斁E��数で 2ms 未満であることを検証する�E�EC-002 検証�E�E
+
+### ユーザースト�Eリー 5 の実裁E
+
+- [X] T019 [US5] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` に `_lastParamHash (int)` フィールドを追加し、`RegenerateMesh()` の冒頭で現在パラメータのハッシュと `_lastParamHash` を比輁E��て同一の場合�E早期リターンするロジチE��を実裁E��る、E*GC 制紁E*: ハッシュ計算�E `Text.GetHashCode() ^ 吁Eenum.GetHashCode()` の XOR 結合のみを使用し、`new`・ LINQ・斁E���E連結�E`ToString()` 等�E GC アロケーションを発生する�E琁E�� `LateUpdate()` 冁E��一刁E��用しなぁE��と�E��E況EV�E�、E*例夁E*: 空斁E���E�E�E""`�E��E FR-015 の規定により常にダーチE��扱ぁE��し、ハチE��ュ一致でも早期リターンしなぁE��と�E�ER-007 の「空斁E���Eは常にダーチE��として扱ぁE��規定を忁E��守ること�E�！ER-007、data-model.md § `_lastParamHash` 属性表参�E、research.md § R-007 参�E�E�E
+
+**チェチE��ポインチE*: ユーザースト�Eリー 5 完亁E EチE��スト未変更時�E GC Alloc ゼロおよびフレームレート維持を単独で検証可能、E
+
+---
+
+## Phase 8: ユーザースト�Eリー 6  E斁E��ごとの個別オブジェクト化 (P6)
+
+**目樁E*: `ObjectMode.PerCharacter` 時に吁E��字に対応する孁EGameObject を生成しオブジェクト�Eールで管琁E��る。可視文字�Eみが対象で、�Eり替え時はプ�Eルを正しく制御する、E
+
+**独立テスチE*: Per-Character モードで "ABC" を設定し、E つの孁EGameObject が生成されることを単独で確認できる、E
+
+### ユーザースト�Eリー 6 のチE��チE
+
+- [X] T020 [P] [US6] `Packages/com.masachuang.solidtext3d/Tests/Editor/CharacterObjectPoolTests.cs` を新規作�Eし、以丁E3 チE��トを実裁E��めE `Sync_MoreChars_CreatesNewChildren`・`Sync_FewerChars_DeactivatesExcess`・`Sync_SameCount_ReusesExistingChildren`
+- [X] T021 [P] [US6] `Packages/com.masachuang.solidtext3d/Tests/Editor/GlyphMeshBuilderTests.cs` に `BuildPerCharacter_ThreeChars_ReturnsThreeMeshes` チE��トを追加する
+- [X] T022 [P] [US6] `Packages/com.masachuang.solidtext3d/Tests/Editor/SolidText3DComponentTests.cs` に以丁E2 チE��トを追加する: `ObjectMode_PerCharacter_CreatesChildObjects`・`PerCharacter_IndependentMaterial_CanBeSet`�E�EC-006: Per-Character モードで吁E��EGameObject に独立しぁE`MeshRenderer.material` を設定できることを検証 EUS6 Scenario 4 対応！E
+
+### ユーザースト�Eリー 6 の実裁E
+
+- [X] T023 [US6] `Packages/com.masachuang.solidtext3d/Runtime/GlyphMeshBuilder.cs` に `BuildPerCharacter(MeshGenerationParams p)` メソチE��を追加する: `IsVisible == true` のグリフ�Eみを対象に、E 斁E��ずつ `GlyphContourBuilder` + `MeshExtruder` で個別 Mesh を生成して `List<Mesh>` として返す�E�Eata-model.md § BuildPerCharacter 設訁E参�E�E�E
+- [X] T024 [US6] `Packages/com.masachuang.solidtext3d/Runtime/CharacterObjectPool.cs` を新規作�Eする: `internal sealed class CharacterObjectPool` に `Sync(List<GlyphContour> visibleGlyphs, List<Mesh> perCharMeshes)` を実裁E��る。文字数増加時�Eみ新要EGameObject を生成！EMeshFilter` + `MeshRenderer` めE`AddComponent`�E�し、文字数減少時は余剰めE`SetActive(false)` で非アクチE��ブ化する、E*`visibleGlyphs` が空の場合（空斁E���E: FR-015�E��Eプ�Eル冁E�E全 GameObject めE`SetActive(false)` にする、E* Destroy は行わなぁE��ER-009b、FR-015、research.md § R-004 参�E�E�E
+- [X] T025 [US6] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` に `_objectMode (ObjectMode)` フィールドと `ObjectMode` プロパティを追加し、`CharacterObjectPool` インスタンスを保持する `_characterPool` フィールドを追加する。`ObjectMode` 変更時�E刁E��替えロジチE���E�EerCharacter ↁESingleObject 刁E��替え時に孁EGameObject を�Eて非アクチE��ブ化、SingleObject ↁEPerCharacter 刁E��替え時にプ�Eルを�E期化�E�を実裁E��る。`ObjectMode` プロパティに XML ドキュメントコメント！E<summary>`�E�を付与する（�E況EVII�E�！Eata-model.md § 状態�E移: ObjectMode 刁E��替ぁE参�E�E�E
+- [X] T026 [US6] `Packages/com.masachuang.solidtext3d/Editor/SolidText3DInspector.cs` に `ObjectMode` の選択ドロチE�Eダウンを手動描画で追加する�E�ER-008 参�E�E�E
+
+**チェチE��ポインチE*: ユーザースト�Eリー 6 完亁E EPer-Character モード�E孁EGameObject 生�E・プ�Eル管琁E�Eモード�Eり替えを単独で検証可能、E
+
+---
+
+## Phase 9: ユーザースト�Eリー 7  E縦書きテキスト�E対忁E(P7)
+
+**目樁E*: `WritingMode.Vertical` 時に斁E��を上から下�E列を右から左に並べる縦書きレイアウトを実現する。アンカー持E���EPer-Character モードとの同時使用に対応する、E
+
+**独立テスチE*: 縦書きモードで「あぁE��えお」を設定し、文字が縦に並ぶことを単独で確認できる、E
+
+### ユーザースト�Eリー 7 のチE��チE
+
+- [X] T027 [P] [US7] `Packages/com.masachuang.solidtext3d/Tests/Editor/LayoutEngineTests.cs` に以丁E2 チE��トを追加する: `ApplyVerticalLayout_SingleChar_YIsNegative`�E�縦書き時に Y 座標が負方向に進むこと�E��E`ApplyVerticalLayout_MultipleJapaneseChars_PositionsDecreasing`�E�EC-007: 日本語褁E��斁E��で吁EY 座標が前�E斁E��より小さくなり、�E間隔・最大高さによる折り返しも正しく動作することを検証 E`[TestCase]` パラメータ化で褁E��ケースを�E挙すること�E�E
+- [X] T028 [P] [US7] `Packages/com.masachuang.solidtext3d/Tests/Editor/GlyphMeshBuilderTests.cs` に `Build_VerticalMode_YDecreases` チE��トを追加する
+
+### ユーザースト�Eリー 7 の実裁E
+
+- [X] T029 [US7] `Packages/com.masachuang.solidtext3d/Runtime/LayoutEngine.cs` に `ApplyVerticalLayout(List<GlyphContour> glyphs, MeshGenerationParams p)` を実裁E��めE 吁E��字を上から下！E は減少方向）に並べ、`MaxHeight` を趁E��たら次の列！E は左方向）へ折り返す、E*`MaxHeight` ぁE0 また�E未設定�E場合�E自動折り返しを行わず、改行コード！E\n`�E��Eみで列�E刁E��替えを制御する�E�ER-014�E�、E* 吁E�E冁E�E斁E���E `VerticalColumnWidth`�E�E の場合�E `FontSize ÁE1.1f`�E�を基準に水平中央揁E��とする。`RotateAsciiInVertical` ぁEtrue の場合�E ASCII 英数字グリフ�E回転フラグを設定する。褁E��行（改行コード）�E次列への折り返しとして処琁E��る！ER-010、FR-011、FR-011b、FR-011c、FR-014、research.md § R-006 参�E�E�E
+- [X] T030 [US7] `Packages/com.masachuang.solidtext3d/Runtime/GlyphMeshBuilder.cs` を修正する: `Build()` / `BuildPerCharacter()` 冁E�� `MeshGenerationParams.WritingMode` を参照し、`Vertical` の場合�E `LayoutEngine.ApplyVerticalLayout()` を呼び出すよぁE�E岐を追加する
+- [X] T031 [US7] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` に `_writingMode (WritingMode)` フィールドと `WritingMode` プロパティ、`_verticalColumnWidth (float)` フィールドと `VerticalColumnWidth` プロパティ、`_rotateAsciiInVertical (bool)` フィールドと `RotateAsciiInVertical` プロパティを追加する。�Eロパティ setter で `_isDirty = true` を設定する。新規追加するすべての `public` プロパティ�E�EWritingMode`, `VerticalColumnWidth`, `RotateAsciiInVertical`�E�に XML ドキュメントコメント！E<summary>`, `<param>`, `<returns>`�E�を付与する（�E況EVII�E�E
+- [X] T032 [US7] `Packages/com.masachuang.solidtext3d/Editor/SolidText3DInspector.cs` に `WritingMode` ドロチE�Eダウン、`VerticalColumnWidth` 数値フィールド、`RotateAsciiInVertical` トグルを手動描画で追加する�E�ER-010、FR-011b、FR-011c 参�E�E�E
+
+**チェチE��ポインチE*: ユーザースト�Eリー 7 完亁E E縦書きレイアウト、�E折り返し、ASCII 回転オプション、アンカーとの絁E��合わせを単独で検証可能、E
+
+---
+
+## Final Phase: ポリチE��ュ・横断皁E��忁E��E
+
+**目皁E*: バ�Eジョン更新、CHANGELOG 記載、パチE��ージ最終整備、E
+
+- [X] T033 [P] `Packages/com.masachuang.solidtext3d/package.json` の `"version"` めE`"1.0.0"` から `"2.0.0"` に更新する�E�破壊的変更: `string Font` 削除、contracts/SolidText3DComponent-API.md 参�E�E�E
+- [X] T034 [P] `Packages/com.masachuang.solidtext3d/CHANGELOG.md` に v2.0.0 エントリを追記すめE 破壊的変更�E�EFont (string)` 削除・`FontAsset (Object)` 追加�E�、追加機�E�E�アンカー・縦書き�EPer-Character・自勁E.bytes 変換・チE��ウンス・パフォーマンス改喁E��を記載する！Eontracts/SolidText3DComponent-API.md § CHANGELOG エントリ 参�E�E�E
+- [X] T035 [P] `Packages/com.masachuang.solidtext3d/Documentation~/BREAKING_CHANGES.md` を新規作�Eし、法�E IV 例外正当化記録を記載すめE `[SerializeField] string _font` ↁE`UnityEngine.Object _fontAsset` は型が根本皁E��異なるためE`[Obsolete]` による段階移行が技術的に困難である琁E��を詳述するとともに、spec Clarification にて開発老E��破壊的変更を�E示承認した旨を記録する、E*こ�Eタスクは Final Phase の忁E��実施事頁E��あり、完亁E��ェチE��ポイントとして扱ぁE*�E�EPM 慣侁E ドキュメント�E `Documentation~/` 配下に配置  E憲況EI 準拠�E�！Elan.md § Constitution Check 参�E�E�E
+
+---
+
+## 依存関係グラフ（ユーザースト�Eリー間！E
 
 ```text
 Phase 2 (基盤: T001-T004)
-│
-├──► Phase 3: US1 フォント Inspector (T005-T007) ← MVP 候補
-│        │
-│        └──► Phase 4: US2 .bytes 自動変換 (T008-T009)
-│
-├──► Phase 5: US3 アンカー指定 (T010-T015)
-│        │
-│        ├──► Phase 6: US4 入力デバウンス (T016, T036, T017)
-│        │
-│        ├──► Phase 7: US5 パフォーマンス (T018, T037, T019)
-│        │
-│        ├──► Phase 8: US6 Per-Character (T020-T026)
-│        │
-│        └──► Phase 9: US7 縦書き (T027-T032)
-│
-└──► Final Phase: ポリッシュ (T033-T034) ← 全フェーズ完了後
+━E
+├──► Phase 3: US1 フォンチEInspector (T005-T007) ↁEMVP 候裁E
+━E       ━E
+━E       └──► Phase 4: US2 .bytes 自動変換 (T008-T009)
+━E
+├──► Phase 5: US3 アンカー持E��E(T010-T015)
+━E       ━E
+━E       ├──► Phase 6: US4 入力デバウンス (T016, T036, T017)
+━E       ━E
+━E       ├──► Phase 7: US5 パフォーマンス (T018, T037, T019)
+━E       ━E
+━E       ├──► Phase 8: US6 Per-Character (T020-T026)
+━E       ━E
+━E       └──► Phase 9: US7 縦書ぁE(T027-T032)
+━E
+└──► Final Phase: ポリチE��ュ (T033-T034) ↁE全フェーズ完亁E��E
 ```
 
-**独立実行可能なフェーズ**: Phase 3 (US1) と Phase 5 (US3) は Phase 2 完了後に並列着手可能。
-Phase 4・5・6・7 (US4-US7) はそれぞれ Phase 5 (US3) の完了を前提とする。
+**独立実行可能なフェーズ**: Phase 3 (US1) と Phase 5 (US3) は Phase 2 完亁E��に並列着手可能、E
+Phase 4・5・6・7 (US4-US7) はそれぞれ Phase 5 (US3) の完亁E��前提とする、E
 
 ---
 
-## 並列実行例（各ユーザーストーリー内）
+## 並列実行例（各ユーザースト�Eリー冁E��E
 
-### Phase 2（基盤）内の並列実行
+### Phase 2�E�基盤�E��Eの並列実衁E
 
 ```text
-T001 (TextAnchorEnums.cs 新規作成)
-    ↓
-T002 (MeshGenerationParams.cs 更新) ┐ 並列実行可
-T003 (GlyphContour.cs 更新)         ┘
-    ↓（両方完了後）
+T001 (TextAnchorEnums.cs 新規作�E)
+    ↁE
+T002 (MeshGenerationParams.cs 更新) ━E並列実行可
+T003 (GlyphContour.cs 更新)         ━E
+    ↓（両方完亁E��！E
 T004 (GlyphMeshBuilderTests.cs 修正)
 ```
 
-### Phase 5（US3）内の並列実行
+### Phase 5�E�ES3�E��Eの並列実衁E
 
 ```text
-T010 (LayoutEngineTests.cs 新規) ┐ 並列実行可
-T011 (GlyphMeshBuilderTests 追記) ┘
-    ↓（テスト作成後）
-T012 (LayoutEngine.cs 新規作成)
-    ↓
+T010 (LayoutEngineTests.cs 新要E ━E並列実行可
+T011 (GlyphMeshBuilderTests 追訁E ━E
+    ↓（テスト作�E後！E
+T012 (LayoutEngine.cs 新規作�E)
+    ↁE
 T013 (GlyphMeshBuilder.cs 修正)
-    ↓
-T014 (SolidText3DComponent アンカーフィールド追加) ┐ 並列実行可
-T015 (SolidText3DInspector アンカー UI 追加)       ┘
+    ↁE
+T014 (SolidText3DComponent アンカーフィールド追加) ━E並列実行可
+T015 (SolidText3DInspector アンカー UI 追加)       ━E
 ```
 
-### Phase 8（US6）内の並列実行
+### Phase 8�E�ES6�E��Eの並列実衁E
 
 ```text
-T020 (CharacterObjectPoolTests 新規) ┐
-T021 (GlyphMeshBuilderTests 追記)    ├ 並列実行可
-T022 (SolidText3DComponentTests 追記) ┘
-    ↓（テスト作成後）
+T020 (CharacterObjectPoolTests 新要E ━E
+T021 (GlyphMeshBuilderTests 追訁E    ━E並列実行可
+T022 (SolidText3DComponentTests 追訁E ━E
+    ↓（テスト作�E後！E
 T023 (GlyphMeshBuilder.BuildPerCharacter 追加)
-    ↓
-T024 (CharacterObjectPool.cs 新規作成) ┐ 並列実行可
-T025 (SolidText3DComponent ObjectMode追加) ┘
-    ↓
+    ↁE
+T024 (CharacterObjectPool.cs 新規作�E) ━E並列実行可
+T025 (SolidText3DComponent ObjectMode追加) ━E
+    ↁE
 T026 (SolidText3DInspector ObjectMode UI 追加)
 ```
 
 ---
 
-## 実装戦略
+## 実裁E��略
 
-### MVP スコープ（推奨最初のデリバリー）
+### MVP スコープ（推奨最初�EチE��バリー�E�E
 
-**Phase 2 + Phase 3（US1）** のみで MVP として成立する:
+**Phase 2 + Phase 3�E�ES1�E�E* のみで MVP として成立すめE
 
-1. `TextAnchorEnums.cs` の定義（T001）
-2. `MeshGenerationParams` の破壊的変更対応（T002-T004）
-3. `SolidText3DComponent` の Font フィールド変更（T005-T006）
-4. `SolidText3DInspector` の Object フィールド追加（T007）
+1. `TextAnchorEnums.cs` の定義�E�E001�E�E
+2. `MeshGenerationParams` の破壊的変更対応！E002-T004�E�E
+3. `SolidText3DComponent` の Font フィールド変更�E�E005-T006�E�E
+4. `SolidText3DInspector` の Object フィールド追加�E�E007�E�E
 
-これだけで「文字列型フォント名 → Object フィールドへの移行」という最大の UX 課題が解消される。
+これだけで「文字�E型フォント名 ↁEObject フィールドへの移行」とぁE��最大の UX 課題が解消される、E
 
-### インクリメンタルデリバリー順序
+### インクリメンタルチE��バリー頁E��E
 
-| リリース候補 | 含まれるフェーズ | 提供価値 |
+| リリース候裁E| 含まれるフェーズ | 提供価値 |
 | ----------- | --------------- | ------- |
-| v2.0.0-alpha.1 | Phase 2 + 3 | フォント Inspector アタッチ（破壊的変更） |
+| v2.0.0-alpha.1 | Phase 2 + 3 | フォンチEInspector アタチE���E�破壊的変更�E�E|
 | v2.0.0-alpha.2 | + Phase 4 | .bytes 自動変換 |
-| v2.0.0-beta.1 | + Phase 5 + 6 | アンカー指定 + デバウンス |
+| v2.0.0-beta.1 | + Phase 5 + 6 | アンカー持E��E+ チE��ウンス |
 | v2.0.0-beta.2 | + Phase 7 + 8 | パフォーマンス + Per-Character |
-| v2.0.0 | + Phase 9 + Final | 縦書き + CHANGELOG + バージョン更新 |
+| v2.0.0 | + Phase 9 + Final | 縦書ぁE+ CHANGELOG + バ�Eジョン更新 |
 
 ---
 
 ## フォーマット検証
 
-全タスクが以下の形式に準拠していることを確認:
+全タスクが以下�E形式に準拠してぁE��ことを確誁E
 
-- ✅ すべてのタスクが `- [ ]` チェックボックスで始まる
-- ✅ 全タスクに連番 ID がある（T001～T037、旧補足タスク T016b → T036・T018b → T037 に改番済み）
-- ✅ 並列実行可能タスクには `[P]` マーカーがある
-- ✅ ユーザーストーリーフェーズのタスクには `[US1]`〜`[US7]` ラベルがある
-- ✅ 全タスクに正確なファイルパスが含まれる
-- ✅ セットアップ・基盤フェーズのタスクにはストーリーラベルがない
-- ✅ 最終フェーズのタスクにはストーリーラベルがない
+- ✁EすべてのタスクぁE`- [ ]` チェチE��ボックスで始まめE
+- ✁E全タスクに連番 ID がある！E001�E�T037、旧補足タスク T016b ↁET036・T018b ↁET037 に改番済み�E�E
+- ✁E並列実行可能タスクには `[P]` マ�EカーがあめE
+- ✁Eユーザースト�Eリーフェーズのタスクには `[US1]`〜`[US7]` ラベルがあめE
+- ✁E全タスクに正確なファイルパスが含まれる
+- ✁EセチE��アチE�E・基盤フェーズのタスクにはスト�EリーラベルがなぁE
+- ✁E最終フェーズのタスクにはスト�EリーラベルがなぁE

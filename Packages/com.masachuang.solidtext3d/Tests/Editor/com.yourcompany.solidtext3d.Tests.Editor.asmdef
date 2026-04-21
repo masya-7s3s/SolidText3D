@@ -2,7 +2,8 @@
     "name": "com.masachuang.solidtext3d.Tests.Editor",
     "rootNamespace": "MasaChuang.SolidText3D.Tests.Editor",
     "references": [
-        "com.masachuang.solidtext3d.Runtime"
+        "com.masachuang.solidtext3d.Runtime",
+        "com.masachuang.solidtext3d.Editor"
     ],
     "includePlatforms": [
         "Editor"

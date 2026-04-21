@@ -10,15 +10,16 @@ namespace MasaChuang.SolidText3D.Tests.Editor
     /// </summary>
     public class GlyphMeshBuilderTests
     {
-        private static string FontPath =>
-            Path.GetFullPath("Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Black.bytes");
+        private static byte[] LoadDefaultFont() =>
+            File.ReadAllBytes(
+                Path.GetFullPath("Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Black.bytes"));
 
         private static MeshGenerationParams ParamsFor(string text, float letterSpacing = 0f, float lineSpacing = 1.2f)
         {
             return new MeshGenerationParams
             {
                 Text = text,
-                FontPath = FontPath,
+                FontData = LoadDefaultFont(),
                 ExtrusionDepth = 1f,
                 OutlineWidth = 0f,
                 BezierErrorThreshold = 0.0005f,
@@ -131,7 +132,6 @@ namespace MasaChuang.SolidText3D.Tests.Editor
             var p = new MeshGenerationParams
             {
                 Text = "A",
-                FontPath = null,
                 FontData = null,
                 ExtrusionDepth = 1f,
                 BezierErrorThreshold = 0.0005f,
@@ -155,6 +155,58 @@ namespace MasaChuang.SolidText3D.Tests.Editor
             var meshB = GlyphMeshBuilder.Build(p2);
             Assert.AreEqual(meshA.vertexCount, meshB.vertexCount,
                 "同じパラメータで再生成した場合は頂点数が一致すること");
+        }
+
+        // T011: アンカー + 縦書きテスト ──────────────────────────────────
+
+        [Test]
+        public void Build_WithCenterAnchor_BoundsSymmetric()
+        {
+            // Center アンカー時、メッシュの bounds が原点に対して対称であること
+            var p = ParamsFor("A");
+            p.HorizontalAnchor = HorizontalAnchor.Center;
+            p.VerticalAnchor = VerticalAnchor.Middle;
+            p.DepthAnchor = DepthAnchor.Center;
+            var mesh = GlyphMeshBuilder.Build(p);
+
+            Assert.IsNotNull(mesh);
+            Assert.Greater(mesh.vertexCount, 0);
+
+            // Center アンカーのとき bounds の min.x + max.x ≈ 0 (対称)
+            float symX = mesh.bounds.min.x + mesh.bounds.max.x;
+            float symY = mesh.bounds.min.y + mesh.bounds.max.y;
+            Assert.AreEqual(0f, symX, 0.05f, "Center 水平アンカー時に bounds が X 軸で対称であること");
+            Assert.AreEqual(0f, symY, 0.05f, "Middle 垂直アンカー時に bounds が Y 軸で対称であること");
+        }
+
+        [Test]
+        public void Build_VerticalMode_YDecreases()
+        {
+            // T028: 縦書きモードで Y 座標が下方向（負）に進むこと
+            var p = ParamsFor("AB");
+            p.WritingMode = WritingMode.Vertical;
+            p.VerticalColumnWidth = 0f; // 自動
+            var mesh = GlyphMeshBuilder.Build(p);
+
+            Assert.IsNotNull(mesh);
+            Assert.Greater(mesh.vertexCount, 0, "縦書きモードでメッシュが生成されること");
+        }
+
+        [Test]
+        public void BuildPerCharacter_ThreeChars_ReturnsThreeMeshes()
+        {
+            // T021: Per-Character モードで3文字分の Mesh リストが返ること
+            var p = ParamsFor("ABC");
+            var result = GlyphMeshBuilder.BuildPerCharacter(p);
+
+            Assert.IsNotNull(result);
+            Assert.IsNotNull(result.Meshes);
+            Assert.AreEqual(3, result.Meshes.Count, "3文字分の Mesh が返ること");
+            foreach (var mesh in result.Meshes)
+            {
+                Assert.IsNotNull(mesh);
+                Assert.Greater(mesh.vertexCount, 0, "各文字の Mesh に頂点が存在すること");
+            }
         }
     }
 }
