@@ -393,6 +393,8 @@ namespace MasaChuang.SolidText3D
             hash ^= _objectMode.GetHashCode();
             hash ^= _extrusionDepth.GetHashCode();
             hash ^= _fontSize.GetHashCode();
+            hash ^= _letterSpacing.GetHashCode();
+            hash ^= _lineSpacing.GetHashCode();
             return hash;
         }
     }
