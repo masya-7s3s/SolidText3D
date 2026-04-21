@@ -87,19 +87,13 @@ namespace MasaChuang.SolidText3D.Tests.Editor
             string outputPath = Path.Combine(_outputDir, "output.bytes");
 
             // Act + Assert: 例外がスローされないこと
-            // LogError が内部で発生するが、テストフレームワークへの影響を避けるため
-            // ignoreFailingMessages で抑制し、出力ファイルが生成されないことで動作を確認する
-            LogAssert.ignoreFailingMessages = true;
-            try
-            {
-                Assert.DoesNotThrow(() =>
-                    FontAssetPostprocessor.ConvertFontToBytes(nonExistentPath, outputPath),
-                    "I/O エラー時に例外がスローされないこと");
-            }
-            finally
-            {
-                LogAssert.ignoreFailingMessages = false;
-            }
+            // LogError が発生することを事前に宣言（Unity Test Framework に期待ログとして登録）
+            // "SolidText3D" は必ずメッセージ先頭行に含まれるため部分マッチで確実に捕捉できる
+            LogAssert.Expect(LogType.Error, new System.Text.RegularExpressions.Regex("SolidText3D"));
+
+            Assert.DoesNotThrow(() =>
+                FontAssetPostprocessor.ConvertFontToBytes(nonExistentPath, outputPath),
+                "I/O エラー時に例外がスローされないこと");
 
             // 出力ファイルが生成されていないこと（エラー時は何も書き出さない）
             Assert.IsFalse(File.Exists(outputPath), "I/O エラー時に出力ファイルが生成されないこと");
