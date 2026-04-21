@@ -87,7 +87,7 @@ namespace MasaChuang.SolidText3D.Tests.Editor
             string outputPath = Path.Combine(_outputDir, "output.bytes");
 
             // Act + Assert: 例外がスローされず、エラーログが出力されること
-            LogAssert.Expect(LogType.Error, new System.Text.RegularExpressions.Regex(".*"));
+            LogAssert.Expect(LogType.Error, new System.Text.RegularExpressions.Regex(@"[\s\S]*"));
             Assert.DoesNotThrow(() =>
                 FontAssetPostprocessor.ConvertFontToBytes(nonExistentPath, outputPath));
         }
