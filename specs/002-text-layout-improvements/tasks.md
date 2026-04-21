@@ -47,7 +47,7 @@
 
 ### ユーザーストーリー 1 のテスト
 
-- [ ] T005 [P] [US1] `Packages/com.masachuang.solidtext3d/Tests/Editor/SolidText3DComponentTests.cs` に以下 2 テストを追加する: `FontAsset_Missing_MaintainsPreviousMesh`（FR-016: フォント Missing 時に直前メッシュ維持・LogWarning 1 回のみ）・`Text_Empty_ClearsMesh`（FR-015: テキストが空文字列のときメッシュがクリアされ、警告なし・PerCharacter モードでは全子 GameObject が非アクティブ化されること）
+- [ ] T005 [P] [US1] `Packages/com.masachuang.solidtext3d/Tests/Editor/SolidText3DComponentTests.cs` に以下 3 テストを追加する: `FontAsset_Missing_MaintainsPreviousMesh`（FR-016: フォント Missing 時に直前メッシュ維持・LogWarning 1 回のみ）・`Text_Empty_ClearsMesh`（FR-015: テキストが空文字列のときメッシュがクリアされ、警告なし・PerCharacter モードでは全子 GameObject が非アクティブ化されること）・`FontAsset_Changed_AtRuntime_Regenerates`（US1 Scenario 3: フォントアセットが実行時に変更された場合、次フレームの更新で新しいフォントで再描画されること）
 
 ### ユーザーストーリー 1 の実装
 
@@ -106,11 +106,11 @@
 
 ### ユーザーストーリー 4 のテスト
 
-- [ ] T016a [P] [US4] `Packages/com.masachuang.solidtext3d/Tests/Editor/SolidText3DInspectorTests.cs` を新規作成または更新し、`SuppressAutoRegenerate_WhileFocused_BlocksRegeneration` テストを実装する: `SuppressAutoRegenerate` フラグが `true` の間は `RegenerateMesh()` が呼び出されず、フォーカスアウト後に呼び出されることを検証する（FR-006、SC-001 の基礎条件確認）
+- [ ] T016 [P] [US4] `Packages/com.masachuang.solidtext3d/Tests/Editor/SolidText3DInspectorTests.cs` を新規作成または更新し、`SuppressAutoRegenerate_WhileFocused_BlocksRegeneration` テストを実装する: `SuppressAutoRegenerate` フラグが `true` の間は `RegenerateMesh()` が呼び出されず、フォーカスアウト後に呼び出されることを検証する（FR-006、SC-001 の基礎条件確認）
 
 ### ユーザーストーリー 4 の実装
 
-- [ ] T016 [US4] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` に `_suppressAutoRegenerate (bool)` フィールドと `SuppressAutoRegenerate` プロパティ（get/set）を追加し、`LateUpdate()` 内で `_suppressAutoRegenerate` が true の場合は `RegenerateMesh()` を呼び出さないよう制御を追加する。`SuppressAutoRegenerate` プロパティに XML ドキュメントコメント（`<summary>`）を付与する（憲法 VII）（FR-006、research.md § R-003 参照）
+- [ ] T016b [US4] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` に `_suppressAutoRegenerate (bool)` フィールドと `SuppressAutoRegenerate` プロパティ（get/set）を追加し、`LateUpdate()` 内で `_suppressAutoRegenerate` が true の場合は `RegenerateMesh()` を呼び出さないよう制御を追加する。`SuppressAutoRegenerate` プロパティに XML ドキュメントコメント（`<summary>`）を付与する（憲法 VII）（FR-006、research.md § R-003 参照）
 - [ ] T017 [US4] `Packages/com.masachuang.solidtext3d/Editor/SolidText3DInspector.cs` のテキストフィールドに `EditorGUI.BeginChangeCheck()` / `EndChangeCheck()` を用いて入力変化を検知する: 入力検知時に `_target.SuppressAutoRegenerate = true` を設定する。`EditorApplication.update` はフォーカス状態のポーリング（`EditorGUIUtility.editingTextField` の監視）にのみ使用し、タイマーカウントダウンは実装しない。フォーカスアウトまたは Enter キー確定時のみ `RegenerateMesh()` を呼び出して `SuppressAutoRegenerate = false` に戻す（FR-006: 時間経過による自動確定なし、research.md § R-003 参照）
 
 **チェックポイント**: ユーザーストーリー 4 完了 — 入力デバウンスによるレイテンシ改善を単独で確認可能（SC-001: 50ms 未満の入力遅延）。
@@ -130,7 +130,7 @@
 
 ### ユーザーストーリー 5 の実装
 
-- [ ] T019 [US5] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` に `_lastParamHash (int)` フィールドを追加し、`RegenerateMesh()` の冒頭で現在パラメータのハッシュと `_lastParamHash` を比較して同一の場合は早期リターンするロジックを実装する。**GC 制約**: ハッシュ計算は `Text.GetHashCode() ^ 各 enum.GetHashCode()` の XOR 結合のみを使用し、`new`・ LINQ・文字列連結・`ToString()` 等の GC アロケーションを発生する処理を `LateUpdate()` 内で一切使用しないこと（憲法 V）（FR-007、data-model.md § `_lastParamHash` 属性表参照、research.md § R-007 参照）
+- [ ] T019 [US5] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` に `_lastParamHash (int)` フィールドを追加し、`RegenerateMesh()` の冒頭で現在パラメータのハッシュと `_lastParamHash` を比較して同一の場合は早期リターンするロジックを実装する。**GC 制約**: ハッシュ計算は `Text.GetHashCode() ^ 各 enum.GetHashCode()` の XOR 結合のみを使用し、`new`・ LINQ・文字列連結・`ToString()` 等の GC アロケーションを発生する処理を `LateUpdate()` 内で一切使用しないこと（憲法 V）。**例外**: 空文字列（`""`）は FR-015 の規定により常にダーティ扱いとし、ハッシュ一致でも早期リターンしないこと（FR-007 の「空文字列は常にダーティとして扱う」規定を必ず守ること）（FR-007、data-model.md § `_lastParamHash` 属性表参照、research.md § R-007 参照）
 
 **チェックポイント**: ユーザーストーリー 5 完了 — テキスト未変更時の GC Alloc ゼロおよびフレームレート維持を単独で検証可能。
 
@@ -146,7 +146,7 @@
 
 - [ ] T020 [P] [US6] `Packages/com.masachuang.solidtext3d/Tests/Editor/CharacterObjectPoolTests.cs` を新規作成し、以下 3 テストを実装する: `Sync_MoreChars_CreatesNewChildren`・`Sync_FewerChars_DeactivatesExcess`・`Sync_SameCount_ReusesExistingChildren`
 - [ ] T021 [P] [US6] `Packages/com.masachuang.solidtext3d/Tests/Editor/GlyphMeshBuilderTests.cs` に `BuildPerCharacter_ThreeChars_ReturnsThreeMeshes` テストを追加する
-- [ ] T022 [P] [US6] `Packages/com.masachuang.solidtext3d/Tests/Editor/SolidText3DComponentTests.cs` に `ObjectMode_PerCharacter_CreatesChildObjects` テストを追加する
+- [ ] T022 [P] [US6] `Packages/com.masachuang.solidtext3d/Tests/Editor/SolidText3DComponentTests.cs` に以下 2 テストを追加する: `ObjectMode_PerCharacter_CreatesChildObjects`・`PerCharacter_IndependentMaterial_CanBeSet`（SC-006: Per-Character モードで各子 GameObject に独立した `MeshRenderer.material` を設定できることを検証— US6 Scenario 4 対応）
 
 ### ユーザーストーリー 6 の実装
 
@@ -167,7 +167,7 @@
 
 ### ユーザーストーリー 7 のテスト
 
-- [ ] T027 [P] [US7] `Packages/com.masachuang.solidtext3d/Tests/Editor/LayoutEngineTests.cs` に以下テストを追加する: `ApplyVerticalLayout_SingleChar_YIsNegative`（縦書き時に Y 座標が負方向に進むこと）
+- [ ] T027 [P] [US7] `Packages/com.masachuang.solidtext3d/Tests/Editor/LayoutEngineTests.cs` に以下 2 テストを追加する: `ApplyVerticalLayout_SingleChar_YIsNegative`（縦書き時に Y 座標が負方向に進むこと）・`ApplyVerticalLayout_MultipleJapaneseChars_PositionsDecreasing`（SC-007: 日本語複数文字で各 Y 座標が前の文字より小さくなり、列間隔・最大高さによる折り返しも正しく動作することを検証— `[TestCase]` パラメータ化で複数ケースを列挙すること）
 - [ ] T028 [P] [US7] `Packages/com.masachuang.solidtext3d/Tests/Editor/GlyphMeshBuilderTests.cs` に `Build_VerticalMode_YDecreases` テストを追加する
 
 ### ユーザーストーリー 7 の実装
@@ -186,7 +186,8 @@
 **目的**: バージョン更新、CHANGELOG 記載、パッケージ最終整備。
 
 - [ ] T033 [P] `Packages/com.masachuang.solidtext3d/package.json` の `"version"` を `"1.0.0"` から `"2.0.0"` に更新する（破壊的変更: `string Font` 削除、contracts/SolidText3DComponent-API.md 参照）
-- [ ] T034 [P] `Packages/com.masachuang.solidtext3d/CHANGELOG.md` に v2.0.0 エントリを追記する: 破壊的変更（`Font (string)` 削除・`FontAsset (Object)` 追加）、追加機能（アンカー・縦書き・Per-Character・自動 .bytes 変換・デバウンス・パフォーマンス改善）を記載する（contracts/SolidText3DComponent-API.md § CHANGELOG エントリ 参照）- [ ] T035 [P] `Packages/com.masachuang.solidtext3d/CHANGELOG.md` または `docs/BREAKING_CHANGES.md` に憲法 IV 例外正当化記録を追加する: `[SerializeField] string _font` → `UnityEngine.Object _fontAsset` は型が根本的に異なるため `[Obsolete]` による段階移行が技術的に困難であり、かつ spec Clarification にて開発者が破壊的変更を明示承認したため即時破壊的変更とする（憲法 IV 正当化記録 — Complexity Tracking）（plan.md § Constitution Check 参照）
+- [ ] T034 [P] `Packages/com.masachuang.solidtext3d/CHANGELOG.md` に v2.0.0 エントリを追記する: 破壊的変更（`Font (string)` 削除・`FontAsset (Object)` 追加）、追加機能（アンカー・縦書き・Per-Character・自動 .bytes 変換・デバウンス・パフォーマンス改善）を記載する（contracts/SolidText3DComponent-API.md § CHANGELOG エントリ 参照）
+- [ ] T035 [P] `docs/BREAKING_CHANGES.md` を新規作成し、法典 IV 例外正当化記録を記載する: `[SerializeField] string _font` → `UnityEngine.Object _fontAsset` は型が根本的に異なるため `[Obsolete]` による段階移行が技術的に困難である理由を詳述するとともに、spec Clarification にて開発者が破壊的変更を明示承認した旨を記録する。**このタスクは Final Phase の必須実施事項であり、完了チェックポイントとして扱う**（法典 IV 正当化記録 — Complexity Tracking）（plan.md § Constitution Check 参照）
 
 ---
 
@@ -201,7 +202,7 @@ Phase 2 (基盤: T001-T004)
 │
 ├──► Phase 5: US3 アンカー指定 (T010-T015)
 │        │
-│        ├──► Phase 6: US4 入力デバウンス (T016a, T016-T017)
+│        ├──► Phase 6: US4 入力デバウンス (T016, T016b-T017)
 │        │
 │        ├──► Phase 7: US5 パフォーマンス (T018-T018b, T019)
 │        │
@@ -291,7 +292,7 @@ T026 (SolidText3DInspector ObjectMode UI 追加)
 全タスクが以下の形式に準拠していることを確認:
 
 - ✅ すべてのタスクが `- [ ]` チェックボックスで始まる
-- ✅ 全タスクに連番 ID がある（T001～T034、補足タスク T016a・T018b を含む）
+- ✅ 全タスクに連番 ID がある（T001～T035、補足タスク T016b・T018b を含む）
 - ✅ 並列実行可能タスクには `[P]` マーカーがある
 - ✅ ユーザーストーリーフェーズのタスクには `[US1]`〜`[US7]` ラベルがある
 - ✅ 全タスクに正確なファイルパスが含まれる

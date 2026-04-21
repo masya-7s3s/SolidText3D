@@ -34,7 +34,7 @@ SolidText3D パッケージに 7 つの改善を加える：
 - [x] **I. UPM 構造**: 既存 `Editor/`・`Runtime/`・`Tests/` 構造を維持。新ファイルはすべて各ディレクトリに配置する設計。
 - [x] **II. Editor/Runtime 分離**: `FontAssetPostprocessor` と Inspector デバウンスロジックは `Editor/` 配下のみ。ランタイムは `FontData (byte[])` 経由でフォントデータを受け取り、`UnityEditor` 名前空間不使用。
 - [x] **III. テストファースト**: spec.md に 7 ユーザーストーリーそれぞれの Acceptance Scenarios を記載済み。Edit Mode テスト（アンカー計算・縦書きレイアウト・プール管理）および Play Mode テスト（入力デバウンス）の計画含む。
-- [x] **IV. 後方互換性**: `public string Font` プロパティの削除は spec の Clarification で「即時破壊的変更」として明示的に承認済み。→ **MAJOR バンプ: 1.0.0 → 2.0.0** が必要。`[Obsolete]` ステップはユーザーの明示的指示により省略する。
+- [x] **IV. 後方互換性**: `public string Font` プロパティの削除は spec の Clarification で「即時破壊的変更」として明示的に承認済み。→ **MAJOR バンプ: 1.0.0 → 2.0.0** が必要。`[Obsolete]` ステップはユーザーの明示的指示により省略する。⚠️ **T035 は Final Phase の必須完了事項**: `docs/BREAKING_CHANGES.md` に `[Obsolete]` が技術的に不可能な理由と承認経緯を詳述すること。T035 未完了での Final Phase チェックポイント通過は不可。
 - [x] **V. パフォーマンス**: `LateUpdate()` 内では `_isDirty` チェックのみ（GC Alloc ゼロ）。テキスト不変時の早期リターン追加。Per-Character プールは Destroy ではなく SetActive(false) で再利用。
 - [x] **VI. Asset Store 準拠**: 新規サードパーティ依存なし。既存 SixLabors.Fonts・LibTessDotNet は `Third Party Notices.md` 記載済み。
 - [x] **VII. シンプルさ**: アンカー / 書字方向 / モードは enum フィールドで直接制御。不必要なストラテジーパターン・ファクトリー等の抽象化なし。

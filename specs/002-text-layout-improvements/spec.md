@@ -187,10 +187,9 @@
 
 ### Key Entities
 
-- **VerticalAnchor**: 垂直方向のアンカー設定を表す列挙値 (Upper / Middle / Lower)。
-- **HorizontalAnchor**: 水平方向のアンカー設定を表す列挙値 (Left / Center / Right)。
-- **DepthAnchor**: 奥行き方向のアンカー設定を表す列挙値 (Front / Center / Back)。
-- **TextAnchor**: 上記 3 つの列挙値を保持する構造体。インスペクタでは 3 軸が個別フィールドとして表示される。
+- **VerticalAnchor**: 垂直方向のアンカー設定を表す列挙値 (Upper / Middle / Lower)。インスペクタでは独立したドロップダウンフィールドとして表示される。
+- **HorizontalAnchor**: 水平方向のアンカー設定を表す列挙値 (Left / Center / Right)。インスペクタでは独立したドロップダウンフィールドとして表示される。
+- **DepthAnchor**: 奥行き方向のアンカー設定を表す列挙値 (Front / Center / Back)。インスペクタでは独立したドロップダウンフィールドとして表示される。
 - **WritingMode**: Horizontal（横書き）/ Vertical（縦書き）の列挙値。
 - **ObjectMode**: SingleObject（文字列全体を 1 メッシュ）/ PerCharacter（文字ごとに個別 GameObject）の列挙値。
 - **FontAssetReference**: インスペクタの `Object` フィールドでアタッチされた `.ttf`/`.otf` フォントファイルへの直接参照。エディタが透過的に `.bytes` 変換を行い、ユーザーには変換プロセスが見えない。
@@ -220,5 +219,5 @@
 - インスペクタ入力はフォーカス離脱または Enter 確定のみでメッシュ再生成する（時間経過による自動確定なし）。
 - パフォーマンス計測は標準的な文字数（最大 200 文字程度）を基準とする。
 - 既存の `SolidText3DComponent` の公開 API は、フォント参照方式の変更による旧フィールドの完全削除（即時破壊的変更）を除き、後方互換を保たない。ユーザーはコンパイルエラーにより新 API への移行が必要になる。
-- .bytes ファイルの自動生成先ディレクトリはエディタ設定で変更可能とする（デフォルト: `Assets/SolidText3DFonts/`）。
+- .bytes ファイルの自動生成先ディレクトリは `Assets/SolidText3DFonts/` に固定とする（将来対応: エディタ設定による変更可能化）。
 - .bytes ファイルの命名規則は `{assetGuid}.bytes` とし、元のフォントファイル名は包含しない。GUID による一意識別を優先する設計であり、`SolidText3DFonts/` フォルダをユーザーが直接参照することは想定しない（フォント参照は Inspector 経由のみ）。
