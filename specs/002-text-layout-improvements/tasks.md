@@ -51,7 +51,7 @@
 
 ### ユーザーストーリー 1 の実装
 
-- [ ] T006 [US1] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` を修正する: `[SerializeField] string _font` と `public string Font` プロパティを完全削除し、`_fontAsset (UnityEngine.Object)`・`_fontBytesCache (TextAsset, HideInInspector)`・`_fontMissingWarningIssued (bool)` を追加する。`FontAsset` プロパティ（get/set）を実装し、`RegenerateMesh()` 内にフォント未設定（FR-012: メッシュ生成スキップ）・Missing（FR-016: 直前メッシュ維持・LogWarning 1 回）の処理を追加する（data-model.md § SolidText3DComponent 参照）
+- [ ] T006 [US1] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` を修正する: `[SerializeField] string _font` と `public string Font` プロパティを完全削除し、`_fontAsset (UnityEngine.Object)`・`_fontBytesCache (TextAsset, HideInInspector)`・`_fontMissingWarningIssued (bool)` を追加する。`FontAsset` プロパティ（get/set）を実装し、`RegenerateMesh()` 内にフォント未設定（FR-012: メッシュ生成スキップ）・**空文字列（FR-015: メッシュクリア・PerCharacter 全子 GameObject 非アクティブ化・警告なし）**・Missing（FR-016: 直前メッシュ維持・LogWarning 1 回）の処理を追加する。新規追加する `public FontAsset` プロパティに XML ドキュメントコメント（`<summary>`, `<param>`, `<returns>`）を付与する（憲法 VII）（data-model.md § SolidText3DComponent 参照）
 - [ ] T007 [US1] `Packages/com.masachuang.solidtext3d/Editor/SolidText3DInspector.cs` を修正する: `DrawDefaultInspector()` を廃止して手動描画に切り替え、`EditorGUILayout.ObjectField("Font Asset", ..., typeof(UnityEngine.Object), false)` でフォントフィールドを追加し、フォント未アタッチ時に `EditorGUILayout.HelpBox()` で警告を表示する（research.md § R-001 参照）
 
 **チェックポイント**: ユーザーストーリー 1 完了 — インスペクタ Object フィールドでのフォント指定と Missing 動作を単独で検証可能。
@@ -66,7 +66,7 @@
 
 ### ユーザーストーリー 2 のテスト
 
-- [ ] T008 [P] [US2] `Packages/com.masachuang.solidtext3d/Tests/Editor/FontAssetPostprocessorTests.cs` を新規作成し、以下 3 テストを実装する: `OnPostprocess_TtfFile_CreatesBytesFile`（.ttf インポートで .bytes 生成）・`OnPostprocess_ExistingBytesFile_Skips`（既存 .bytes 再変換スキップ）・`OnPostprocess_IoError_LogsError`（I/O エラー時の LogError）
+- [ ] T008 [P] [US2] `Packages/com.masachuang.solidtext3d/Tests/Editor/FontAssetPostprocessorTests.cs` を新規作成し、以下 3 テストを実装する: `OnPostprocess_TtfFile_CreatesBytesFile`（.ttf インポートで .bytes 生成 — **SC-004 検証**: テストコメントにドラッグ＆ドロップ 1 操作でセットアップが完了するフローであることを明記すること）・`OnPostprocess_ExistingBytesFile_Skips`（既存 .bytes 再変換スキップ）・`OnPostprocess_IoError_LogsError`（I/O エラー時の LogError）
 
 ### ユーザーストーリー 2 の実装
 
@@ -89,9 +89,9 @@
 
 ### ユーザーストーリー 3 の実装
 
-- [ ] T012 [US3] `Packages/com.masachuang.solidtext3d/Runtime/LayoutEngine.cs` を新規作成する: `internal static class LayoutEngine` に `ApplyHorizontalLayout(List<GlyphContour> glyphs, MeshGenerationParams p)` と `CalculateAnchorOffset(Bounds meshBounds, MeshGenerationParams p)` を実装する。アンカーオフセット計算式（水平: Left=0, Center=-width/2, Right=-width; 垂直: Upper=-height, Middle=-height/2, Lower=0; 奥行き: Front=0, Center=-depth/2, Back=-depth）を適用する。既存 `GlyphMeshBuilder.ApplyLayout()` のロジックを移植し、`MaxWidth` による自動折り返しに対応する（research.md § R-005 参照）
+- [ ] T012 [US3] `Packages/com.masachuang.solidtext3d/Runtime/LayoutEngine.cs` を新規作成する: `internal static class LayoutEngine` に `ApplyHorizontalLayout(List<GlyphContour> glyphs, MeshGenerationParams p)` と `CalculateAnchorOffset(Bounds meshBounds, MeshGenerationParams p)` を実装する。アンカーオフセット計算式（水平: Left=0, Center=-width/2, Right=-width; 垂直: Upper=-height, Middle=-height/2, Lower=0; 奥行き: Front=0, Center=-depth/2, Back=-depth）を適用する。既存 `GlyphMeshBuilder.ApplyLayout()` のロジックを移植し、`MaxWidth` による自動折り返しに対応する。**FR-013 折り返し粒度の言語判定**: 各文字の Unicode コードポイントが `\u2E80`–`\u9FFF`（CJK統合漢字・ひらがな・カタカナ等）の範囲に含まれる場合は文字単位で折り返し、それ以外の範囲（ラテン文字・ASCII 等）はスペース・区切り文字を基準とした単語単位で折り返す（research.md § R-005 参照）
 - [ ] T013 [US3] `Packages/com.masachuang.solidtext3d/Runtime/GlyphMeshBuilder.cs` を修正する: `ApplyLayout()` プライベートメソッドを削除して `LayoutEngine.ApplyHorizontalLayout()` 呼び出しに置き換え、`GetFontBytes()` から `FontPath` 参照を削除する。`Build()` 内で `MeshExtruder.Build()` 後に `LayoutEngine.CalculateAnchorOffset()` を呼び出して全頂点にオフセットを加算する（data-model.md § データフロー概要 参照）
-- [ ] T014 [US3] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` を修正する: `_horizontalAnchor`・`_verticalAnchor`・`_depthAnchor` の 3 フィールドとそれぞれのプロパティ（`HorizontalAnchor`・`VerticalAnchor`・`DepthAnchor`）、`_maxWidth`・`_maxHeight` フィールドと `MaxWidth`・`MaxHeight` プロパティを追加する。プロパティ setter で `_isDirty = true` を設定する
+- [ ] T014 [US3] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` を修正する: `_horizontalAnchor`・`_verticalAnchor`・`_depthAnchor` の 3 フィールドとそれぞれのプロパティ（`HorizontalAnchor`・`VerticalAnchor`・`DepthAnchor`）、`_maxWidth`・`_maxHeight` フィールドと `MaxWidth`・`MaxHeight` プロパティを追加する。プロパティ setter で `_isDirty = true` を設定する。新規追加するすべての `public` プロパティに XML ドキュメントコメント（`<summary>`, `<param>`, `<returns>`）を付与する（憲法 VII）
 - [ ] T015 [US3] `Packages/com.masachuang.solidtext3d/Editor/SolidText3DInspector.cs` に `HorizontalAnchor`・`VerticalAnchor`・`DepthAnchor` の 3 つのドロップダウンフィールドと `MaxWidth`・`MaxHeight` の数値フィールドを手動描画で追加する（FR-004 参照）
 
 **チェックポイント**: ユーザーストーリー 3 完了 — 3 軸アンカー設定とメッシュ位置オフセットを単独で検証可能。
@@ -106,11 +106,11 @@
 
 ### ユーザーストーリー 4 のテスト
 
-- [ ] T015a [P] [US4] `Packages/com.masachuang.solidtext3d/Tests/Editor/SolidText3DInspectorTests.cs` を新規作成または更新し、`SuppressAutoRegenerate_WhileFocused_BlocksRegeneration` テストを実装する: `SuppressAutoRegenerate` フラグが `true` の間は `RegenerateMesh()` が呼び出されず、フォーカスアウト後に呼び出されることを検証する（FR-006、SC-001 の基礎条件確認）
+- [ ] T016a [P] [US4] `Packages/com.masachuang.solidtext3d/Tests/Editor/SolidText3DInspectorTests.cs` を新規作成または更新し、`SuppressAutoRegenerate_WhileFocused_BlocksRegeneration` テストを実装する: `SuppressAutoRegenerate` フラグが `true` の間は `RegenerateMesh()` が呼び出されず、フォーカスアウト後に呼び出されることを検証する（FR-006、SC-001 の基礎条件確認）
 
 ### ユーザーストーリー 4 の実装
 
-- [ ] T016 [US4] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` に `_suppressAutoRegenerate (bool)` フィールドと `SuppressAutoRegenerate` プロパティ（get/set）を追加し、`LateUpdate()` 内で `_suppressAutoRegenerate` が true の場合は `RegenerateMesh()` を呼び出さないよう制御を追加する（FR-006、research.md § R-003 参照）
+- [ ] T016 [US4] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` に `_suppressAutoRegenerate (bool)` フィールドと `SuppressAutoRegenerate` プロパティ（get/set）を追加し、`LateUpdate()` 内で `_suppressAutoRegenerate` が true の場合は `RegenerateMesh()` を呼び出さないよう制御を追加する。`SuppressAutoRegenerate` プロパティに XML ドキュメントコメント（`<summary>`）を付与する（憲法 VII）（FR-006、research.md § R-003 参照）
 - [ ] T017 [US4] `Packages/com.masachuang.solidtext3d/Editor/SolidText3DInspector.cs` のテキストフィールドに `EditorGUI.BeginChangeCheck()` / `EndChangeCheck()` を用いて入力変化を検知する: 入力検知時に `_target.SuppressAutoRegenerate = true` を設定する。`EditorApplication.update` はフォーカス状態のポーリング（`EditorGUIUtility.editingTextField` の監視）にのみ使用し、タイマーカウントダウンは実装しない。フォーカスアウトまたは Enter キー確定時のみ `RegenerateMesh()` を呼び出して `SuppressAutoRegenerate = false` に戻す（FR-006: 時間経過による自動確定なし、research.md § R-003 参照）
 
 **チェックポイント**: ユーザーストーリー 4 完了 — 入力デバウンスによるレイテンシ改善を単独で確認可能（SC-001: 50ms 未満の入力遅延）。
@@ -151,8 +151,8 @@
 ### ユーザーストーリー 6 の実装
 
 - [ ] T023 [US6] `Packages/com.masachuang.solidtext3d/Runtime/GlyphMeshBuilder.cs` に `BuildPerCharacter(MeshGenerationParams p)` メソッドを追加する: `IsVisible == true` のグリフのみを対象に、1 文字ずつ `GlyphContourBuilder` + `MeshExtruder` で個別 Mesh を生成して `List<Mesh>` として返す（data-model.md § BuildPerCharacter 設計 参照）
-- [ ] T024 [US6] `Packages/com.masachuang.solidtext3d/Runtime/CharacterObjectPool.cs` を新規作成する: `internal sealed class CharacterObjectPool` に `Sync(List<GlyphContour> visibleGlyphs, List<Mesh> perCharMeshes)` を実装する。文字数増加時のみ新規 GameObject を生成（`MeshFilter` + `MeshRenderer` を `AddComponent`）し、文字数減少時は余剰を `SetActive(false)` で非アクティブ化する。Destroy は行わない（FR-009b、research.md § R-004 参照）
-- [ ] T025 [US6] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` に `_objectMode (ObjectMode)` フィールドと `ObjectMode` プロパティを追加し、`CharacterObjectPool` インスタンスを保持する `_characterPool` フィールドを追加する。`ObjectMode` 変更時の切り替えロジック（PerCharacter → SingleObject 切り替え時に子 GameObject を全て非アクティブ化、SingleObject → PerCharacter 切り替え時にプールを初期化）を実装する（data-model.md § 状態遷移: ObjectMode 切り替え 参照）
+- [ ] T024 [US6] `Packages/com.masachuang.solidtext3d/Runtime/CharacterObjectPool.cs` を新規作成する: `internal sealed class CharacterObjectPool` に `Sync(List<GlyphContour> visibleGlyphs, List<Mesh> perCharMeshes)` を実装する。文字数増加時のみ新規 GameObject を生成（`MeshFilter` + `MeshRenderer` を `AddComponent`）し、文字数減少時は余剰を `SetActive(false)` で非アクティブ化する。**`visibleGlyphs` が空の場合（空文字列: FR-015）はプール内の全 GameObject を `SetActive(false)` にする。** Destroy は行わない（FR-009b、FR-015、research.md § R-004 参照）
+- [ ] T025 [US6] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` に `_objectMode (ObjectMode)` フィールドと `ObjectMode` プロパティを追加し、`CharacterObjectPool` インスタンスを保持する `_characterPool` フィールドを追加する。`ObjectMode` 変更時の切り替えロジック（PerCharacter → SingleObject 切り替え時に子 GameObject を全て非アクティブ化、SingleObject → PerCharacter 切り替え時にプールを初期化）を実装する。`ObjectMode` プロパティに XML ドキュメントコメント（`<summary>`）を付与する（憲法 VII）（data-model.md § 状態遷移: ObjectMode 切り替え 参照）
 - [ ] T026 [US6] `Packages/com.masachuang.solidtext3d/Editor/SolidText3DInspector.cs` に `ObjectMode` の選択ドロップダウンを手動描画で追加する（FR-008 参照）
 
 **チェックポイント**: ユーザーストーリー 6 完了 — Per-Character モードの子 GameObject 生成・プール管理・モード切り替えを単独で検証可能。
@@ -172,9 +172,9 @@
 
 ### ユーザーストーリー 7 の実装
 
-- [ ] T029 [US7] `Packages/com.masachuang.solidtext3d/Runtime/LayoutEngine.cs` に `ApplyVerticalLayout(List<GlyphContour> glyphs, MeshGenerationParams p)` を実装する: 各文字を上から下（Y は減少方向）に並べ、`MaxHeight` を超えたら次の列（X は左方向）へ折り返す。各列内の文字は `VerticalColumnWidth`（0 の場合は `FontSize × 1.1f`）を基準に水平中央揃えとする。`RotateAsciiInVertical` が true の場合は ASCII 英数字グリフの回転フラグを設定する。複数行（改行コード）は次列への折り返しとして処理する（FR-010、FR-011、FR-011b、FR-011c、research.md § R-006 参照）
+- [ ] T029 [US7] `Packages/com.masachuang.solidtext3d/Runtime/LayoutEngine.cs` に `ApplyVerticalLayout(List<GlyphContour> glyphs, MeshGenerationParams p)` を実装する: 各文字を上から下（Y は減少方向）に並べ、`MaxHeight` を超えたら次の列（X は左方向）へ折り返す。**`MaxHeight` が 0 または未設定の場合は自動折り返しを行わず、改行コード（`\n`）のみで列の切り替えを制御する（FR-014）。** 各列内の文字は `VerticalColumnWidth`（0 の場合は `FontSize × 1.1f`）を基準に水平中央揃えとする。`RotateAsciiInVertical` が true の場合は ASCII 英数字グリフの回転フラグを設定する。複数行（改行コード）は次列への折り返しとして処理する（FR-010、FR-011、FR-011b、FR-011c、FR-014、research.md § R-006 参照）
 - [ ] T030 [US7] `Packages/com.masachuang.solidtext3d/Runtime/GlyphMeshBuilder.cs` を修正する: `Build()` / `BuildPerCharacter()` 内で `MeshGenerationParams.WritingMode` を参照し、`Vertical` の場合は `LayoutEngine.ApplyVerticalLayout()` を呼び出すよう分岐を追加する
-- [ ] T031 [US7] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` に `_writingMode (WritingMode)` フィールドと `WritingMode` プロパティ、`_verticalColumnWidth (float)` フィールド、`_rotateAsciiInVertical (bool)` フィールドを追加する。プロパティ setter で `_isDirty = true` を設定する
+- [ ] T031 [US7] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` に `_writingMode (WritingMode)` フィールドと `WritingMode` プロパティ、`_verticalColumnWidth (float)` フィールドと `VerticalColumnWidth` プロパティ、`_rotateAsciiInVertical (bool)` フィールドと `RotateAsciiInVertical` プロパティを追加する。プロパティ setter で `_isDirty = true` を設定する。新規追加するすべての `public` プロパティ（`WritingMode`, `VerticalColumnWidth`, `RotateAsciiInVertical`）に XML ドキュメントコメント（`<summary>`, `<param>`, `<returns>`）を付与する（憲法 VII）
 - [ ] T032 [US7] `Packages/com.masachuang.solidtext3d/Editor/SolidText3DInspector.cs` に `WritingMode` ドロップダウン、`VerticalColumnWidth` 数値フィールド、`RotateAsciiInVertical` トグルを手動描画で追加する（FR-010、FR-011b、FR-011c 参照）
 
 **チェックポイント**: ユーザーストーリー 7 完了 — 縦書きレイアウト、列折り返し、ASCII 回転オプション、アンカーとの組み合わせを単独で検証可能。
@@ -201,7 +201,7 @@ Phase 2 (基盤: T001-T004)
 │
 ├──► Phase 5: US3 アンカー指定 (T010-T015)
 │        │
-│        ├──► Phase 6: US4 入力デバウンス (T015a, T016-T017)
+│        ├─► Phase 6: US4 入力デバウンス (T016a, T016-T017)
 │        │
 │        ├──► Phase 7: US5 パフォーマンス (T018-T018b, T019)
 │        │
@@ -291,7 +291,7 @@ T026 (SolidText3DInspector ObjectMode UI 追加)
 全タスクが以下の形式に準拠していることを確認:
 
 - ✅ すべてのタスクが `- [ ]` チェックボックスで始まる
-- ✅ 全タスクに連番 ID がある（T001～T034、補足タスク T015a・T018b を含む）
+- ✅ 全タスクに連番 ID がある（T001～T034、補足タスク T016a・T018b を含む）
 - ✅ 並列実行可能タスクには `[P]` マーカーがある
 - ✅ ユーザーストーリーフェーズのタスクには `[US1]`〜`[US7]` ラベルがある
 - ✅ 全タスクに正確なファイルパスが含まれる

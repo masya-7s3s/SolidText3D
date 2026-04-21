@@ -205,8 +205,8 @@ Packages/com.masachuang.solidtext3d/
 1. `DrawDefaultInspector()` を廃止し、各フィールドを手動描画する（Object フィールドのフィルター設定のため）
 2. `EditorGUILayout.ObjectField("Font Asset", ..., typeof(UnityEngine.Object), false)` でフォントフィールドを表示する
 3. フォントが未アタッチの場合に `EditorGUILayout.HelpBox()` で警告を表示する
-4. `EditorGUI.BeginChangeCheck()` / `EndChangeCheck()` + `EditorApplication.update` でデバウンスを実装する
-5. テキストフィールドへのキー入力中は `_target.SuppressAutoRegenerate = true` を設定し、デバウンス後に `RegenerateMesh()` を呼び出して `SuppressAutoRegenerate = false` に戻す
+4. `EditorGUI.BeginChangeCheck()` / `EndChangeCheck()` + `EditorApplication.update` を使用してフォーカスアウト / Enter 確定トリガーによる再生成制御を実装する
+5. テキストフィールドへのキー入力中は `_target.SuppressAutoRegenerate = true` を設定し、フォーカスアウトまたは Enter 確定時に `RegenerateMesh()` を呼び出して `SuppressAutoRegenerate = false` に戻す
 
 ### ステップ 10 — `package.json` と `CHANGELOG.md` の更新（最終ステップ）
 
