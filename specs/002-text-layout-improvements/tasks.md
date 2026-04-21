@@ -47,7 +47,7 @@
 
 ### ユーザーストーリー 1 のテスト
 
-- [ ] T005 [P] [US1] `Packages/com.masachuang.solidtext3d/Tests/Editor/SolidText3DComponentTests.cs` に以下 3 テストを追加する: `FontAsset_Missing_MaintainsPreviousMesh`（FR-016: フォント Missing 時に直前メッシュ維持・LogWarning 1 回のみ）・`Text_Empty_ClearsMesh`（FR-015: テキストが空文字列のときメッシュがクリアされ、警告なし・PerCharacter モードでは全子 GameObject が非アクティブ化されること）・`FontAsset_Changed_AtRuntime_Regenerates`（US1 Scenario 3: フォントアセットが実行時に変更された場合、次フレームの更新で新しいフォントで再描画されること）
+- [ ] T005 [P] [US1] `Packages/com.masachuang.solidtext3d/Tests/Editor/SolidText3DComponentTests.cs` に以下 4 テストを追加する: `FontAsset_Missing_MaintainsPreviousMesh`（FR-016: フォント Missing 時に直前メッシュ維持・LogWarning 1 回のみ）・`Text_Empty_ClearsMesh`（FR-015: テキストが空文字列のときメッシュがクリアされ、警告なし・PerCharacter モードでは全子 GameObject が非アクティブ化されること）・`FontAsset_Changed_AtRuntime_Regenerates`（US1 Scenario 3: フォントアセットが実行時に変更された場合、次フレームの更新で新しいフォントで再描画されること）・`FontAsset_NotSet_SkipsMeshGeneration`（FR-012: フォントが未設定の場合に `RegenerateMesh()` が即座にリターンしてメッシュ生成を行わないことをランタイム側で単体検証する）
 
 ### ユーザーストーリー 1 の実装
 
@@ -84,7 +84,7 @@
 
 ### ユーザーストーリー 3 のテスト
 
-- [ ] T010 [P] [US3] `Packages/com.masachuang.solidtext3d/Tests/Editor/LayoutEngineTests.cs` を新規作成し、以下のテストを実装する: `ApplyHorizontalLayout_EmptyGlyphs_DoesNotThrow`・`CalculateAnchorOffset_Center_ReturnsHalfExtents`。さらに `CalculateAnchorOffset_AllCombinations_BoundsMatchOrigin` パラメータ化テスト（`[TestCase]` 等）で `HorizontalAnchor`×3 × `VerticalAnchor`×3 × `DepthAnchor`×3 の全 27 組み合わせを列挙し、各組み合わせでメッシュの対応する頭点・辺・重心が原点に一致することを検証する（SC-005 全渔影保証）
+- [ ] T010 [P] [US3] `Packages/com.masachuang.solidtext3d/Tests/Editor/LayoutEngineTests.cs` を新規作成し、以下のテストを実装する: `ApplyHorizontalLayout_EmptyGlyphs_DoesNotThrow`・`CalculateAnchorOffset_Center_ReturnsHalfExtents`。さらに `CalculateAnchorOffset_AllCombinations_BoundsMatchOrigin` パラメータ化テスト（`[TestCase]` 等）で `HorizontalAnchor`×3 × `VerticalAnchor`×3 × `DepthAnchor`×3 の全 27 組み合わせを列挙し、各組み合わせでメッシュの対応する頭点・辺・重心が原点に一致することを検証する（SC-005 全組み合わせ保証）。加えて以下 2 テストを追加する: `AnchorChange_SetsDirtyFlag`（FR-005: アンカープロパティの setter が `_isDirty = true` を設定し、次フレームのメッシュ再計算が発動することを検証する）・`Layout_MaxWidthZero_NoWordWrap`（FR-014: `MaxWidth` が 0 の場合に自動折り返しが行われず、改行コードのみで行が制御されることを検証する）
 - [ ] T011 [P] [US3] `Packages/com.masachuang.solidtext3d/Tests/Editor/GlyphMeshBuilderTests.cs` に `Build_WithCenterAnchor_BoundsSymmetric` テストを追加する
 
 ### ユーザーストーリー 3 の実装
@@ -110,7 +110,7 @@
 
 ### ユーザーストーリー 4 の実装
 
-- [ ] T016b [US4] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` に `_suppressAutoRegenerate (bool)` フィールドと `SuppressAutoRegenerate` プロパティ（get/set）を追加し、`LateUpdate()` 内で `_suppressAutoRegenerate` が true の場合は `RegenerateMesh()` を呼び出さないよう制御を追加する。`SuppressAutoRegenerate` プロパティに XML ドキュメントコメント（`<summary>`）を付与する（憲法 VII）（FR-006、research.md § R-003 参照）
+- [ ] T036 [US4] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` に `_suppressAutoRegenerate (bool)` フィールドと `SuppressAutoRegenerate` プロパティ（get/set）を追加し、`LateUpdate()` 内で `_suppressAutoRegenerate` が true の場合は `RegenerateMesh()` を呼び出さないよう制御を追加する。`SuppressAutoRegenerate` プロパティに XML ドキュメントコメント（`<summary>` のみ。bool プロパティは引数・戻り値を持たないため `<param>` / `<returns>` は省略可）を付与する（憲法 VII）（FR-006、research.md § R-003 参照）
 - [ ] T017 [US4] `Packages/com.masachuang.solidtext3d/Editor/SolidText3DInspector.cs` のテキストフィールドに `EditorGUI.BeginChangeCheck()` / `EndChangeCheck()` を用いて入力変化を検知する: 入力検知時に `_target.SuppressAutoRegenerate = true` を設定する。`EditorApplication.update` はフォーカス状態のポーリング（`EditorGUIUtility.editingTextField` の監視）にのみ使用し、タイマーカウントダウンは実装しない。フォーカスアウトまたは Enter キー確定時のみ `RegenerateMesh()` を呼び出して `SuppressAutoRegenerate = false` に戻す（FR-006: 時間経過による自動確定なし、research.md § R-003 参照）
 
 **チェックポイント**: ユーザーストーリー 4 完了 — 入力デバウンスによるレイテンシ改善を単独で確認可能（SC-001: 50ms 未満の入力遅延）。
@@ -126,7 +126,7 @@
 ### ユーザーストーリー 5 のテスト
 
 - [ ] T018 [P] [US5] `Packages/com.masachuang.solidtext3d/Tests/Editor/SolidText3DComponentTests.cs` に以下 2 テストを追加する: `RegenerateMesh_SameParams_SkipsRegeneration`（同一パラメータハッシュ時に再生成がスキップされること）・`RegenerateMesh_SameParams_ZeroGCAlloc`（同一パラメータ時に `GC.GetTotalMemory(false)` 前後の差分がゼロであること— SC-003 検証）
-- [ ] T018b [P] [US5] `Packages/com.masachuang.solidtext3d/Tests/Runtime/PerformanceTests.cs` を新規作成し、`TextUpdate_EveryFrame_Under2msFrameTime` Play Mode テストを実装する: 毎フレームテキストを変更するシナリオで `Profiler.BeginSample` / `EndSample` を使用してメッシュ再生成処理の所要時間を計測し、200 文字以下の標準的な文字数で 2ms 未満であることを検証する（SC-002 検証）
+- [ ] T037 [P] [US5] `Packages/com.masachuang.solidtext3d/Tests/Runtime/PerformanceTests.cs` を新規作成し、`TextUpdate_EveryFrame_Under2msFrameTime` Play Mode テストを実装する: 毎フレームテキストを変更するシナリオで `Profiler.BeginSample` / `EndSample` を使用してメッシュ再生成処理の所要時間を計測し、200 文字以下の標準的な文字数で 2ms 未満であることを検証する（SC-002 検証）
 
 ### ユーザーストーリー 5 の実装
 
@@ -187,7 +187,7 @@
 
 - [ ] T033 [P] `Packages/com.masachuang.solidtext3d/package.json` の `"version"` を `"1.0.0"` から `"2.0.0"` に更新する（破壊的変更: `string Font` 削除、contracts/SolidText3DComponent-API.md 参照）
 - [ ] T034 [P] `Packages/com.masachuang.solidtext3d/CHANGELOG.md` に v2.0.0 エントリを追記する: 破壊的変更（`Font (string)` 削除・`FontAsset (Object)` 追加）、追加機能（アンカー・縦書き・Per-Character・自動 .bytes 変換・デバウンス・パフォーマンス改善）を記載する（contracts/SolidText3DComponent-API.md § CHANGELOG エントリ 参照）
-- [ ] T035 [P] `docs/BREAKING_CHANGES.md` を新規作成し、法典 IV 例外正当化記録を記載する: `[SerializeField] string _font` → `UnityEngine.Object _fontAsset` は型が根本的に異なるため `[Obsolete]` による段階移行が技術的に困難である理由を詳述するとともに、spec Clarification にて開発者が破壊的変更を明示承認した旨を記録する。**このタスクは Final Phase の必須実施事項であり、完了チェックポイントとして扱う**（法典 IV 正当化記録 — Complexity Tracking）（plan.md § Constitution Check 参照）
+- [ ] T035 [P] `Packages/com.masachuang.solidtext3d/Documentation~/BREAKING_CHANGES.md` を新規作成し、法典 IV 例外正当化記録を記載する: `[SerializeField] string _font` → `UnityEngine.Object _fontAsset` は型が根本的に異なるため `[Obsolete]` による段階移行が技術的に困難である理由を詳述するとともに、spec Clarification にて開発者が破壊的変更を明示承認した旨を記録する。**このタスクは Final Phase の必須実施事項であり、完了チェックポイントとして扱う**（UPM 慣例: ドキュメントは `Documentation~/` 配下に配置 — 憲法 I 準拠）（plan.md § Constitution Check 参照）
 
 ---
 
@@ -202,9 +202,9 @@ Phase 2 (基盤: T001-T004)
 │
 ├──► Phase 5: US3 アンカー指定 (T010-T015)
 │        │
-│        ├──► Phase 6: US4 入力デバウンス (T016, T016b-T017)
+│        ├──► Phase 6: US4 入力デバウンス (T016, T036, T017)
 │        │
-│        ├──► Phase 7: US5 パフォーマンス (T018-T018b, T019)
+│        ├──► Phase 7: US5 パフォーマンス (T018, T037, T019)
 │        │
 │        ├──► Phase 8: US6 Per-Character (T020-T026)
 │        │
@@ -292,7 +292,7 @@ T026 (SolidText3DInspector ObjectMode UI 追加)
 全タスクが以下の形式に準拠していることを確認:
 
 - ✅ すべてのタスクが `- [ ]` チェックボックスで始まる
-- ✅ 全タスクに連番 ID がある（T001～T035、補足タスク T016b・T018b を含む）
+- ✅ 全タスクに連番 ID がある（T001～T037、旧補足タスク T016b → T036・T018b → T037 に改番済み）
 - ✅ 並列実行可能タスクには `[P]` マーカーがある
 - ✅ ユーザーストーリーフェーズのタスクには `[US1]`〜`[US7]` ラベルがある
 - ✅ 全タスクに正確なファイルパスが含まれる
