@@ -83,7 +83,8 @@ namespace MasaChuang.SolidText3D.Editor
         /// </summary>
         /// <param name="inputPath">変換元フォントファイルの絶対パス。</param>
         /// <param name="outputPath">出力先 .bytes ファイルの絶対パス。</param>
-        public static void ConvertFontToBytes(string inputPath, string outputPath)
+        /// <param name="logError">エラーメッセージを受け取るデリゲート。null の場合は Debug.LogError を使用する（テスト時に差し替え可能）。</param>
+        public static void ConvertFontToBytes(string inputPath, string outputPath, Action<string> logError = null)
         {
             // 既存の .bytes ファイルがある場合はスキップ
             if (File.Exists(outputPath))
@@ -100,7 +101,11 @@ namespace MasaChuang.SolidText3D.Editor
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[SolidText3D] フォントの .bytes 変換に失敗しました: {inputPath}\n{ex.Message}");
+                string message = $"[SolidText3D] フォントの .bytes 変換に失敗しました: {inputPath}\n{ex.Message}";
+                if (logError != null)
+                    logError(message);
+                else
+                    Debug.LogError(message);
             }
         }
     }

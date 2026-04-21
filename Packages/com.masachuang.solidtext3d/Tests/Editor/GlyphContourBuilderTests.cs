@@ -42,6 +42,7 @@ namespace MasaChuang.SolidText3D.Tests.Editor
             _builder.BeginFigure();
             _builder.MoveTo(new System.Numerics.Vector2(5, 7));
             _builder.LineTo(new System.Numerics.Vector2(10, 7));
+            _builder.LineTo(new System.Numerics.Vector2(5, 12));  // 3点以上必要（EndFigure の最小要件）
             _builder.EndFigure();
             _builder.EndGlyph();
 

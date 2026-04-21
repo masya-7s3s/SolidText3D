@@ -39,12 +39,14 @@ namespace MasaChuang.SolidText3D.Tests.Editor
                 new Vector2(2f, 2f),
                 new Vector2(0f, 2f),
             };
+            // NonZero WindingRule で穴を生成するには内側コンターを CW（時計回り）にする必要がある
+            // outer: CCW（反時計回り、winding=+1）、inner: CW（時計回り、winding=-1）→ 穴の内部は winding=0
             var inner = new List<Vector2>
             {
-                new Vector2(0.5f, 0.5f),
-                new Vector2(1.5f, 0.5f),
-                new Vector2(1.5f, 1.5f),
                 new Vector2(0.5f, 1.5f),
+                new Vector2(1.5f, 1.5f),
+                new Vector2(1.5f, 0.5f),
+                new Vector2(0.5f, 0.5f),
             };
             return new GlyphContour
             {
