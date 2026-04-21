@@ -77,21 +77,32 @@ namespace MasaChuang.SolidText3D.Tests.Editor
         }
 
         /// <summary>
-        /// I/O エラー発生時は LogError でエラーを記録する。
+        /// I/O エラー発生時は例外をスローせず、出力ファイルも生成しない。
         /// </summary>
         [Test]
-        public void ConvertFontToBytes_IoError_LogsError()
+        public void ConvertFontToBytes_IoError_DoesNotThrowAndNoOutput()
         {
             // Arrange: 存在しない入力ファイル
             string nonExistentPath = Path.Combine(_tempDir, "NonExistent.ttf");
             string outputPath = Path.Combine(_outputDir, "output.bytes");
 
-            // Act + Assert: 例外がスローされず、エラーログが出力されること
-            // LogError の内容はスタックトレース付きの複数行文字列のため ignoreFailingMessages で抑制する
+            // Act + Assert: 例外がスローされないこと
+            // LogError が内部で発生するが、テストフレームワークへの影響を避けるため
+            // ignoreFailingMessages で抑制し、出力ファイルが生成されないことで動作を確認する
             LogAssert.ignoreFailingMessages = true;
-            Assert.DoesNotThrow(() =>
-                FontAssetPostprocessor.ConvertFontToBytes(nonExistentPath, outputPath));
-            LogAssert.ignoreFailingMessages = false;
+            try
+            {
+                Assert.DoesNotThrow(() =>
+                    FontAssetPostprocessor.ConvertFontToBytes(nonExistentPath, outputPath),
+                    "I/O エラー時に例外がスローされないこと");
+            }
+            finally
+            {
+                LogAssert.ignoreFailingMessages = false;
+            }
+
+            // 出力ファイルが生成されていないこと（エラー時は何も書き出さない）
+            Assert.IsFalse(File.Exists(outputPath), "I/O エラー時に出力ファイルが生成されないこと");
         }
     }
 }
