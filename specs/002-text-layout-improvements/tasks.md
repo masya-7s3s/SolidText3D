@@ -70,7 +70,7 @@
 
 ### ユーザーストーリー 2 の実装
 
-- [ ] T009 [US2] `Packages/com.masachuang.solidtext3d/Editor/FontAssetPostprocessor.cs` を新規作成する: `AssetPostprocessor` を継承し、`OnPostprocessAllAssets` で `.ttf`/`.otf` を検知する。`Assets/SolidText3DFonts/{assetGuid}.bytes` へ一時ファイル経由のアトミック書き込み（FR-017）を実装し、`AssetDatabase.ImportAsset()` で登録する。シーン内の `SolidText3DComponent` を走査して `_fontBytesCache` を自動設定し `EditorUtility.SetDirty()` + `AssetDatabase.SaveAssets()` でシリアライズする（data-model.md § FontAssetPostprocessor 参照、research.md § R-002 参照）
+- [ ] T009 [US2] `Packages/com.masachuang.solidtext3d/Editor/FontAssetPostprocessor.cs` を新規作成する: `AssetPostprocessor` を継承し、`OnPostprocessAllAssets` で `.ttf`/`.otf` を検知する。`Assets/SolidText3DFonts/{assetGuid}.bytes` へ一時ファイル経由のアトミック書き込み（FR-017）を実装し、`AssetDatabase.ImportAsset()` で登録する。シーン内の `SolidText3DComponent` を走査して `_fontBytesCache` を自動設定し `EditorUtility.SetDirty()` + `AssetDatabase.SaveAssets()` でシリアライズする（data-model.md § FontAssetPostprocessor 参照、research.md § R-002 参照）。**制限**: `FindObjectsByType<SolidText3DComponent>()` による走査は開いているシーン内のみ対象。Prefab アセットは対象外となり、次回 Inspector 表示時に自動設定される（plan.md ステップ 8 の注記参照）
 
 **チェックポイント**: ユーザーストーリー 2 完了 — .ttf アタッチから .bytes 自動生成までの流れを単独で検証可能。
 
@@ -104,10 +104,14 @@
 
 **独立テスト**: テキストフィールドに長い文字列を素早く入力し、入力中に再生成が走らないことを確認できる。
 
+### ユーザーストーリー 4 のテスト
+
+- [ ] T015a [P] [US4] `Packages/com.masachuang.solidtext3d/Tests/Editor/SolidText3DInspectorTests.cs` を新規作成または更新し、`SuppressAutoRegenerate_WhileFocused_BlocksRegeneration` テストを実装する: `SuppressAutoRegenerate` フラグが `true` の間は `RegenerateMesh()` が呼び出されず、フォーカスアウト後に呼び出されることを検証する（FR-006、SC-001 の基礎条件確認）
+
 ### ユーザーストーリー 4 の実装
 
 - [ ] T016 [US4] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` に `_suppressAutoRegenerate (bool)` フィールドと `SuppressAutoRegenerate` プロパティ（get/set）を追加し、`LateUpdate()` 内で `_suppressAutoRegenerate` が true の場合は `RegenerateMesh()` を呼び出さないよう制御を追加する（FR-006、research.md § R-003 参照）
-- [ ] T017 [US4] `Packages/com.masachuang.solidtext3d/Editor/SolidText3DInspector.cs` のテキストフィールドに `EditorGUI.BeginChangeCheck()` / `EndChangeCheck()` + `EditorApplication.update` によるデバウンスを実装する: 入力検知時に `_target.SuppressAutoRegenerate = true` を設定し、フォーカスアウトまたは Enter キー確定後に `RegenerateMesh()` を呼び出して `SuppressAutoRegenerate = false` に戻す（research.md § R-003 参照）
+- [ ] T017 [US4] `Packages/com.masachuang.solidtext3d/Editor/SolidText3DInspector.cs` のテキストフィールドに `EditorGUI.BeginChangeCheck()` / `EndChangeCheck()` を用いて入力変化を検知する: 入力検知時に `_target.SuppressAutoRegenerate = true` を設定する。`EditorApplication.update` はフォーカス状態のポーリング（`EditorGUIUtility.editingTextField` の監視）にのみ使用し、タイマーカウントダウンは実装しない。フォーカスアウトまたは Enter キー確定時のみ `RegenerateMesh()` を呼び出して `SuppressAutoRegenerate = false` に戻す（FR-006: 時間経過による自動確定なし、research.md § R-003 参照）
 
 **チェックポイント**: ユーザーストーリー 4 完了 — 入力デバウンスによるレイテンシ改善を単独で確認可能（SC-001: 50ms 未満の入力遅延）。
 
@@ -121,7 +125,8 @@
 
 ### ユーザーストーリー 5 のテスト
 
-- [ ] T018 [P] [US5] `Packages/com.masachuang.solidtext3d/Tests/Editor/SolidText3DComponentTests.cs` に `RegenerateMesh_SameParams_SkipsRegeneration` テストを追加する（同一パラメータハッシュ時に再生成がスキップされること）
+- [ ] T018 [P] [US5] `Packages/com.masachuang.solidtext3d/Tests/Editor/SolidText3DComponentTests.cs` に以下 2 テストを追加する: `RegenerateMesh_SameParams_SkipsRegeneration`（同一パラメータハッシュ時に再生成がスキップされること）・`RegenerateMesh_SameParams_ZeroGCAlloc`（同一パラメータ時に `GC.GetTotalMemory(false)` 前後の差分がゼロであること— SC-003 検証）
+- [ ] T018b [P] [US5] `Packages/com.masachuang.solidtext3d/Tests/Runtime/PerformanceTests.cs` を新規作成し、`TextUpdate_EveryFrame_Under2msFrameTime` Play Mode テストを実装する: 毎フレームテキストを変更するシナリオで `Profiler.BeginSample` / `EndSample` を使用してメッシュ再生成処理の所要時間を計測し、200 文字以下の標準的な文字数で 2ms 未満であることを検証する（SC-002 検証）
 
 ### ユーザーストーリー 5 の実装
 
@@ -196,9 +201,9 @@ Phase 2 (基盤: T001-T004)
 │
 ├──► Phase 5: US3 アンカー指定 (T010-T015)
 │        │
-│        ├──► Phase 6: US4 入力デバウンス (T016-T017)
+│        ├──► Phase 6: US4 入力デバウンス (T015a, T016-T017)
 │        │
-│        ├──► Phase 7: US5 パフォーマンス (T018-T019)
+│        ├──► Phase 7: US5 パフォーマンス (T018-T018b, T019)
 │        │
 │        ├──► Phase 8: US6 Per-Character (T020-T026)
 │        │
@@ -286,7 +291,7 @@ T026 (SolidText3DInspector ObjectMode UI 追加)
 全タスクが以下の形式に準拠していることを確認:
 
 - ✅ すべてのタスクが `- [ ]` チェックボックスで始まる
-- ✅ 全タスクに T001〜T034 の連番 ID がある
+- ✅ 全タスクに連番 ID がある（T001～T034、補足タスク T015a・T018b を含む）
 - ✅ 並列実行可能タスクには `[P]` マーカーがある
 - ✅ ユーザーストーリーフェーズのタスクには `[US1]`〜`[US7]` ラベルがある
 - ✅ 全タスクに正確なファイルパスが含まれる
