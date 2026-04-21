@@ -23,8 +23,9 @@ namespace MasaChuang.SolidText3D.Tests.Runtime
 
             var mf = go.GetComponent<MeshFilter>();
             Assert.IsNotNull(mf);
-            // フォント未設定のため頂点数は 0 になりうるが、例外が出ないことを検証
-            Assert.IsNotNull(mf.sharedMesh, "テキスト変更後 1 フレームでメッシュが設定されること");
+            // フォント未設定時は FR-012 によりメッシュ生成をスキップする。
+            // sharedMesh が null でも例外が出ないことと、ダーティフラグがクリアされることを検証する。
+            Assert.IsFalse(comp.IsDirty, "テキスト変更後 1 フレームでダーティフラグがクリアされること");
 
 #if UNITY_EDITOR
             Object.DestroyImmediate(go);
@@ -44,7 +45,9 @@ namespace MasaChuang.SolidText3D.Tests.Runtime
 
             var mf = go.GetComponent<MeshFilter>();
             Assert.IsNotNull(mf);
-            Assert.AreEqual(0, mf.sharedMesh.vertexCount, "空テキストで頂点数が 0 であること");
+            // フォント未設定時は sharedMesh が null になりうる。null も頂点数 0 と同義とみなす。
+            int vertexCount = mf.sharedMesh != null ? mf.sharedMesh.vertexCount : 0;
+            Assert.AreEqual(0, vertexCount, "空テキストで頂点数が 0 であること");
 
 #if UNITY_EDITOR
             Object.DestroyImmediate(go);
@@ -92,12 +95,14 @@ namespace MasaChuang.SolidText3D.Tests.Runtime
 
             var mf = go.GetComponent<MeshFilter>();
 
-            // FontAsset を null に切り替え（デフォルトフォントへフォールバック）
+            // FontAsset を null に切り替え → FR-012 によりメッシュ生成をスキップ
             comp.FontAsset = null;
 
             yield return null; // 再生成
 
-            Assert.IsNotNull(mf.sharedMesh, "フォント切り替え後もメッシュが設定されること");
+            // FontAsset が null の場合はメッシュを生成しない。例外が発生せず
+            // ダーティフラグがクリアされることを検証する（FR-012 準拠）。
+            Assert.IsFalse(comp.IsDirty, "フォント切り替え後にダーティフラグがクリアされること");
 
 #if UNITY_EDITOR
             Object.DestroyImmediate(go);
