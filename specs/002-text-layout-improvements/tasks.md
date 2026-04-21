@@ -47,7 +47,7 @@
 
 ### ユーザーストーリー 1 のテスト
 
-- [ ] T005 [P] [US1] `Packages/com.masachuang.solidtext3d/Tests/Editor/SolidText3DComponentTests.cs` に `FontAsset_Missing_MaintainsPreviousMesh` テストを追加する（FR-016: フォント Missing 時に直前メッシュ維持・LogWarning 1 回のみ）
+- [ ] T005 [P] [US1] `Packages/com.masachuang.solidtext3d/Tests/Editor/SolidText3DComponentTests.cs` に以下 2 テストを追加する: `FontAsset_Missing_MaintainsPreviousMesh`（FR-016: フォント Missing 時に直前メッシュ維持・LogWarning 1 回のみ）・`Text_Empty_ClearsMesh`（FR-015: テキストが空文字列のときメッシュがクリアされ、警告なし・PerCharacter モードでは全子 GameObject が非アクティブ化されること）
 
 ### ユーザーストーリー 1 の実装
 
@@ -89,7 +89,7 @@
 
 ### ユーザーストーリー 3 の実装
 
-- [ ] T012 [US3] `Packages/com.masachuang.solidtext3d/Runtime/LayoutEngine.cs` を新規作成する: `internal static class LayoutEngine` に `ApplyHorizontalLayout(List<GlyphContour> glyphs, MeshGenerationParams p)` と `CalculateAnchorOffset(Bounds meshBounds, MeshGenerationParams p)` を実装する。アンカーオフセット計算式（水平: Left=0, Center=-width/2, Right=-width; 垂直: Upper=-height, Middle=-height/2, Lower=0; 奥行き: Front=0, Center=-depth/2, Back=-depth）を適用する。既存 `GlyphMeshBuilder.ApplyLayout()` のロジックを移植し、`MaxWidth` による自動折り返しに対応する。**FR-013 折り返し粒度の言語判定**: 各文字の Unicode コードポイントが `\u2E80`–`\u9FFF`（CJK統合漢字・ひらがな・カタカナ等）の範囲に含まれる場合は文字単位で折り返し、それ以外の範囲（ラテン文字・ASCII 等）はスペース・区切り文字を基準とした単語単位で折り返す（research.md § R-005 参照）
+- [ ] T012 [US3] `Packages/com.masachuang.solidtext3d/Runtime/LayoutEngine.cs` を新規作成する: `internal static class LayoutEngine` に `ApplyHorizontalLayout(List<GlyphContour> glyphs, MeshGenerationParams p)` と `CalculateAnchorOffset(Bounds meshBounds, MeshGenerationParams p)` を実装する。アンカーオフセット計算式（水平: Left=0, Center=-width/2, Right=-width; 垂直: Upper=-height, Middle=-height/2, Lower=0; 奥行き: Front=0, Center=-depth/2, Back=-depth）を適用する。既存 `GlyphMeshBuilder.ApplyLayout()` のロジックを移植し、`MaxWidth` による自動折り返しに対応する。**FR-013 折り返し粒度の言語判定**: 各文字の Unicode コードポイントが下記いずれかの範囲に含まれる場合は文字単位で折り返し、それ以外（ラテン文字・ASCII 等）はスペース・区切り文字を基準とした単語単位で折り返す: `\u2E80`–`\u9FFF`（CJK統合漢字・ひらがな・カタカナ等）、`\uAC00`–`\uD7AF`（ハングル音節）、`\uFF00`–`\uFF60`（全角英数字・記号）（research.md § R-005 参照）
 - [ ] T013 [US3] `Packages/com.masachuang.solidtext3d/Runtime/GlyphMeshBuilder.cs` を修正する: `ApplyLayout()` プライベートメソッドを削除して `LayoutEngine.ApplyHorizontalLayout()` 呼び出しに置き換え、`GetFontBytes()` から `FontPath` 参照を削除する。`Build()` 内で `MeshExtruder.Build()` 後に `LayoutEngine.CalculateAnchorOffset()` を呼び出して全頂点にオフセットを加算する（data-model.md § データフロー概要 参照）
 - [ ] T014 [US3] `Packages/com.masachuang.solidtext3d/Runtime/SolidText3DComponent.cs` を修正する: `_horizontalAnchor`・`_verticalAnchor`・`_depthAnchor` の 3 フィールドとそれぞれのプロパティ（`HorizontalAnchor`・`VerticalAnchor`・`DepthAnchor`）、`_maxWidth`・`_maxHeight` フィールドと `MaxWidth`・`MaxHeight` プロパティを追加する。プロパティ setter で `_isDirty = true` を設定する。新規追加するすべての `public` プロパティに XML ドキュメントコメント（`<summary>`, `<param>`, `<returns>`）を付与する（憲法 VII）
 - [ ] T015 [US3] `Packages/com.masachuang.solidtext3d/Editor/SolidText3DInspector.cs` に `HorizontalAnchor`・`VerticalAnchor`・`DepthAnchor` の 3 つのドロップダウンフィールドと `MaxWidth`・`MaxHeight` の数値フィールドを手動描画で追加する（FR-004 参照）
@@ -201,7 +201,7 @@ Phase 2 (基盤: T001-T004)
 │
 ├──► Phase 5: US3 アンカー指定 (T010-T015)
 │        │
-│        ├─► Phase 6: US4 入力デバウンス (T016a, T016-T017)
+│        ├──► Phase 6: US4 入力デバウンス (T016a, T016-T017)
 │        │
 │        ├──► Phase 7: US5 パフォーマンス (T018-T018b, T019)
 │        │
