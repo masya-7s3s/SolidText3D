@@ -70,7 +70,8 @@ namespace MasaChuang.SolidText3D.Editor
 
             // ── テキスト（デバウンス対応）──
             EditorGUI.BeginChangeCheck();
-            string newText = EditorGUILayout.TextField("Text", _target.Text);
+            EditorGUILayout.LabelField("Text");
+            string newText = EditorGUILayout.TextArea(_target.Text, GUILayout.MinHeight(60f));
             if (EditorGUI.EndChangeCheck())
             {
                 Undo.RecordObject(_target, "Change Text");
@@ -97,12 +98,9 @@ namespace MasaChuang.SolidText3D.Editor
                 _target.LineSpacing = newLineSpacing;
                 _target.FontSize = newFontSize;
                 EditorUtility.SetDirty(_target);
-                // テキスト編集中でなければ即時再生成
-                if (!EditorGUIUtility.editingTextField)
-                {
-                    _target.RegenerateMesh();
-                    EditorApplication.QueuePlayerLoopUpdate();
-                }
+                // FloatField は Enter/ブラーで値が確定されるため常に即時再生成する
+                _target.RegenerateMesh();
+                EditorApplication.QueuePlayerLoopUpdate();
             }
 
             EditorGUILayout.Space();
@@ -123,11 +121,8 @@ namespace MasaChuang.SolidText3D.Editor
                 _target.MaxWidth = newMaxWidth;
                 _target.MaxHeight = newMaxHeight;
                 EditorUtility.SetDirty(_target);
-                if (!EditorGUIUtility.editingTextField)
-                {
-                    _target.RegenerateMesh();
-                    EditorApplication.QueuePlayerLoopUpdate();
-                }
+                _target.RegenerateMesh();
+                EditorApplication.QueuePlayerLoopUpdate();
             }
 
             EditorGUILayout.Space();
