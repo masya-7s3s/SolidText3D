@@ -30,5 +30,8 @@ namespace MasaChuang.SolidText3D
 
         /// <summary>可視文字かどうか（折り返し区切り等の非表示文字は false）</summary>
         public bool IsVisible { get; set; } = true;
+
+        /// <summary>縦書き時に 90 度時計回り回転するかどうか（RotateAsciiInVertical が true の ASCII 文字）</summary>
+        public bool IsRotated { get; set; } = false;
     }
 }

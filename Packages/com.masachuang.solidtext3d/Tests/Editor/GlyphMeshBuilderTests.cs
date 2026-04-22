@@ -185,7 +185,6 @@ namespace MasaChuang.SolidText3D.Tests.Editor
             // T028: 縦書きモードで Y 座標が下方向（負）に進むこと
             var p = ParamsFor("AB");
             p.WritingMode = WritingMode.Vertical;
-            p.VerticalColumnWidth = 0f; // 自動
             var mesh = GlyphMeshBuilder.Build(p);
 
             Assert.IsNotNull(mesh);

@@ -45,12 +45,13 @@ namespace MasaChuang.SolidText3D.Editor
             if (_target == null) return;
             serializedObject.Update();
 
-            // ── フォントアセット ──
+            // ── フォントアセット (.ttf / .otf 限定) ──
             EditorGUI.BeginChangeCheck();
+            // typeof(Font) を指定することで ObjectPicker に .ttf/.otf のみ表示される
             var newFontAsset = EditorGUILayout.ObjectField(
                 "Font Asset",
                 _target.FontAsset,
-                typeof(UnityEngine.Object),
+                typeof(Font),
                 false);
             if (EditorGUI.EndChangeCheck())
             {
@@ -62,8 +63,8 @@ namespace MasaChuang.SolidText3D.Editor
             if (_target.FontAsset == null)
             {
                 EditorGUILayout.HelpBox(
-                    "フォントアセット（.ttf / .otf）を設定してください。",
-                    MessageType.Warning);
+                    "フォントアセット（.ttf / .otf）を設定するか、未設定の場合は NotoSansJP-Black が使用されます。",
+                    MessageType.Info);
             }
 
             EditorGUILayout.Space();
@@ -130,13 +131,11 @@ namespace MasaChuang.SolidText3D.Editor
             // ── 書字方向 ──
             EditorGUI.BeginChangeCheck();
             var newWritingMode = (WritingMode)EditorGUILayout.EnumPopup("Writing Mode", _target.WritingMode);
-            float newColWidth = EditorGUILayout.FloatField("Vertical Column Width (0=auto)", _target.VerticalColumnWidth);
             bool newRotateAscii = EditorGUILayout.Toggle("Rotate ASCII in Vertical", _target.RotateAsciiInVertical);
             if (EditorGUI.EndChangeCheck())
             {
                 Undo.RecordObject(_target, "Change Writing Mode");
                 _target.WritingMode = newWritingMode;
-                _target.VerticalColumnWidth = newColWidth;
                 _target.RotateAsciiInVertical = newRotateAscii;
                 EditorUtility.SetDirty(_target);
                 _target.RegenerateMesh();

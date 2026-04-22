@@ -46,9 +46,15 @@ namespace MasaChuang.SolidText3D
             var mesh = MeshExtruder.Build(glyphs, p);
 
             // アンカーオフセットを全頂点に加算
+            // 横書き: X 方向は各行のレイアウト時に適用済みのため全体オフセットでは無効化
+            // 縦書き: Y 方向は各列のレイアウト時に適用済みのため全体オフセットでは無効化
             if (mesh != null && mesh.vertexCount > 0)
             {
                 var offset = LayoutEngine.CalculateAnchorOffset(mesh.bounds, p);
+                if (p.WritingMode == WritingMode.Horizontal)
+                    offset = new Vector3(0f, offset.y, offset.z);
+                else if (p.WritingMode == WritingMode.Vertical)
+                    offset = new Vector3(offset.x, 0f, offset.z);
                 if (offset != Vector3.zero)
                 {
                     var verts = mesh.vertices;
@@ -92,6 +98,23 @@ namespace MasaChuang.SolidText3D
             else
                 LayoutEngine.ApplyHorizontalLayout(allGlyphs, p);
 
+            // SingleObject と同じアンカーオフセットを算出し各グリフの Offset に反映する
+            // これにより PerCharacter と SingleObject の表示位置が一致する
+            var tempMesh = MeshExtruder.Build(allGlyphs, p);
+            if (tempMesh != null && tempMesh.vertexCount > 0)
+            {
+                var anchorOffset = LayoutEngine.CalculateAnchorOffset(tempMesh.bounds, p);
+                if (p.WritingMode == WritingMode.Horizontal)
+                    anchorOffset = new Vector3(0f, anchorOffset.y, anchorOffset.z);
+                else if (p.WritingMode == WritingMode.Vertical)
+                    anchorOffset = new Vector3(anchorOffset.x, 0f, anchorOffset.z);
+                if (anchorOffset != Vector3.zero)
+                {
+                    foreach (var g in allGlyphs)
+                        g.Offset += anchorOffset;
+                }
+            }
+
             var visibleGlyphs = new List<GlyphContour>();
             var meshes = new List<Mesh>();
 
@@ -123,17 +146,80 @@ namespace MasaChuang.SolidText3D
 
             const float renderFontSize = 72f;
             var font = family.CreateFont(renderFontSize);
-            var options = new TextOptions(font)
-            {
-                LineSpacing = p.LineSpacing > 0f ? p.LineSpacing : 1f,
-            };
 
             // FontSize=1 のとき em スクエア(=renderFontSize)が 1 Unity unit になるようスケーリング
             float scale = (p.FontSize > 0f ? p.FontSize : 1f) / renderFontSize;
-            var renderer = new GlyphContourBuilder(p.BezierErrorThreshold, scale);
-            TextRenderer.RenderTextTo(renderer, p.Text, options);
 
-            return renderer.GlyphContours;
+            // 縦書きモードの場合、1文字ずつレンダリングして輪郭を原点基準に正規化する
+            // (TextRenderer.RenderTextTo は横書き座標で全文字をまとめて出力するため)
+            if (p.WritingMode == WritingMode.Vertical)
+            {
+                var result = new List<GlyphContour>();
+                var singleCharOptions = new TextOptions(font);
+                for (int i = 0; i < p.Text.Length; i++)
+                {
+                    // 改行文字は非表示グリフとして登録し、ApplyVerticalLayout で列折り返しに使う
+                    if (p.Text[i] == '\n')
+                    {
+                        result.Add(new GlyphContour
+                        {
+                            Contours = new System.Collections.Generic.List<System.Collections.Generic.List<Vector2>>(),
+                            CharIndex = i,
+                            IsVisible = false
+                        });
+                        continue;
+                    }
+
+                    string ch = p.Text[i].ToString();
+                    var renderer = new GlyphContourBuilder(p.BezierErrorThreshold, scale);
+                    TextRenderer.RenderTextTo(renderer, ch, singleCharOptions);
+                    if (renderer.GlyphContours.Count == 0) continue;
+
+                    var g = renderer.GlyphContours[0];
+                    // 輪郭を原点基準に正規化する
+                    // ToUnity で Y 軸反転済みのため:
+                    //   vertex.x 範囲: [Bounds.xMin, Bounds.xMax]  → ox = Bounds.xMin で [0, width]
+                    //   vertex.y 範囲: [-Bounds.yMax, -Bounds.yMin] → oy = -Bounds.yMin で [-height, 0]
+                    float ox = g.Bounds.xMin;
+                    float oy = -g.Bounds.yMin;
+                    if (ox != 0f || oy != 0f)
+                    {
+                        var normalizedContours = new System.Collections.Generic.List<System.Collections.Generic.List<Vector2>>();
+                        foreach (var contour in g.Contours)
+                        {
+                            var nc = new System.Collections.Generic.List<Vector2>(contour.Count);
+                            foreach (var v in contour)
+                                nc.Add(new Vector2(v.x - ox, v.y - oy));
+                            normalizedContours.Add(nc);
+                        }
+                        g = new GlyphContour
+                        {
+                            Contours = normalizedContours,
+                            AdvanceWidth = g.AdvanceWidth,
+                            AdvanceHeight = g.AdvanceHeight,
+                            Bounds = new Rect(0f, 0f, g.Bounds.width, g.Bounds.height),
+                            CharIndex = i,
+                            IsVisible = true
+                        };
+                    }
+                    else
+                    {
+                        g.CharIndex = i;
+                        g.IsVisible = true;
+                    }
+                    result.Add(g);
+                }
+                return result;
+            }
+
+            var defaultOptions = new TextOptions(font)
+            {
+                LineSpacing = p.LineSpacing > 0f ? p.LineSpacing : 1f,
+            };
+            var defaultRenderer = new GlyphContourBuilder(p.BezierErrorThreshold, scale);
+            TextRenderer.RenderTextTo(defaultRenderer, p.Text, defaultOptions);
+
+            return defaultRenderer.GlyphContours;
         }
 
         private static byte[] GetFontBytes(MeshGenerationParams p)

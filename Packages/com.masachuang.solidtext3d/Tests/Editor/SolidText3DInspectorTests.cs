@@ -57,6 +57,7 @@ namespace MasaChuang.SolidText3D.Tests.Editor
             Assert.IsFalse(_component.SuppressAutoRegenerate, "フォーカスアウト後に false に戻せること");
 
             // 再生成が呼び出せること（フォント未設定なので警告は出るが例外は出ない）
+            _component.FontAsset = null;
             LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex(".*フォント.*"));
             Assert.DoesNotThrow(() => _component.RegenerateMesh(),
                 "SuppressAutoRegenerate=false 後に RegenerateMesh() が呼び出せること");

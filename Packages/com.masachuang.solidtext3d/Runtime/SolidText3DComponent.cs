@@ -31,7 +31,6 @@ namespace MasaChuang.SolidText3D
         [SerializeField] private ObjectMode _objectMode = ObjectMode.SingleObject;
         [SerializeField] private float _maxWidth = 0f;
         [SerializeField] private float _maxHeight = 0f;
-        [SerializeField] private float _verticalColumnWidth = 0f;
         [SerializeField] private bool _rotateAsciiInVertical = false;
 
         private bool _isDirty = true;
@@ -59,7 +58,13 @@ namespace MasaChuang.SolidText3D
         public UnityEngine.Object FontAsset
         {
             get => _fontAsset;
-            set { _fontAsset = value; _fontMissingWarningIssued = false; _isDirty = true; }
+            set
+            {
+                _fontAsset = value;
+                if (value == null) _fontBytesCache = null; // 明示的 null 設定時はキャッシュもクリア
+                _fontMissingWarningIssued = false;
+                _isDirty = true;
+            }
         }
 
         /// <summary>押し出し深さ（Z 軸方向）。</summary>
@@ -147,22 +152,7 @@ namespace MasaChuang.SolidText3D
         public ObjectMode ObjectMode
         {
             get => _objectMode;
-            set
-            {
-                if (_objectMode == value) return;
-                var prev = _objectMode;
-                _objectMode = value;
-                if (prev == ObjectMode.PerCharacter && value == ObjectMode.SingleObject)
-                {
-                    _characterPool?.DeactivateAll();
-                }
-                else if (prev == ObjectMode.SingleObject && value == ObjectMode.PerCharacter)
-                {
-                    if (_characterPool == null)
-                        _characterPool = new CharacterObjectPool(transform);
-                }
-                _isDirty = true;
-            }
+            set { if (_objectMode == value) return; _objectMode = value; _isDirty = true; }
         }
 
         /// <summary>
@@ -185,17 +175,6 @@ namespace MasaChuang.SolidText3D
         {
             get => _maxHeight;
             set { _maxHeight = value; _isDirty = true; }
-        }
-
-        /// <summary>
-        /// 縦書き時の列幅（0 = FontSize × 1.1f 自動）。
-        /// </summary>
-        /// <param name="value">列幅（Unity ワールド単位）。0 の場合は自動設定。</param>
-        /// <returns>現在の縦書き列幅設定。</returns>
-        public float VerticalColumnWidth
-        {
-            get => _verticalColumnWidth;
-            set { _verticalColumnWidth = value; _isDirty = true; }
         }
 
         /// <summary>
@@ -250,6 +229,21 @@ namespace MasaChuang.SolidText3D
                     _meshRenderer.sharedMaterial = new Material(shader) { name = "SolidText3D Default" };
             }
 
+            // フォント未設定時はパッケージ内の NotoSansJP-Black をデフォルトフォントとして自動設定
+            if (_fontAsset == null && _fontBytesCache == null)
+            {
+#if UNITY_EDITOR
+                var defaultFont = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(
+                    "Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Black.bytes");
+                if (defaultFont != null)
+                    _fontBytesCache = defaultFont as TextAsset;
+#else
+                var defaultAsset = Resources.Load<TextAsset>("Fonts/NotoSansJP-Black");
+                if (defaultAsset != null)
+                    _fontBytesCache = defaultAsset;
+#endif
+            }
+
             if (_objectMode == ObjectMode.PerCharacter)
                 _characterPool = new CharacterObjectPool(transform);
         }
@@ -286,13 +280,14 @@ namespace MasaChuang.SolidText3D
                 return;
             }
 
-            // FR-015: 空文字列時はメッシュをクリアし、PerCharacter 全子 GameObject を非アクティブ化
+            // FR-015: 空文字列時はメッシュをクリアし、PerCharacter 全子 GameObject を破棄
             if (string.IsNullOrEmpty(_text))
             {
                 if (_meshFilter == null) _meshFilter = GetComponent<MeshFilter>();
                 if (_meshFilter != null && _meshFilter.sharedMesh != null)
                     _meshFilter.sharedMesh.Clear();
-                _characterPool?.DeactivateAll();
+                _characterPool?.DestroyAll();
+                _characterPool = null;
                 return;
             }
 
@@ -330,7 +325,6 @@ namespace MasaChuang.SolidText3D
                 WritingMode = _writingMode,
                 MaxWidth = _maxWidth,
                 MaxHeight = _maxHeight,
-                VerticalColumnWidth = _verticalColumnWidth,
                 RotateAsciiInVertical = _rotateAsciiInVertical
             };
 
@@ -338,14 +332,25 @@ namespace MasaChuang.SolidText3D
 
             if (_objectMode == ObjectMode.PerCharacter)
             {
+                // SingleObject のメッシュを非表示にして PerCharacter と重複しないようにする
+                if (_meshFilter != null) _meshFilter.sharedMesh = null;
+                if (_meshRenderer != null) _meshRenderer.enabled = false;
+
+                // 毎回再生成（テキスト変更時に子を作り直す・MissingReference 防止）
                 if (_characterPool == null)
                     _characterPool = new CharacterObjectPool(transform);
 
+                var mat = _meshRenderer != null ? _meshRenderer.sharedMaterial : null;
                 var perCharResult = GlyphMeshBuilder.BuildPerCharacter(p);
-                _characterPool.Sync(perCharResult.Glyphs, perCharResult.Meshes);
+                _characterPool.Sync(perCharResult.Glyphs, perCharResult.Meshes, mat);
             }
             else
             {
+                // SingleObject に切り替わった際に子オブジェクトを破棄
+                _characterPool?.DestroyAll();
+                _characterPool = null;
+
+                if (_meshRenderer != null) _meshRenderer.enabled = true;
                 if (_meshFilter != null)
                     _meshFilter.sharedMesh = GlyphMeshBuilder.Build(p);
             }
@@ -395,6 +400,7 @@ namespace MasaChuang.SolidText3D
             hash ^= _fontSize.GetHashCode();
             hash ^= _letterSpacing.GetHashCode();
             hash ^= _lineSpacing.GetHashCode();
+            hash ^= _rotateAsciiInVertical.GetHashCode();
             return hash;
         }
     }

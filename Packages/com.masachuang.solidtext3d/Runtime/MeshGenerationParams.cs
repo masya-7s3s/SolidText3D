@@ -50,9 +50,6 @@
         /// <summary>縦書き時の最大高さ（0 = 無制限）</summary>
         public float MaxHeight;
 
-        /// <summary>縦書き時の列幅（0 = FontSize × 1.1f 自動）</summary>
-        public float VerticalColumnWidth;
-
         /// <summary>縦書き時に ASCII 英数字を 90 度回転するか</summary>
         public bool RotateAsciiInVertical;
     }

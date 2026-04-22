@@ -168,7 +168,6 @@ namespace MasaChuang.SolidText3D.Tests.Editor
             var glyphs = CreateDummyGlyphs(2);
             var p = DefaultParams("AB");
             p.WritingMode = WritingMode.Vertical;
-            p.VerticalColumnWidth = 1.5f;
 
             LayoutEngine.ApplyVerticalLayout(glyphs, p);
 
@@ -186,7 +185,6 @@ namespace MasaChuang.SolidText3D.Tests.Editor
             var glyphs = CreateDummyGlyphs(charCount);
             var p = DefaultParams(text);
             p.WritingMode = WritingMode.Vertical;
-            p.VerticalColumnWidth = 1.5f;
             p.MaxHeight = 0f; // 折り返しなし
 
             LayoutEngine.ApplyVerticalLayout(glyphs, p);

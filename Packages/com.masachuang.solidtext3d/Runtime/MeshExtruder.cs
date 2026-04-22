@@ -74,9 +74,28 @@ namespace MasaChuang.SolidText3D
             if (glyph.Contours == null || glyph.Contours.Count == 0)
                 return data;
 
+            // IsRotated: 縦書き ASCII 90 度時計回り回転
+            // 正規化後グリフ中心 (cx, cy) = (w/2, -h/2) 周りで回転
+            // 90° CW: (dx,dy) → (dy, -dx)  ⟹  new_x = cx + (y-cy),  new_y = cy - (x-cx)
+            var sourceContours = glyph.Contours;
+            if (glyph.IsRotated && sourceContours.Count > 0)
+            {
+                float cx = glyph.Bounds.width * 0.5f;
+                float cy = -glyph.Bounds.height * 0.5f;
+                var rotated = new List<List<Vector2>>(sourceContours.Count);
+                foreach (var contour in sourceContours)
+                {
+                    var rc = new List<Vector2>(contour.Count);
+                    foreach (var v in contour)
+                        rc.Add(new Vector2(cx + (v.y - cy), cy - (v.x - cx)));
+                    rotated.Add(rc);
+                }
+                sourceContours = rotated;
+            }
+
             // 前面三角分割（LibTessDotNet EvenOdd WindingRule）
             var tess = new Tess();
-            foreach (var contour in glyph.Contours)
+            foreach (var contour in sourceContours)
             {
                 if (contour.Count < 3) continue;
                 var tessVertices = new ContourVertex[contour.Count];
@@ -142,7 +161,7 @@ namespace MasaChuang.SolidText3D
             }
 
             // 側面クワッドを輪郭エッジから生成
-            foreach (var contour in glyph.Contours)
+            foreach (var contour in sourceContours)
             {
                 if (contour.Count < 2) continue;
                 for (int i = 0; i < contour.Count; i++)

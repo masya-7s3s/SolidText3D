@@ -14,63 +14,98 @@ namespace MasaChuang.SolidText3D
         private readonly List<GameObject> _pool = new List<GameObject>();
 
         /// <summary>
-        /// プールを初期化する。
+        /// プールを初期化する。ドメインリロード後などに残留した孤立子オブジェクトも破棄する。
         /// </summary>
         /// <param name="parent">子 GameObject の親 Transform。</param>
         internal CharacterObjectPool(Transform parent)
         {
             _parent = parent;
+            DestroyOrphanedChildren();
         }
 
         /// <summary>
-        /// 可視グリフ数に合わせてプールを同期する。
+        /// グリフ数に合わせて子 GameObject を同期する。
+        /// - 既存 GameObject は再利用してメッシュ・マテリアルを更新する（Destroy しない）。
+        /// - 余剰 GameObject は SetActive(false) で非アクティブ化する。
+        /// - 不足分のみ新規 GameObject を生成する（FR-009b）。
         /// </summary>
-        /// <param name="visibleGlyphs">可視グリフのリスト。</param>
-        /// <param name="perCharMeshes">各グリフに対応するメッシュのリスト。</param>
-        internal void Sync(List<GlyphContour> visibleGlyphs, List<Mesh> perCharMeshes)
+        internal void Sync(List<GlyphContour> visibleGlyphs, List<Mesh> perCharMeshes, Material sharedMaterial = null)
         {
             int count = visibleGlyphs != null ? visibleGlyphs.Count : 0;
 
-            // 文字数増加時: 不足分の GameObject を新規作成
-            while (_pool.Count < count)
+            // 既存プールエントリを再利用・更新
+            for (int i = 0; i < count; i++)
             {
-                var go = new GameObject($"Char_{_pool.Count}");
-                go.transform.SetParent(_parent, false);
-                go.AddComponent<MeshFilter>();
-                go.AddComponent<MeshRenderer>();
-                _pool.Add(go);
-            }
-
-            // 各スロットを更新: アクティブ化 + メッシュ設定
-            for (int i = 0; i < _pool.Count; i++)
-            {
-                var go = _pool[i];
-                if (i < count)
+                if (i < _pool.Count)
                 {
+                    var go = _pool[i];
                     go.SetActive(true);
                     var mf = go.GetComponent<MeshFilter>();
-                    if (mf != null && i < perCharMeshes.Count)
-                        mf.sharedMesh = perCharMeshes[i];
+                    if (mf != null && i < perCharMeshes.Count) mf.sharedMesh = perCharMeshes[i];
+                    if (sharedMaterial != null)
+                    {
+                        var mr = go.GetComponent<MeshRenderer>();
+                        if (mr != null) mr.sharedMaterial = sharedMaterial;
+                    }
                 }
                 else
                 {
-                    // 余剰は非アクティブ化（FR-009b, FR-015）
-                    go.SetActive(false);
+                    var go = new GameObject($"Char_{i}");
+                    go.transform.SetParent(_parent, false);
+                    var mf = go.AddComponent<MeshFilter>();
+                    var mr = go.AddComponent<MeshRenderer>();
+                    if (i < perCharMeshes.Count) mf.sharedMesh = perCharMeshes[i];
+                    if (sharedMaterial != null) mr.sharedMaterial = sharedMaterial;
+                    _pool.Add(go);
                 }
+            }
+
+            // 余剰 GameObject を非アクティブ化
+            for (int i = count; i < _pool.Count; i++)
+            {
+                if (_pool[i] != null)
+                    _pool[i].SetActive(false);
             }
         }
 
         /// <summary>
-        /// プール内の全 GameObject を非アクティブ化する。
-        /// PerCharacter → SingleObject 切り替え時や空文字列時（FR-015）に呼び出す。
+        /// プール内の全 GameObject を破棄してプールを空にする。
+        /// PerCharacter → SingleObject 切り替え時や空文字列時に呼び出す。
         /// </summary>
-        internal void DeactivateAll()
+        internal void DestroyAll()
         {
             foreach (var go in _pool)
             {
                 if (go != null)
-                    go.SetActive(false);
+                    DestroyGameObject(go);
             }
+            _pool.Clear();
+        }
+
+        /// <summary>
+        /// 親の子オブジェクトのうち "Char_" で始まる孤立オブジェクトを破棄する。
+        /// ドメインリロード後のプール再生成時に呼び出す。
+        /// </summary>
+        private void DestroyOrphanedChildren()
+        {
+            var toDestroy = new List<GameObject>();
+            for (int i = 0; i < _parent.childCount; i++)
+            {
+                var child = _parent.GetChild(i);
+                if (child != null && child.name.StartsWith("Char_"))
+                    toDestroy.Add(child.gameObject);
+            }
+            foreach (var go in toDestroy)
+                DestroyGameObject(go);
+        }
+
+        private static void DestroyGameObject(GameObject go)
+        {
+#if UNITY_EDITOR
+            Object.DestroyImmediate(go);
+#else
+            Object.Destroy(go);
+#endif
         }
     }
 }
