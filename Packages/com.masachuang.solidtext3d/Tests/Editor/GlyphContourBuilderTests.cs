@@ -42,6 +42,7 @@ namespace MasaChuang.SolidText3D.Tests.Editor
             _builder.BeginFigure();
             _builder.MoveTo(new System.Numerics.Vector2(5, 7));
             _builder.LineTo(new System.Numerics.Vector2(10, 7));
+            _builder.LineTo(new System.Numerics.Vector2(5, 12));  // 3点以上必要（EndFigure の最小要件）
             _builder.EndFigure();
             _builder.EndGlyph();
 
@@ -49,8 +50,9 @@ namespace MasaChuang.SolidText3D.Tests.Editor
             Assert.AreEqual(1, contours.Count);
             var points = contours[0].Contours[0];
             // 最初の点が MoveTo の位置であるべき
+            // GlyphContourBuilder は SixLabors.Fonts の Y 下向き座標を Unity の Y 上向きに変換するため Y は符号反転
             Assert.AreEqual(5f, points[0].x, 0.001f);
-            Assert.AreEqual(7f, points[0].y, 0.001f);
+            Assert.AreEqual(-7f, points[0].y, 0.001f);
         }
 
         [Test]

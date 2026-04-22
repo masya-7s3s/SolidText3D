@@ -5,11 +5,11 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
-    path: Assets/Samples/Solid Text 3D/1.0.0/Basic Usage/BasicUsage.unity
+  - enabled: 0
+    path: Assets/Samples/Solid Text 3D/2.0.0/Basic Usage/BasicUsage.unity
     guid: 0bc86480a026af04db6d971ed32761df
   - enabled: 1
-    path: Assets/Samples/Solid Text 3D/1.0.0/CJK Example/CJKExample.unity
+    path: Assets/Samples/Solid Text 3D/2.0.0/CJK Example/CJKExample.unity
     guid: 3d6f8dede2a36c64baf3416d4fc6925a
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

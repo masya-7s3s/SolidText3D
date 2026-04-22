@@ -1,6 +1,4 @@
-﻿using UnityEngine;
-
-namespace MasaChuang.SolidText3D
+﻿namespace MasaChuang.SolidText3D
 {
     /// <summary>
     /// GlyphMeshBuilder.Build() に渡すメッシュ生成パラメータ。
@@ -10,10 +8,7 @@ namespace MasaChuang.SolidText3D
         /// <summary>生成対象テキスト</summary>
         public string Text;
 
-        /// <summary>フォントファイルの絶対パス（FontData と排他）</summary>
-        public string FontPath;
-
-        /// <summary>フォントバイナリデータ（FontPath と排他）</summary>
+        /// <summary>フォントバイナリデータ</summary>
         public byte[] FontData;
 
         /// <summary>押し出し深さ（0 以上）</summary>
@@ -36,5 +31,26 @@ namespace MasaChuang.SolidText3D
         /// デフォルト値: 1.0f
         /// </summary>
         public float FontSize;
+
+        /// <summary>水平アンカー位置。デフォルト: Left</summary>
+        public HorizontalAnchor HorizontalAnchor;
+
+        /// <summary>垂直アンカー位置。デフォルト: Lower</summary>
+        public VerticalAnchor VerticalAnchor;
+
+        /// <summary>奥行きアンカー位置。デフォルト: Front</summary>
+        public DepthAnchor DepthAnchor;
+
+        /// <summary>書字方向。デフォルト: Horizontal</summary>
+        public WritingMode WritingMode;
+
+        /// <summary>横書き時の最大幅（0 = 無制限）</summary>
+        public float MaxWidth;
+
+        /// <summary>縦書き時の最大高さ（0 = 無制限）</summary>
+        public float MaxHeight;
+
+        /// <summary>縦書き時に ASCII 英数字を 90 度回転するか</summary>
+        public bool RotateAsciiInVertical;
     }
 }

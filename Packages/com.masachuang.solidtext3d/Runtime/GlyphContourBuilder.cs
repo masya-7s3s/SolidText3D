@@ -130,6 +130,7 @@ namespace MasaChuang.SolidText3D
             {
                 Contours = _currentContours ?? new List<List<Vector2>>(),
                 AdvanceWidth = _currentBounds.Width * _scale,
+                AdvanceHeight = _currentBounds.Height * _scale,
                 Bounds = bounds
             };
             GlyphContours.Add(contour);

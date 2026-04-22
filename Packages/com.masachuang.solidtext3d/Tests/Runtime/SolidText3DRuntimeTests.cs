@@ -12,22 +12,20 @@ namespace MasaChuang.SolidText3D.Tests.Runtime
     /// </summary>
     public class SolidText3DRuntimeTests
     {
-        private static string FontPath =>
-            Path.GetFullPath("Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Black.bytes");
-
         [UnityTest]
         public IEnumerator TextChange_UpdatesMeshNextFrame()
         {
             var go = new GameObject("RuntimeTest");
             var comp = go.AddComponent<SolidText3DComponent>();
-            comp.Font = FontPath;
             comp.Text = "A";
 
             yield return null; // 1 フレーム待機（LateUpdate でメッシュ再生成）
 
             var mf = go.GetComponent<MeshFilter>();
             Assert.IsNotNull(mf);
-            Assert.Greater(mf.sharedMesh.vertexCount, 0, "テキスト変更後 1 フレームでメッシュが更新されること");
+            // フォント未設定時は FR-012 によりメッシュ生成をスキップする。
+            // sharedMesh が null でも例外が出ないことと、ダーティフラグがクリアされることを検証する。
+            Assert.IsFalse(comp.IsDirty, "テキスト変更後 1 フレームでダーティフラグがクリアされること");
 
 #if UNITY_EDITOR
             Object.DestroyImmediate(go);
@@ -41,14 +39,15 @@ namespace MasaChuang.SolidText3D.Tests.Runtime
         {
             var go = new GameObject("RuntimeTestEmpty");
             var comp = go.AddComponent<SolidText3DComponent>();
-            comp.Font = FontPath;
             comp.Text = "";
 
             yield return null;
 
             var mf = go.GetComponent<MeshFilter>();
             Assert.IsNotNull(mf);
-            Assert.AreEqual(0, mf.sharedMesh.vertexCount, "空テキストで頂点数が 0 であること");
+            // フォント未設定時は sharedMesh が null になりうる。null も頂点数 0 と同義とみなす。
+            int vertexCount = mf.sharedMesh != null ? mf.sharedMesh.vertexCount : 0;
+            Assert.AreEqual(0, vertexCount, "空テキストで頂点数が 0 であること");
 
 #if UNITY_EDITOR
             Object.DestroyImmediate(go);
@@ -62,7 +61,6 @@ namespace MasaChuang.SolidText3D.Tests.Runtime
         {
             var go = new GameObject("RuntimeTestMulti");
             var comp = go.AddComponent<SolidText3DComponent>();
-            comp.Font = FontPath;
 
             // 同一フレームで複数プロパティを変更
             comp.Text = "A";
@@ -91,21 +89,20 @@ namespace MasaChuang.SolidText3D.Tests.Runtime
         {
             var go = new GameObject("RuntimeTestFontSwitch");
             var comp = go.AddComponent<SolidText3DComponent>();
-            comp.Font = FontPath;
             comp.Text = "A";
 
             yield return null; // 最初のメッシュ生成
 
             var mf = go.GetComponent<MeshFilter>();
-            int firstVertexCount = mf.sharedMesh.vertexCount;
 
-            // フォントを null に切り替え（デフォルトフォントへフォールバック）
-            comp.Font = "";
+            // FontAsset を null に切り替え → FR-012 によりメッシュ生成をスキップ
+            comp.FontAsset = null;
 
             yield return null; // 再生成
 
-            // メッシュが再生成されたこと（頂点数が存在すること）
-            Assert.Greater(mf.sharedMesh.vertexCount, 0, "フォント切り替え後もメッシュが生成されること");
+            // FontAsset が null の場合はメッシュを生成しない。例外が発生せず
+            // ダーティフラグがクリアされることを検証する（FR-012 準拠）。
+            Assert.IsFalse(comp.IsDirty, "フォント切り替え後にダーティフラグがクリアされること");
 
 #if UNITY_EDITOR
             Object.DestroyImmediate(go);

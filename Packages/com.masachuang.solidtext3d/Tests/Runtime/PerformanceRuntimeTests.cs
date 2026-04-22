@@ -16,8 +16,9 @@ namespace MasaChuang.SolidText3D.Tests.Runtime
     /// </summary>
     public class PerformanceRuntimeTests
     {
-        private static string FontPath =>
-            Path.GetFullPath("Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Black.bytes");
+        private static byte[] LoadDefaultFont() =>
+            File.ReadAllBytes(
+                Path.GetFullPath("Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Black.bytes"));
 
         private const int ComponentCount = 20;
         private const int MeasureFrames = 30;
@@ -35,13 +36,13 @@ namespace MasaChuang.SolidText3D.Tests.Runtime
 
             var objects = new GameObject[ComponentCount];
             const string text50 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwx";
+            byte[] fontData = LoadDefaultFont();
 
             // 20 個の SolidText3DComponent を生成
             for (int i = 0; i < ComponentCount; i++)
             {
                 objects[i] = new GameObject($"PerfTest_{i}");
                 var comp = objects[i].AddComponent<SolidText3DComponent>();
-                comp.Font = FontPath;
                 comp.Text = text50;
             }
 

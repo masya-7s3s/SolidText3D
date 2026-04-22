@@ -10,8 +10,9 @@ namespace MasaChuang.SolidText3D.Tests.Editor
     /// </summary>
     public class PerformanceTests
     {
-        private static string FontPath =>
-            Path.GetFullPath("Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Black.bytes");
+        private static byte[] LoadDefaultFont() =>
+            File.ReadAllBytes(
+                Path.GetFullPath("Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Black.bytes"));
 
         [Test]
         public void Build_50Chars_Under2000ms()
@@ -23,7 +24,7 @@ namespace MasaChuang.SolidText3D.Tests.Editor
             var p = new MeshGenerationParams
             {
                 Text = text,
-                FontPath = FontPath,
+                FontData = LoadDefaultFont(),
                 ExtrusionDepth = 1f,
                 OutlineWidth = 0f,
                 BezierErrorThreshold = 0.0005f,
