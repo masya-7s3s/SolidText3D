@@ -1,128 +1,133 @@
-# クイックスタートガイド: テキストアウトライン生成（v2.1.0）
+# Quickstart: テキストアウトライン生成（再設計版）
 
-**Branch**: `003-text-outline` | **Date**: 2026-04-23
+**Branch**: `003-text-outline-alt` | **Date**: 2026-05-12
 
----
+## 前提
 
-## 前提条件
+- `SolidText3DComponent` が GameObject にアタッチされている
+- フォントと文字列が設定済みである
+- Unity 6 (6000.x LTS) 環境で package が import 済みである
 
-- `SolidText3DComponent` が GameObject にアタッチされ、フォントと文字が設定済みであること
-- Unity 6 (6000.x LTS) + URP 環境
+## 1. Inspector から outline を有効化する
 
----
+1. 対象 GameObject を選択する
+2. `SolidText3DComponent` の `Outline` セクションを開く
+3. `Enabled` をオンにする
+4. `Offset Amount`、`Thickness`、`Display Mode`、`Material` を設定する
 
-## Inspector からアウトラインを設定する（推奨）
+**期待結果**:
 
-1. アウトライン対象の GameObject を選択する
-2. Inspector の `SolidText3DComponent` コンポーネントを開く
-3. **「Outline」セクション**を展開する
-4. **「Enabled」チェックボックス**をオンにする
-5. 各パラメータを設定する:
+- 正面からは文字外周に沿ったリング状シルエットが表示される
+- `Donut` と `BackFilled` を切り替えても正面シルエットは変わらない
+- `BackFilled` では厚さ変更時も背面位置が固定される
+- `Offset Amount = 0` にすると outline は表示されず、後で 0 より大きい値に戻すと同じ child GO に再生成される
 
-   | パラメータ | 推奨初期値 | 説明 |
-   | --------- | --------- | ---- |
-   | Offset Amount | `0.05` | 文字外周からのオフセット量（Unity ワールド単位） |
-   | Thickness | `0.25` | Z 軸方向の厚さ（文字本体と独立） |
-   | Display Mode | `Donut` | 裏面形状。ドーナツ状 or 裏面埋め |
-   | Material | `None` | 専用マテリアル。未設定時は文字本体と同じマテリアルを使用 |
-
-→ 設定変更と同時にシーンビューのアウトラインがリアルタイム更新される。
-
----
-
-## コードからアウトラインを制御する
+## 2. コードから設定する
 
 ```csharp
 using MasaChuang.SolidText3D;
 using UnityEngine;
 
-public class OutlineExample : MonoBehaviour
+public sealed class OutlineSample : MonoBehaviour
 {
     [SerializeField] private SolidText3DComponent _text;
     [SerializeField] private Material _outlineMaterial;
 
-    void Start()
+    private void Start()
     {
-        // アウトラインを有効化
-        _text.OutlineEnabled     = true;
-        _text.OutlineOffset      = 0.05f;
-        _text.OutlineThickness   = 0.1f;
-        _text.OutlineMaterial    = _outlineMaterial;   // null = 本体マテリアルを共有
+        _text.OutlineEnabled = true;
+        _text.OutlineOffset = 0.05f;
+        _text.OutlineThickness = 0.1f;
+        _text.OutlineMaterial = _outlineMaterial;
         _text.OutlineDisplayMode = OutlineDisplayMode.BackFilled;
-    }
-
-    // ゲームプレイ中にアウトラインを動的に生成・削除する例
-    public void ToggleOutline(bool generate)
-    {
-        _text.OutlineEnabled = generate;
-        // generate=false → 子 GameObject が破棄される（設定値は保持）
-        // generate=true  → 子 GameObject が新規生成され前回の設定でメッシュが構築される
     }
 }
 ```
 
----
+## 3. mode ごとの見え方を確認する
 
-## 表示モードの選択ガイド
+### Donut
 
-### Donut（ドーナツモード）— デフォルト
+- 2D 断面は `offset(originalFilled) - originalFilled`
+- 厚みは中央基準で前後へ均等に配分される
+- 背面から見ると中央に文字本体が抜けて見える
 
-```text
-正面:  ┌─────────────┐
-       │ ┌─────────┐ │
-       │ │  文字本体 │ │  ← アウトライン（リング状）
-       │ └─────────┘ │
-       └─────────────┘
+### BackFilled
 
-背面:  中央に文字本体が透けて見える
-```
+- front silhouette は Donut と同一
+- 背面は `bodyBack - 0.0001f` に固定される
+- 背面から見ると太字状に埋まって見える
 
-**向いているシーン**: 正面からのみ見せる UI テキスト、正面表示のみの 3D UI
+## 4. 実装検証の最短手順
 
----
+1. `OutlineContourBuilderTests` を実行し、ring profile と winding parity が通ることを確認する
+2. `OutlineMeshBuilderTests` を実行し、front cap が存在することを確認する
+3. `Offset Amount` を `0` にして outline が非表示になり、再び増やすと再表示されることを確認する
+4. Unity Editor で正面表示と背面表示を目視確認する
 
-### BackFilled（裏面埋めモード）
+## 5. 検証結果スナップショット
 
-```text
-正面:  ドーナツモードと同じ見た目
+- 2026-05-13: Edit Mode / Play Mode テストは all green を確認
+- outline の clean frame 回帰は `PerformanceTests.OutlineEnabled_CleanLateUpdate_AllocatesZeroBytes` で確認対象に追加
+- profiler sample 追加箇所: `OutlineContourBuilder.BuildProfiles`, `OutlineMeshBuilder.Build`, `SolidText3DComponent.RegenerateMesh`, `SolidText3DComponent.UpdateOutlineMesh`
+- 2026-05-13: Profiler 上で dirty frame marker の厳密採取は見送った。実用上のパフォーマンス問題が出ていないこと、outline clean frame 回帰テストを追加済みであることをもって performance polish を受け入れる
 
-背面:  └─────────────┘  ← 塗りつぶされた裏面
-       （文字本体のくぼみが設けられた構造）
-```
+### Profiler 証跡の取得手順
 
-**向いているシーン**: あらゆる角度から見せる 3D テキスト、VR / AR コンテンツ
+1. Unity Editor で `Assets/Scenes/SampleScene.unity` を開く
+2. Hierarchy 上で `SolidText3DComponent` を持つサンプルオブジェクトを 1 つ選ぶ
+3. Inspector で `Outline` を有効化し、`Offset Amount = 0.05`, `Thickness = 0.1`, `Display Mode = Donut` を設定する
+4. Window > Analysis > Profiler を開く
+5. CPU Usage を選び、Deep Profile はオフのまま Record を開始する
+6. まず 120 フレーム程度アイドル状態で流し、clean frame の `SolidText3DComponent.LateUpdate` がほぼ即 return していることを確認する
+7. 次に `OutlineOffset` を `0.05 -> 0.08 -> 0.05` と変え、dirty frame で `SolidText3DComponent.RegenerateMesh`, `SolidText3DComponent.UpdateOutlineMesh`, `OutlineContourBuilder.BuildProfiles`, `OutlineMeshBuilder.Build` が 1 回ずつ現れることを確認する
+8. CPU Usage の Hierarchy または Timeline で上記 marker のフレームを選び、スクリーンショットを保存する
+9. 保存する証跡は最低 2 枚: clean frame 1 枚、dirty frame 1 枚
 
----
+### T039 の確認手順
 
-## アウトラインと文字本体の厚さ設定例
+1. Test Runner で `MasaChuang.SolidText3D.Tests.Editor.PerformanceTests` を実行する
+2. `OutlineEnabled_CleanLateUpdate_AllocatesZeroBytes` が green なら、clean frame の追加 GC.Alloc なしを確認済みとして扱う
+3. その後、Profiler の clean frame でも `GC Alloc` 列が 0 B 付近であることを確認する
+4. 上の 2 条件が満たせたら T039 を完了にしてよい
 
-```csharp
-// ケース 1: アウトラインを文字本体より薄くする
-_text.ExtrusionDepth  = 0.5f;   // 文字本体: 0.5 Unity単位
-_text.OutlineThickness = 0.2f;  // アウトライン: 0.2 Unity単位
-// → BackFilled モード時、アウトライン裏面は -0.5 - 0.0001f に配置（Zファイティング回避）
+### 実施メモ
 
-// ケース 2: アウトラインを文字本体より厚くする
-_text.ExtrusionDepth  = 0.1f;
-_text.OutlineThickness = 0.4f;
-// → BackFilled モード時、アウトライン裏面は -0.4 - 0.0001f に配置
-```
+- 本 feature では `OutlineEnabled_CleanLateUpdate_AllocatesZeroBytes` の追加と Edit Mode / Play Mode green を完了済み
+- dirty frame marker の厳密採取は環境差で安定しなかったため、ユーザー判断で実用上問題なしとして受け入れた
 
----
+## 6. トラブルシューティング
 
-## Clipper2 依存のセットアップ（パッケージ初回インストール時のみ）
+| 症状 | 確認ポイント |
+| --- | --- |
+| 正面だけ outline が見えない | front face 専用ロジックではなく、`RingContoursEm` が body と同じ押し出しコアに渡っているか確認する |
+| offset path は取れているのに面が出ない | `OutlineContourBuilder` の出力が raw path ではなく final ring profile になっているか確認する |
+| `Offset Amount = 0` でも outline child が消えてほしくない | child GO のライフサイクルが `OutlineEnabled` のみで制御され、offset 0 では mesh クリアだけを行っているか確認する |
+| Donut と BackFilled で正面形状がズレる | 両 mode が同じ `RingContoursEm` を共有しているか確認する |
+| BackFilled の背面位置が動く | shell の Z 配置と rear cap の anchor が `bodyBack - 0.0001f` に固定されているか確認する |
 
-> **注**: Unity Package Manager でこのパッケージをインポートすると `Clipper2Lib.dll` が  
-> `Runtime/Plugins/` に自動配置されます。手動での DLL コピーは不要です。
+## 7. 手動ビルド記録
 
----
+### Windows player build 実施手順
 
-## トラブルシューティング
+1. Unity Editor で File > Build Profiles を開く
+2. Platform を Windows に切り替え、Architecture は普段使っている配布設定に合わせる
+3. Scene List に有効な scene が入っていることを確認する。現状の Build Settings では `Assets/Samples/Solid Text 3D/2.0.0/CJK Example/CJKExample.unity` が有効
+4. Build を実行し、出力先を `Builds/Windows-OutlineValidation` などの新規フォルダにする
+5. build 完了後、生成された exe を起動する
+6. SampleScene で text 本体と outline が表示されることを確認する
+7. 可能なら inspector 相当の設定済みオブジェクトで `Donut` と `BackFilled` の見え方を確認する
+8. 目視確認後、このセクションの記録欄に日時、Unity バージョン、出力先、結果を追記する
 
-| 症状 | 確認事項 |
-| ---- | ------- |
-| アウトラインが表示されない | Inspector の「Enabled」がオンになっているか確認。`OutlineEnabled = true` がコードから設定されているか確認。Hierarchy で `"__OutlineMesh__"` 子 GO が存在するか確認 |
-| アウトライン形状が崩れる | `Offset Amount` が大きすぎて文字内部の穴が外周と融合している可能性がある（仕様動作）。値を小さくして確認 |
-| 文字とアウトラインの間に隙間がある | `Offset Amount = 0` に設定すると文字本体と完全一致した輪郭になる |
-| 裏面埋めモードで Zファイティングが発生する | `ExtrusionDepth` と `OutlineThickness` の差が非常に小さい場合に生じることがある。`Z_FIGHT_EPSILON`（0.0001f）は自動適用されているため、通常は発生しない |
-| アウトライン子 GameObject が複数生成される | `"__OutlineMesh__"` という名前の子 GO が重複している場合は手動で削除する。次回再生成時に 1 つだけ作成される |
+補足:
+
+- `-buildWindows64Player` の batchmode 実行はこの環境で成果物なし / return code 1 だったため、Windows build は Editor からの手動実行を正とする
+
+### 記録欄
+
+- Date:
+- Unity:
+- Scene:
+- Build Output:
+- Result:
+- Notes:

@@ -51,7 +51,7 @@ namespace MasaChuang.SolidText3D.Tests.Editor
             // min = (0, 0, 0), max = (2, 1, 1)
             Assert.AreEqual(-1f, offset.x, 0.001f, "水平 Center アンカーのオフセットが -width/2 であること");
             Assert.AreEqual(-0.5f, offset.y, 0.001f, "垂直 Middle アンカーのオフセットが -height/2 であること");
-            Assert.AreEqual(-0.5f, offset.z, 0.001f, "奥行き Center アンカーのオフセットが -depth/2 であること");
+            Assert.AreEqual(-0.5f, offset.z, 0.001f, "奥行き Center アンカーのオフセットが -center.z であること");
         }
 
         // ── SC-005: 全27組み合わせのアンカーテスト ─────────────────────
@@ -109,9 +109,9 @@ namespace MasaChuang.SolidText3D.Tests.Editor
             float expectedY = vAnchor == VerticalAnchor.Lower ? -bounds.min.y :
                               vAnchor == VerticalAnchor.Middle ? -bounds.min.y - bounds.size.y / 2f :
                               -bounds.min.y - bounds.size.y;
-            float expectedZ = dAnchor == DepthAnchor.Front ? -bounds.min.z :
-                              dAnchor == DepthAnchor.Center ? -bounds.min.z - bounds.size.z / 2f :
-                              -bounds.min.z - bounds.size.z;
+            float expectedZ = dAnchor == DepthAnchor.Front ? -bounds.max.z :
+                              dAnchor == DepthAnchor.Center ? -bounds.center.z :
+                              -bounds.min.z;
 
             Assert.AreEqual(expectedX, offset.x, 0.001f);
             Assert.AreEqual(expectedY, offset.y, 0.001f);

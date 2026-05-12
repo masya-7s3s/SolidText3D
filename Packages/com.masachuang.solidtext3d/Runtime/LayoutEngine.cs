@@ -212,14 +212,15 @@ namespace MasaChuang.SolidText3D
                 default: offsetY = -meshBounds.min.y; break;
             }
 
-            // 奥行き: Front=min を原点, Center=-depth/2 相対, Back=-depth 相対
+            // 奥行き: MeshExtruder は front=max.z, back=min.z の規約で面を生成する。
+            // Front は max.z を、Back は min.z を原点に合わせる。
             float offsetZ;
             switch (p.DepthAnchor)
             {
-                case DepthAnchor.Front:  offsetZ = -meshBounds.min.z; break;
-                case DepthAnchor.Center: offsetZ = -meshBounds.min.z - depth * 0.5f; break;
-                case DepthAnchor.Back:   offsetZ = -meshBounds.min.z - depth; break;
-                default: offsetZ = -meshBounds.min.z; break;
+                case DepthAnchor.Front:  offsetZ = -meshBounds.max.z; break;
+                case DepthAnchor.Center: offsetZ = -meshBounds.center.z; break;
+                case DepthAnchor.Back:   offsetZ = -meshBounds.min.z; break;
+                default: offsetZ = -meshBounds.max.z; break;
             }
 
             return new Vector3(offsetX, offsetY, offsetZ);

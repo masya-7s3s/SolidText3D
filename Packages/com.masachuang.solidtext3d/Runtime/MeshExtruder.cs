@@ -93,9 +93,30 @@ namespace MasaChuang.SolidText3D
                 sourceContours = rotated;
             }
 
+            return BuildContourMeshData(NormalizeContours(sourceContours), 0f, -extrusionDepth, extrusionDepth > 0f);
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
+        }
+
+        internal static GlyphMeshData BuildContourMeshData(List<List<Vector2>> contours, float frontZ, float backZ, bool includeBackCap, bool frontFaceForward = true, bool emitBackCapSurface = true)
+        {
+            var data = new GlyphMeshData
+            {
+                Vertices = new List<Vector3>(),
+                Triangles = new List<int>(),
+                Normals = new List<Vector3>(),
+                Offset = Vector3.zero
+            };
+
+            if (contours == null || contours.Count == 0)
+                return data;
+
             // 前面三角分割（LibTessDotNet EvenOdd WindingRule）
             var tess = new Tess();
-            foreach (var contour in sourceContours)
+            foreach (var contour in contours)
             {
                 if (contour.Count < 3) continue;
                 var tessVertices = new ContourVertex[contour.Count];
@@ -116,14 +137,13 @@ namespace MasaChuang.SolidText3D
             for (int i = 0; i < tess.VertexCount; i++)
             {
                 var v = tess.Vertices[i].Position;
-                data.Vertices.Add(new Vector3(v.X, v.Y, 0f));
-                data.Normals.Add(Vector3.forward);
+                data.Vertices.Add(new Vector3(v.X, v.Y, frontZ));
+                data.Normals.Add(frontFaceForward ? Vector3.forward : Vector3.back);
             }
 
             // 前面インデックス
-            // CounterClockwise で全輪郭を CCW 統一後、LibTessDotNet は CCW で出力する。
-            // Unity の front face = CCW を前提とする場合、+Z 向き面の法線は +Z だが
-            // カメラが -Z にあるため CW（逆転）にする必要がある。
+            // 正規化済み contour（outer=CCW, hole=CW）に対しては
+            // LibTessDotNet の出力順をそのまま使うと front cap が可視側を向く。
             int elemCount = tess.ElementCount;
             for (int i = 0; i < elemCount; i++)
             {
@@ -132,11 +152,11 @@ namespace MasaChuang.SolidText3D
                 int e2 = tess.Elements[i * 3 + 2];
                 if (e0 < 0 || e1 < 0 || e2 < 0) continue;
                 data.Triangles.Add(e0 + frontStart);
-                data.Triangles.Add(e2 + frontStart);
-                data.Triangles.Add(e1 + frontStart);
+                data.Triangles.Add((frontFaceForward ? e1 : e2) + frontStart);
+                data.Triangles.Add((frontFaceForward ? e2 : e1) + frontStart);
             }
 
-            if (extrusionDepth <= 0f)
+            if (!includeBackCap || Mathf.Approximately(frontZ, backZ))
                 return data;
 
             // 背面頂点（z=-extrusionDepth）
@@ -144,24 +164,27 @@ namespace MasaChuang.SolidText3D
             for (int i = 0; i < tess.VertexCount; i++)
             {
                 var v = tess.Vertices[i].Position;
-                data.Vertices.Add(new Vector3(v.X, v.Y, -extrusionDepth));
+                data.Vertices.Add(new Vector3(v.X, v.Y, backZ));
                 data.Normals.Add(Vector3.back);
             }
 
-            // 背面インデックス（前面と逆巻き: CCW → 背面から見えるよう +Z 向き）
-            for (int i = 0; i < elemCount; i++)
+            if (emitBackCapSurface)
             {
-                int e0 = tess.Elements[i * 3 + 0];
-                int e1 = tess.Elements[i * 3 + 1];
-                int e2 = tess.Elements[i * 3 + 2];
-                if (e0 < 0 || e1 < 0 || e2 < 0) continue;
-                data.Triangles.Add(e0 + backStart);
-                data.Triangles.Add(e1 + backStart);
-                data.Triangles.Add(e2 + backStart);
+                // 背面インデックス（前面と逆巻き）
+                for (int i = 0; i < elemCount; i++)
+                {
+                    int e0 = tess.Elements[i * 3 + 0];
+                    int e1 = tess.Elements[i * 3 + 1];
+                    int e2 = tess.Elements[i * 3 + 2];
+                    if (e0 < 0 || e1 < 0 || e2 < 0) continue;
+                    data.Triangles.Add(e0 + backStart);
+                    data.Triangles.Add(e2 + backStart);
+                    data.Triangles.Add(e1 + backStart);
+                }
             }
 
             // 側面クワッドを輪郭エッジから生成
-            foreach (var contour in sourceContours)
+            foreach (var contour in contours)
             {
                 if (contour.Count < 2) continue;
                 for (int i = 0; i < contour.Count; i++)
@@ -170,14 +193,13 @@ namespace MasaChuang.SolidText3D
                     var a = contour[i];
                     var b = contour[next];
 
-                    var aFront = new Vector3(a.x, a.y, 0f);
-                    var bFront = new Vector3(b.x, b.y, 0f);
-                    var aBack = new Vector3(a.x, a.y, -extrusionDepth);
-                    var bBack = new Vector3(b.x, b.y, -extrusionDepth);
+                    var aFront = new Vector3(a.x, a.y, frontZ);
+                    var bFront = new Vector3(b.x, b.y, frontZ);
+                    var aBack = new Vector3(a.x, a.y, backZ);
+                    var bBack = new Vector3(b.x, b.y, backZ);
 
-                    // CW 外輪郭の外向き法線 = 進行方向の左垂線 = (-edge.y, edge.x)
                     var edge = new Vector2(b.x - a.x, b.y - a.y);
-                    var normal = new Vector3(-edge.y, edge.x, 0f).normalized;
+                    var normal = new Vector3(edge.y, -edge.x, 0f).normalized;
 
                     int sideBase = data.Vertices.Count;
                     data.Vertices.Add(aFront);  // 0
@@ -190,20 +212,174 @@ namespace MasaChuang.SolidText3D
                     data.Normals.Add(normal);
 
                     data.Triangles.Add(sideBase + 0);
+                    data.Triangles.Add(sideBase + 2);
                     data.Triangles.Add(sideBase + 1);
-                    data.Triangles.Add(sideBase + 2);
                     data.Triangles.Add(sideBase + 0);
-                    data.Triangles.Add(sideBase + 2);
                     data.Triangles.Add(sideBase + 3);
+                    data.Triangles.Add(sideBase + 2);
                 }
             }
 
             return data;
-            }
-            finally
+        }
+
+        private static List<List<Vector2>> NormalizeContours(List<List<Vector2>> contours)
+        {
+            var normalized = new List<List<Vector2>>();
+            if (contours == null)
+                return normalized;
+
+            var filtered = new List<List<Vector2>>();
+            foreach (var contour in contours)
             {
-                Profiler.EndSample();
+                if (contour == null || contour.Count < 3)
+                    continue;
+
+                if (Mathf.Abs(GetSignedArea(contour)) <= 0.0001f)
+                    continue;
+
+                filtered.Add(new List<Vector2>(contour));
             }
+
+            filtered.Sort((left, right) => Mathf.Abs(GetSignedArea(right)).CompareTo(Mathf.Abs(GetSignedArea(left))));
+            for (int index = 0; index < filtered.Count; index++)
+            {
+                var contour = filtered[index];
+                bool isHole = IsHoleContour(filtered, index);
+                float signedArea = GetSignedArea(contour);
+
+                if (!isHole && signedArea < 0f)
+                    contour.Reverse();
+                else if (isHole && signedArea > 0f)
+                    contour.Reverse();
+
+                normalized.Add(contour);
+            }
+
+            return normalized;
+        }
+
+        private static bool IsHoleContour(List<List<Vector2>> sortedContours, int index)
+        {
+            int containingCount = 0;
+            var samplePoint = GetCentroid(sortedContours[index]);
+            for (int i = 0; i < index; i++)
+            {
+                if (ContainsPoint(sortedContours[i], samplePoint))
+                    containingCount++;
+            }
+
+            return (containingCount & 1) == 1;
+        }
+
+        private static float GetSignedArea(List<Vector2> contour)
+        {
+            float signedArea = 0f;
+            for (int i = 0; i < contour.Count; i++)
+            {
+                int next = (i + 1) % contour.Count;
+                signedArea += (contour[i].x * contour[next].y) - (contour[next].x * contour[i].y);
+            }
+
+            return signedArea * 0.5f;
+        }
+
+        private static Vector2 GetCentroid(List<Vector2> contour)
+        {
+            float signedArea = GetSignedArea(contour);
+            if (Mathf.Abs(signedArea) <= 0.0001f)
+                return contour[0];
+
+            float centroidX = 0f;
+            float centroidY = 0f;
+            for (int i = 0; i < contour.Count; i++)
+            {
+                int next = (i + 1) % contour.Count;
+                float cross = (contour[i].x * contour[next].y) - (contour[next].x * contour[i].y);
+                centroidX += (contour[i].x + contour[next].x) * cross;
+                centroidY += (contour[i].y + contour[next].y) * cross;
+            }
+
+            float factor = 1f / (6f * signedArea);
+            return new Vector2(centroidX * factor, centroidY * factor);
+        }
+
+        private static bool ContainsPoint(List<Vector2> contour, Vector2 point)
+        {
+            bool inside = false;
+            int lastIndex = contour.Count - 1;
+            for (int i = 0, j = lastIndex; i < contour.Count; j = i++)
+            {
+                bool intersects = ((contour[i].y > point.y) != (contour[j].y > point.y)) &&
+                    (point.x < ((contour[j].x - contour[i].x) * (point.y - contour[i].y) / (contour[j].y - contour[i].y)) + contour[i].x);
+                if (intersects)
+                    inside = !inside;
+            }
+
+            return inside;
+        }
+
+        internal static GlyphMeshData BuildCapMeshData(List<List<Vector2>> contours, float z, bool faceForward)
+        {
+            var data = new GlyphMeshData
+            {
+                Vertices = new List<Vector3>(),
+                Triangles = new List<int>(),
+                Normals = new List<Vector3>(),
+                Offset = Vector3.zero
+            };
+
+            if (contours == null || contours.Count == 0)
+                return data;
+
+            var tess = new Tess();
+            foreach (var contour in contours)
+            {
+                if (contour.Count < 3) continue;
+                var tessVertices = new ContourVertex[contour.Count];
+                for (int i = 0; i < contour.Count; i++)
+                {
+                    tessVertices[i] = new ContourVertex
+                    {
+                        Position = new Vec3 { X = contour[i].x, Y = contour[i].y, Z = 0f }
+                    };
+                }
+
+                tess.AddContour(tessVertices, ContourOrientation.Original);
+            }
+
+            tess.Tessellate(WindingRule.NonZero, ElementType.Polygons, 3);
+
+            var normal = faceForward ? Vector3.forward : Vector3.back;
+            for (int i = 0; i < tess.VertexCount; i++)
+            {
+                var vertex = tess.Vertices[i].Position;
+                data.Vertices.Add(new Vector3(vertex.X, vertex.Y, z));
+                data.Normals.Add(normal);
+            }
+
+            for (int i = 0; i < tess.ElementCount; i++)
+            {
+                int e0 = tess.Elements[i * 3 + 0];
+                int e1 = tess.Elements[i * 3 + 1];
+                int e2 = tess.Elements[i * 3 + 2];
+                if (e0 < 0 || e1 < 0 || e2 < 0) continue;
+
+                if (faceForward)
+                {
+                    data.Triangles.Add(e0);
+                    data.Triangles.Add(e1);
+                    data.Triangles.Add(e2);
+                }
+                else
+                {
+                    data.Triangles.Add(e0);
+                    data.Triangles.Add(e2);
+                    data.Triangles.Add(e1);
+                }
+            }
+
+            return data;
         }
     }
 }

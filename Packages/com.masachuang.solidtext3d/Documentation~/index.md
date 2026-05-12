@@ -2,25 +2,30 @@
 
 ## 概要
 
-Solid Text 3D は TTF/OTF フォントのグリフから 3D ポリゴンメッシュを生成する Unity UPM パッケージです。
-SixLabors.Fonts でグリフ輪郭を抽出し、LibTessDotNet で三角分割して、Unity の `Mesh` オブジェクトを生成します。
+Solid Text 3D は TTF/OTF フォントのグリフから 3D ポリゴンメッシュを生成する Unity UPM パッケージです。SixLabors.Fonts で輪郭を抽出し、LibTessDotNet と共有押し出しコアで本体メッシュを生成します。outline は Clipper2 で canonical ring profile を確定してから、Donut / BackFilled の 2 モードで立体化します。
 
 ## API リファレンス
 
 ### SolidText3DComponent
 
-`MonoBehaviour` として GameObject に追加して使用します。
+MonoBehaviour として GameObject に追加して使用します。
 
 | プロパティ/メソッド | 型 | 説明 |
 | ------------------ | --- | ---- |
-| `Text` | `string` | 表示テキスト。変更するとダーティフラグが立ち、次の LateUpdate でメッシュが再生成される |
-| `Font` | `string` | フォントファイルのパス。省略時は Noto Sans JP を使用 |
-| `ExtrusionDepth` | `float` | 押し出し深さ（Z 軸方向）。デフォルト: 0.1 |
-| `OutlineWidth` | `float` | アウトライン幅（将来の拡張用）。デフォルト: 0 |
-| `LetterSpacing` | `float` | 追加の文字間スペース。デフォルト: 0 |
-| `LineSpacing` | `float` | 行間係数。デフォルト: 1.2（フォントサイズの 1.2 倍） |
-| `IsDirty` | `bool` | ダーティフラグ（読み取り専用） |
-| `RegenerateMesh()` | `void` | 即時メッシュ再生成（LateUpdate を待たずに実行） |
+| `Text` | `string` | 表示テキスト。変更時に dirty が立つ |
+| `FontAsset` | `UnityEngine.Object` | Inspector で指定するフォントアセット |
+| `ExtrusionDepth` | `float` | 本体メッシュの押し出し深さ |
+| `OutlineEnabled` | `bool` | outline child の生成・再利用を切り替える |
+| `OutlineOffset` | `float` | outline の外側オフセット量 |
+| `OutlineThickness` | `float` | outline の厚み |
+| `OutlineDisplayMode` | `OutlineDisplayMode` | `Donut` または `BackFilled` |
+| `OutlineMaterial` | `Material` | null の場合は本体 sharedMaterial を継承 |
+| `LetterSpacing` | `float` | 追加の文字間スペース |
+| `LineSpacing` | `float` | 行間係数 |
+| `FontSize` | `float` | em スケールの Unity 単位変換 |
+| `ObjectMode` | `ObjectMode` | `SingleObject` / `PerCharacter` |
+| `IsDirty` | `bool` | 次フレームで再生成が必要かどうか |
+| `RegenerateMesh()` | `void` | 即時再生成 |
 
 ### MeshGenerationParams
 
@@ -29,38 +34,35 @@ SixLabors.Fonts でグリフ輪郭を抽出し、LibTessDotNet で三角分割�
 | フィールド | 型 | 説明 |
 | ---------- | --- | ---- |
 | `Text` | `string` | 表示テキスト |
-| `FontPath` | `string` | フォントファイルパス |
-| `FontData` | `byte[]` | フォントバイト配列（FontPath より優先される） |
+| `FontData` | `byte[]` | フォントバイト配列 |
 | `ExtrusionDepth` | `float` | 押し出し深さ |
-| `OutlineWidth` | `float` | アウトライン幅 |
+| `OutlineWidth` | `float` | 互換用 alias。内部では outline offset として扱う |
 | `LetterSpacing` | `float` | 文字間スペース |
 | `LineSpacing` | `float` | 行間係数 |
-| `BezierErrorThreshold` | `float` | ベジェ曲線の適応分割誤差閾値（デフォルト: 0.0005） |
+| `FontSize` | `float` | em から Unity 単位へのスケール |
+| `BezierErrorThreshold` | `float` | ベジェ曲線の適応分割誤差閾値 |
 
-### GlyphMeshBuilder（静的クラス）
+### OutlineDisplayMode
 
-```csharp
-public static Mesh Build(MeshGenerationParams p);
-```
-
-パラメータに基づいてテキストの 3D メッシュを生成します。
-
-### MeshExtruder（静的クラス）
-
-```csharp
-public static Mesh Build(List<GlyphContour> glyphs, MeshGenerationParams p);
-public static GlyphMeshData BuildGlyphMesh(GlyphContour glyph, float extrusionDepth, float outlineWidth);
-```
-
-グリフ輪郭データから 3D メッシュを生成します。
+| 値 | 説明 |
+| --- | ---- |
+| `Donut` | front silhouette を維持したまま厚みを前後へ均等配分する |
+| `BackFilled` | front silhouette を維持し、背面に rear infill を追加する |
 
 ## エディタでの使用ガイド
 
-1. **GameObject を作成**: Hierarchy で右クリック → Create Empty
-2. **コンポーネントを追加**: Inspector → Add Component → "Solid Text 3D Component"
-3. **テキストを設定**: Inspector の `Text` フィールドにテキストを入力
-4. **フォントを設定**（省略可）: `Font` フィールドにフォントファイルのパスを入力
-5. **パラメータを調整**: `Extrusion Depth` / `Letter Spacing` / `Line Spacing` を調整
+1. GameObject を作成する
+2. Solid Text 3D Component を追加する
+3. Text と FontAsset を設定する
+4. Outline セクションで Enabled をオンにする
+5. Offset Amount / Thickness / Display Mode / Material を調整する
+
+### outline の振る舞い
+
+- `OutlineOffset = 0` のときは outline child を維持したまま mesh だけをクリアする
+- `Donut` と `BackFilled` は正面シルエットを共有する
+- `BackFilled` は背面が本体背面の少し後ろに固定される
+- `OutlineMaterial = null` のときは本体の sharedMaterial を使用する
 
 ## ランタイムでの使用ガイド
 
@@ -68,63 +70,53 @@ public static GlyphMeshData BuildGlyphMesh(GlyphContour glyph, float extrusionDe
 using MasaChuang.SolidText3D;
 using UnityEngine;
 
-public class MyScript : MonoBehaviour
+public sealed class OutlineRuntimeExample : MonoBehaviour
 {
-    private SolidText3DComponent _text3D;
+    [SerializeField] private SolidText3DComponent _text3D;
 
-    void Start()
+    private void Start()
     {
-        _text3D = GetComponent<SolidText3DComponent>();
-        _text3D.Text = "Hello, World!";
-    }
-
-    void Update()
-    {
-        // テキストを動的に変更（次の LateUpdate で自動再生成）
-        if (Input.GetKeyDown(KeyCode.Space))
-            _text3D.Text = "Changed!";
+        _text3D.Text = "Hello, Outline";
+        _text3D.OutlineEnabled = true;
+        _text3D.OutlineOffset = 0.05f;
+        _text3D.OutlineThickness = 0.1f;
+        _text3D.OutlineDisplayMode = OutlineDisplayMode.Donut;
     }
 }
 ```
 
 ## CJK 文字の使用
 
-Noto Sans JP フォント（デフォルト埋め込み）は日本語・中国語・韓国語をサポートしています。
+デフォルト埋め込みフォントは日本語・中国語・韓国語を含む CJK テキストを扱えます。
 
 ```csharp
-_text3D.Text = "立体文字";  // 日本語
-_text3D.Text = "汉字";     // 中国語
-_text3D.Text = "한글";     // 韓国語
-_text3D.Text = "Hello 世界"; // 混在テキスト
+_text3D.Text = "立体文字";
+_text3D.Text = "汉字";
+_text3D.Text = "한글";
+_text3D.Text = "Hello 世界";
 ```
 
 ## トラブルシューティング
 
-### メッシュが表示されない
+### 正面から outline が見えない
 
-- `SolidText3DComponent` に `MeshRenderer` と `MeshFilter` が自動追加されていることを確認してください
-- `MeshRenderer` にマテリアルが設定されていない場合は、Inspector で任意のマテリアルを設定してください
-- Console ウィンドウで警告・エラーを確認してください
+- `OutlineEnabled` が true か確認する
+- `OutlineOffset` が 0 より大きいか確認する
+- `OutlineDisplayMode` に関係なく front silhouette は同一なので、見え方の差は背面側だけか確認する
 
 ### フォントが読み込まれない
 
-- エディタ実行時: フォントファイルのパスが正しいことを確認してください
-- ランタイムビルド時: `Resources/Fonts/NotoSansJP-Regular.ttf` が含まれていることを確認してください
-- フォントファイルが存在しない場合、`Debug.LogWarning` が出力され空メッシュが返ります
+- FontAsset に有効な TextAsset が割り当たっているか確認する
+- ランタイムで直接与える場合は `MeshGenerationParams.FontData` を使用する
 
-### ランタイムでのフォントバイト制限
+### パフォーマンス
 
-ランタイムビルドでは `Resources.Load<TextAsset>` でフォントを読み込みます。
-カスタムフォントを使用する場合は `MeshGenerationParams.FontData` にバイト配列を直接渡してください。
-
-### パフォーマンスについて
-
-- テキスト変更はダーティフラグ経由で次フレームに処理されます（`LateUpdate` 内）
-- `LateUpdate` 内でのアロケーションはゼロです（メッシュ再生成時のみアロケーション発生）
-- 大量の 3D テキストオブジェクトがある場合は、変更しないオブジェクトの更新を避けるために `IsDirty` チェックが有効です
+- clean frame の LateUpdate は dirty チェックで即 return する
+- profiler sample は outline build の各段に追加済み
+- 2026-05-13 時点で Edit Mode / Play Mode テスト green を確認済み
 
 ## 既知の制限事項
 
-- SixLabors.Fonts は net6.0 ビルドのみ対応（Unity 6 / CoreCLR 環境が必要）
-- アウトライン幅機能は現バージョンでは未実装（将来のバージョンで実装予定）
-- 非常に複雑なグリフ（多数のベジェ曲線）では処理時間が増加する可能性があります
+- SixLabors.Fonts は Unity 6 / CoreCLR 前提です
+- 複雑な glyph では dirty 時の再生成コストが上がります
+- Windows player build の最終手動確認ログは quickstart に記録運用です

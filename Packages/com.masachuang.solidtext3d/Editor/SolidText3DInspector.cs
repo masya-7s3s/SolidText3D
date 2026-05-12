@@ -86,7 +86,6 @@ namespace MasaChuang.SolidText3D.Editor
             // ── メッシュ設定 ──
             EditorGUI.BeginChangeCheck();
             float newExtrusion = EditorGUILayout.FloatField("Extrusion Depth", _target.ExtrusionDepth);
-            float newOutline = EditorGUILayout.FloatField("Outline Width", _target.OutlineWidth);
             float newLetterSpacing = EditorGUILayout.FloatField("Letter Spacing", _target.LetterSpacing);
             float newLineSpacing = EditorGUILayout.FloatField("Line Spacing", _target.LineSpacing);
             float newFontSize = EditorGUILayout.FloatField("Font Size", _target.FontSize);
@@ -94,12 +93,34 @@ namespace MasaChuang.SolidText3D.Editor
             {
                 Undo.RecordObject(_target, "Change Mesh Params");
                 _target.ExtrusionDepth = newExtrusion;
-                _target.OutlineWidth = newOutline;
                 _target.LetterSpacing = newLetterSpacing;
                 _target.LineSpacing = newLineSpacing;
                 _target.FontSize = newFontSize;
                 EditorUtility.SetDirty(_target);
                 // FloatField は Enter/ブラーで値が確定されるため常に即時再生成する
+                _target.RegenerateMesh();
+                EditorApplication.QueuePlayerLoopUpdate();
+            }
+
+            EditorGUILayout.Space();
+
+            // ── Outline 設定 ──
+            EditorGUILayout.LabelField("Outline", EditorStyles.boldLabel);
+            EditorGUI.BeginChangeCheck();
+            bool newOutlineEnabled = EditorGUILayout.Toggle("Enabled", _target.OutlineEnabled);
+            float newOutlineOffset = EditorGUILayout.FloatField("Offset Amount", _target.OutlineOffset);
+            float newOutlineThickness = EditorGUILayout.FloatField("Thickness", _target.OutlineThickness);
+            var newOutlineDisplayMode = (OutlineDisplayMode)EditorGUILayout.EnumPopup("Display Mode", _target.OutlineDisplayMode);
+            var newOutlineMaterial = (Material)EditorGUILayout.ObjectField("Material", _target.OutlineMaterial, typeof(Material), false);
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(_target, "Change Outline Settings");
+                _target.OutlineEnabled = newOutlineEnabled;
+                _target.OutlineOffset = newOutlineOffset;
+                _target.OutlineThickness = newOutlineThickness;
+                _target.OutlineDisplayMode = newOutlineDisplayMode;
+                _target.OutlineMaterial = newOutlineMaterial;
+                EditorUtility.SetDirty(_target);
                 _target.RegenerateMesh();
                 EditorApplication.QueuePlayerLoopUpdate();
             }

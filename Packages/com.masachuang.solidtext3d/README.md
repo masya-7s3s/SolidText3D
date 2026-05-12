@@ -1,52 +1,53 @@
 ﻿# Solid Text 3D
 
-TTF/OTF フォントのグリフから 3D ポリゴンメッシュを生成する Unity UPM パッケージです。
+TTF/OTF フォントのグリフから 3D ポリゴンメッシュを生成する Unity UPM パッケージです。CJK テキスト、ランタイム更新、Per-Character 配置に加えて、文字本体とは独立した outline を Donut / BackFilled の 2 モードで生成できます。
 
-## インストール手順
+## インストール
 
-1. Unity Package Manager を開く（Window > Package Manager）
-2. 「+」ボタン → 「Add package from disk...」を選択
-3. `Packages/com.masachuang.solidtext3d/package.json` を選択
+1. Unity Package Manager を開く
+2. 「+」→ 「Add package from disk...」を選ぶ
+3. Packages/com.masachuang.solidtext3d/package.json を指定する
 
-または `Packages/manifest.json` に直接記述：
+manifest.json に直接記述する場合の例:
 
 ```json
 {
   "dependencies": {
-    "com.MasaChuang.SolidText3D": "file:../Packages/com.MasaChuang.SolidText3D"
+    "com.masachuang.solidtext3d": "file:../Packages/com.masachuang.solidtext3d"
   }
 }
 ```
 
-## 基本的な使い方
+## 基本使用
 
-1. GameObject に `SolidText3DComponent` を AddComponent する
-2. Inspector で以下のパラメータを設定する：
-   - **Text**: 表示するテキスト
-   - **Font**: フォントファイルのパス（省略時は Noto Sans JP を使用）
-   - **Extrusion Depth**: 押し出し深さ（Z 軸方向）
-   - **Outline Width**: アウトライン幅
-   - **Letter Spacing**: 文字間スペース
-   - **Line Spacing**: 行間スペース
+1. GameObject に SolidText3DComponent を追加する
+2. Text と FontAsset を設定する
+3. Extrusion Depth で本体の厚みを調整する
+4. Outline セクションで Enabled をオンにし、Offset Amount / Thickness / Display Mode / Material を調整する
 
-スクリプトからも変更できます：
+期待結果:
+
+- Offset Amount を上げると文字外周に outline が生成される
+- OutlineOffset が 0 のときは child は維持したまま outline mesh だけがクリアされる
+- Donut と BackFilled は正面シルエットを共有し、背面構成だけが変わる
 
 ```csharp
 using MasaChuang.SolidText3D;
 using UnityEngine;
 
-public class ScoreDisplay : MonoBehaviour
+public sealed class OutlineSample : MonoBehaviour
 {
-    private SolidText3DComponent _text3D;
+    [SerializeField] private SolidText3DComponent _text;
+    [SerializeField] private Material _outlineMaterial;
 
-    void Start()
+    private void Start()
     {
-        _text3D = GetComponent<SolidText3DComponent>();
-    }
-
-    public void SetScore(int score)
-    {
-        _text3D.Text = $"Score: {score}";
+        _text.Text = "Solid Text 3D";
+        _text.OutlineEnabled = true;
+        _text.OutlineOffset = 0.05f;
+        _text.OutlineThickness = 0.1f;
+        _text.OutlineDisplayMode = OutlineDisplayMode.BackFilled;
+        _text.OutlineMaterial = _outlineMaterial;
     }
 }
 ```
@@ -58,43 +59,45 @@ public class ScoreDisplay : MonoBehaviour
 | プロパティ | 型 | 説明 |
 | --------- | --- | ---- |
 | `Text` | `string` | 表示テキスト |
-| `Font` | `string` | フォントファイルパス |
-| `ExtrusionDepth` | `float` | 押し出し深さ |
-| `OutlineWidth` | `float` | アウトライン幅 |
+| `FontAsset` | `UnityEngine.Object` | Inspector で割り当てるフォントアセット |
+| `ExtrusionDepth` | `float` | 本体メッシュの押し出し深さ |
+| `OutlineEnabled` | `bool` | outline child の生成・維持を切り替える |
+| `OutlineOffset` | `float` | outline の外側オフセット量 |
+| `OutlineThickness` | `float` | outline の厚み |
+| `OutlineDisplayMode` | `OutlineDisplayMode` | `Donut` / `BackFilled` |
+| `OutlineMaterial` | `Material` | null のとき本体 material を継承 |
 | `LetterSpacing` | `float` | 文字間スペース |
-| `LineSpacing` | `float` | 行間スペース（デフォルト 1.2） |
-| `IsDirty` | `bool` | ダーティフラグ（読み取り専用） |
-| `RegenerateMesh()` | `void` | 即時メッシュ再生成 |
+| `LineSpacing` | `float` | 行間係数 |
+| `FontSize` | `float` | em 高さを Unity 単位へ変換するスケール |
+| `ObjectMode` | `ObjectMode` | `SingleObject` / `PerCharacter` |
+| `IsDirty` | `bool` | 次の LateUpdate で再生成が必要かどうか |
+| `RegenerateMesh()` | `void` | 即時再生成 |
 
-### GlyphMeshBuilder
+### OutlineDisplayMode
 
-```csharp
-// 直接メッシュを生成する場合
-var p = new MeshGenerationParams
-{
-    Text = "Hello",
-    FontPath = "path/to/font.ttf",
-    ExtrusionDepth = 0.1f,
-    BezierErrorThreshold = 0.0005f,
-    LetterSpacing = 0f,
-    LineSpacing = 1.2f
-};
-Mesh mesh = GlyphMeshBuilder.Build(p);
-```
+| 値 | 説明 |
+| --- | ---- |
+| `Donut` | 厚みを前後に均等配分するリング状 outline |
+| `BackFilled` | 正面シルエットを維持しつつ、背面を本体背面に固定して埋める outline |
 
-## カスタムフォントの割り当て方
+## カスタムフォント
 
-1. TTF/OTF フォントファイルを `Assets/` 以下の任意の場所に配置する
-2. `SolidText3DComponent` の `Font` フィールドにフォントファイルのパスを入力する
-3. Inspector で変更すると自動的にメッシュが再生成される
+1. TTF/OTF を Assets 配下へ配置する
+2. 必要なら生成された .bytes TextAsset を FontAsset に割り当てる
+3. ランタイムで直接与える場合は MeshGenerationParams.FontData に byte[] を設定する
 
-## 既知の制限事項
+## パフォーマンス
 
-- SixLabors.Fonts は net6.0 ビルドのみ対応（Unity 6 / CoreCLR 環境が必要）
-- ランタイムビルドでは `Resources/Fonts/NotoSansJP-Regular.ttf` が埋め込まれている必要がある
-- アウトライン幅機能は将来のバージョンで実装予定
+- 通常フレームは dirty flag を見て何もしないため、clean frame の LateUpdate で追加 GC.Alloc を発生させない設計です
+- profiler sample: GlyphMeshBuilder.Build, MeshExtruder.BuildGlyphMesh, OutlineContourBuilder.BuildProfiles, OutlineMeshBuilder.Build, SolidText3DComponent.RegenerateMesh, SolidText3DComponent.UpdateOutlineMesh
+- 2026-05-13 時点で Edit Mode / Play Mode テストは green を確認済みです
+
+## 既知の制限
+
+- SixLabors.Fonts は Unity 6 / CoreCLR 前提です
+- very complex glyph では dirty 時の再生成コストが増えます
+- Windows player の最終手動ビルド記録は quickstart に追記運用です
 
 ## ライセンス
 
-MIT License — 詳細は `LICENSE.md` を参照してください。  
-サードパーティライセンスは `Third Party Notices.md` を参照してください。
+MIT License。詳細は LICENSE.md を参照してください。サードパーティライセンスは Third Party Notices.md を参照してください。
