@@ -1,4 +1,7 @@
 ﻿using NUnit.Framework;
+using System.IO;
+using System.Reflection;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.TestTools;
 using MasaChuang.SolidText3D;
@@ -134,6 +137,53 @@ namespace MasaChuang.SolidText3D.Tests.Editor
             _component.RegenerateMesh();
             // ダーティフラグはクリアされること
             Assert.IsFalse(_component.IsDirty);
+        }
+
+        [Test]
+        public void GetFontBytes_FontAssetOverridesExistingDefaultCache()
+        {
+            var serifFont = AssetDatabase.LoadAssetAtPath<Font>(
+                "Assets/Samples/Solid Text 3D/2.0.0/CJK Example/NotoSerifJP-Black.ttf");
+            Assert.IsNotNull(serifFont, "比較用フォントが存在すること");
+
+            var defaultBytes = AssetDatabase.LoadAssetAtPath<TextAsset>(
+                "Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Black.bytes");
+            Assert.IsNotNull(defaultBytes, "デフォルトフォント bytes が存在すること");
+
+            var cacheField = typeof(SolidText3DComponent).GetField("_fontBytesCache", BindingFlags.NonPublic | BindingFlags.Instance);
+            cacheField.SetValue(_component, defaultBytes);
+            _component.FontAsset = serifFont;
+
+            var getFontBytesMethod = typeof(SolidText3DComponent).GetMethod("GetFontBytes", BindingFlags.NonPublic | BindingFlags.Instance);
+            var actualBytes = (byte[])getFontBytesMethod.Invoke(_component, null);
+            var expectedBytes = File.ReadAllBytes(Path.GetFullPath(
+                "Assets/Samples/Solid Text 3D/2.0.0/CJK Example/NotoSerifJP-Black.ttf"));
+
+            Assert.IsNotNull(actualBytes);
+            Assert.AreEqual(expectedBytes.Length, actualBytes.Length,
+                "FontAsset 指定時は既存 cache ではなく選択したフォントの bytes を使うこと");
+        }
+
+        [Test]
+        public void ComputeParamHash_FontAssetChange_ChangesHash()
+        {
+            var sansFont = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NotoSansJP-Black.ttf");
+            var serifFont = AssetDatabase.LoadAssetAtPath<Font>(
+                "Assets/Samples/Solid Text 3D/2.0.0/CJK Example/NotoSerifJP-Black.ttf");
+            Assert.IsNotNull(sansFont);
+            Assert.IsNotNull(serifFont);
+
+            _component.Text = "A";
+            _component.FontAsset = sansFont;
+
+            var computeHashMethod = typeof(SolidText3DComponent).GetMethod("ComputeParamHash", BindingFlags.NonPublic | BindingFlags.Instance);
+            int sansHash = (int)computeHashMethod.Invoke(_component, null);
+
+            _component.FontAsset = serifFont;
+            int serifHash = (int)computeHashMethod.Invoke(_component, null);
+
+            Assert.AreNotEqual(sansHash, serifHash,
+                "フォント変更時は再生成ハッシュも変化すること");
         }
 
         // T018: US5 — パフォーマンス改善 ─────────────────────────────────

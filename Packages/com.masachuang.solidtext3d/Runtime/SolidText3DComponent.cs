@@ -16,6 +16,9 @@ namespace MasaChuang.SolidText3D
     [RequireComponent(typeof(MeshRenderer))]
     public sealed class SolidText3DComponent : MonoBehaviour
     {
+        private const string DefaultFontBytesAssetPath = "Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Black.bytes";
+        private const string GeneratedFontBytesFolder = "Assets/SolidText3DFonts";
+
         [SerializeField] private string _text = "Hello, World!";
         [SerializeField] private UnityEngine.Object _fontAsset;
         [SerializeField, HideInInspector] private TextAsset _fontBytesCache;
@@ -68,7 +71,11 @@ namespace MasaChuang.SolidText3D
             set
             {
                 _fontAsset = value;
-                if (value == null) _fontBytesCache = null; // 明示的 null 設定時はキャッシュもクリア
+#if UNITY_EDITOR
+                _fontBytesCache = ResolveEditorFontBytesCache(value);
+#else
+                if (value == null) _fontBytesCache = null;
+#endif
                 _fontMissingWarningIssued = false;
                 _isDirty = true;
             }
@@ -355,7 +362,7 @@ namespace MasaChuang.SolidText3D
             {
 #if UNITY_EDITOR
                 var defaultFont = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(
-                    "Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Black.bytes");
+                    DefaultFontBytesAssetPath);
                 if (defaultFont != null)
                     _fontBytesCache = defaultFont as TextAsset;
 #else
@@ -372,6 +379,10 @@ namespace MasaChuang.SolidText3D
         private void OnValidate()
         {
             EnsureOutlineSettingsInitialized();
+#if UNITY_EDITOR
+            if (_fontAsset != null)
+                _fontBytesCache = ResolveEditorFontBytesCache(_fontAsset);
+#endif
             _isDirty = true;
         }
 
@@ -498,26 +509,22 @@ namespace MasaChuang.SolidText3D
 
         private byte[] GetFontBytes()
         {
+#if UNITY_EDITOR
+            byte[] fontBytes = TryReadEditorFontBytesFromAsset(_fontAsset);
+            if (fontBytes != null && fontBytes.Length > 0)
+                return fontBytes;
+
             if (_fontBytesCache != null)
                 return _fontBytesCache.bytes;
 
-#if UNITY_EDITOR
-            if (_fontAsset != null)
-            {
-                string assetPath = UnityEditor.AssetDatabase.GetAssetPath(_fontAsset);
-                if (!string.IsNullOrEmpty(assetPath))
-                {
-                    string fullPath = System.IO.Path.GetFullPath(assetPath);
-                    if (System.IO.File.Exists(fullPath))
-                        return System.IO.File.ReadAllBytes(fullPath);
-                }
-            }
-
             var textAsset = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.TextAsset>(
-                "Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Black.bytes");
+                DefaultFontBytesAssetPath);
             if (textAsset != null)
                 return textAsset.bytes;
 #else
+            if (_fontBytesCache != null)
+                return _fontBytesCache.bytes;
+
             var defaultAsset = Resources.Load<TextAsset>("Fonts/NotoSansJP-Black");
             if (defaultAsset != null)
                 return defaultAsset.bytes;
@@ -540,6 +547,8 @@ namespace MasaChuang.SolidText3D
             hash ^= _letterSpacing.GetHashCode();
             hash ^= _lineSpacing.GetHashCode();
             hash ^= _rotateAsciiInVertical.GetHashCode();
+            hash ^= _fontAsset != null ? _fontAsset.GetInstanceID() : 0;
+            hash ^= _fontBytesCache != null ? _fontBytesCache.GetInstanceID() : 0;
             hash ^= _outline.Enabled.GetHashCode();
             hash ^= _outline.OffsetAmount.GetHashCode();
             hash ^= _outline.Thickness.GetHashCode();
@@ -547,6 +556,46 @@ namespace MasaChuang.SolidText3D
             hash ^= _outline.Material != null ? _outline.Material.GetInstanceID() : 0;
             return hash;
         }
+
+#if UNITY_EDITOR
+        private static TextAsset ResolveEditorFontBytesCache(UnityEngine.Object fontAsset)
+        {
+            if (fontAsset == null)
+                return null;
+
+            if (fontAsset is TextAsset textAsset)
+                return textAsset;
+
+            string assetPath = UnityEditor.AssetDatabase.GetAssetPath(fontAsset);
+            if (string.IsNullOrEmpty(assetPath))
+                return null;
+
+            string guid = UnityEditor.AssetDatabase.AssetPathToGUID(assetPath);
+            if (string.IsNullOrEmpty(guid))
+                return null;
+
+            return UnityEditor.AssetDatabase.LoadAssetAtPath<TextAsset>($"{GeneratedFontBytesFolder}/{guid}.bytes");
+        }
+
+        private static byte[] TryReadEditorFontBytesFromAsset(UnityEngine.Object fontAsset)
+        {
+            if (fontAsset == null)
+                return null;
+
+            if (fontAsset is TextAsset textAsset)
+                return textAsset.bytes;
+
+            string assetPath = UnityEditor.AssetDatabase.GetAssetPath(fontAsset);
+            if (string.IsNullOrEmpty(assetPath))
+                return null;
+
+            string fullPath = System.IO.Path.GetFullPath(assetPath);
+            if (!System.IO.File.Exists(fullPath))
+                return null;
+
+            return System.IO.File.ReadAllBytes(fullPath);
+        }
+#endif
 
         private void EnsureOutlineSettingsInitialized()
         {

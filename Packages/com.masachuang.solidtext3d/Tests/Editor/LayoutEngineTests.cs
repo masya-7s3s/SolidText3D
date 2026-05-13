@@ -109,9 +109,9 @@ namespace MasaChuang.SolidText3D.Tests.Editor
             float expectedY = vAnchor == VerticalAnchor.Lower ? -bounds.min.y :
                               vAnchor == VerticalAnchor.Middle ? -bounds.min.y - bounds.size.y / 2f :
                               -bounds.min.y - bounds.size.y;
-            float expectedZ = dAnchor == DepthAnchor.Front ? -bounds.max.z :
+            float expectedZ = dAnchor == DepthAnchor.Front ? -bounds.min.z :
                               dAnchor == DepthAnchor.Center ? -bounds.center.z :
-                              -bounds.min.z;
+                              -bounds.max.z;
 
             Assert.AreEqual(expectedX, offset.x, 0.001f);
             Assert.AreEqual(expectedY, offset.y, 0.001f);
