@@ -114,7 +114,7 @@ namespace MasaChuang.SolidText3D
             if (contours == null || contours.Count == 0)
                 return data;
 
-            // 前面三角分割（LibTessDotNet EvenOdd WindingRule）
+            // 前面三角分割。正規化済み contour（outer=CCW, hole=CW）を NonZero で充填する。
             var tess = new Tess();
             foreach (var contour in contours)
             {
@@ -256,34 +256,20 @@ namespace MasaChuang.SolidText3D
             }
 
             filtered.Sort((left, right) => Mathf.Abs(GetSignedArea(right)).CompareTo(Mathf.Abs(GetSignedArea(left))));
+
+            // Fonts can contain filled islands nested inside other filled contours.
+            // Preserve the original relative winding relationship and only normalize the global direction.
+            bool reverseAllContours = GetSignedArea(filtered[0]) < 0f;
             for (int index = 0; index < filtered.Count; index++)
             {
                 var contour = filtered[index];
-                bool isHole = IsHoleContour(filtered, index);
-                float signedArea = GetSignedArea(contour);
-
-                if (!isHole && signedArea < 0f)
-                    contour.Reverse();
-                else if (isHole && signedArea > 0f)
+                if (reverseAllContours)
                     contour.Reverse();
 
                 normalized.Add(contour);
             }
 
             return normalized;
-        }
-
-        private static bool IsHoleContour(List<List<Vector2>> sortedContours, int index)
-        {
-            int containingCount = 0;
-            var samplePoint = GetCentroid(sortedContours[index]);
-            for (int i = 0; i < index; i++)
-            {
-                if (ContainsPoint(sortedContours[i], samplePoint))
-                    containingCount++;
-            }
-
-            return (containingCount & 1) == 1;
         }
 
         private static float GetSignedArea(List<Vector2> contour)
@@ -316,21 +302,6 @@ namespace MasaChuang.SolidText3D
 
             float factor = 1f / (6f * signedArea);
             return new Vector2(centroidX * factor, centroidY * factor);
-        }
-
-        private static bool ContainsPoint(List<Vector2> contour, Vector2 point)
-        {
-            bool inside = false;
-            int lastIndex = contour.Count - 1;
-            for (int i = 0, j = lastIndex; i < contour.Count; j = i++)
-            {
-                bool intersects = ((contour[i].y > point.y) != (contour[j].y > point.y)) &&
-                    (point.x < ((contour[j].x - contour[i].x) * (point.y - contour[i].y) / (contour[j].y - contour[i].y)) + contour[i].x);
-                if (intersects)
-                    inside = !inside;
-            }
-
-            return inside;
         }
 
         internal static GlyphMeshData BuildCapMeshData(List<List<Vector2>> contours, float z, bool faceForward)

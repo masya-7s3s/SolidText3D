@@ -192,6 +192,18 @@ namespace MasaChuang.SolidText3D.Tests.Editor
         }
 
         [Test]
+        public void Build_VerticalSupplementaryCjk_HasVertices()
+        {
+            var p = ParamsFor("𠮷");
+            p.WritingMode = WritingMode.Vertical;
+
+            var mesh = GlyphMeshBuilder.Build(p);
+
+            Assert.IsNotNull(mesh);
+            Assert.Greater(mesh.vertexCount, 0, "補助平面の CJK 文字が縦書きでも分断されずメッシュ化されること");
+        }
+
+        [Test]
         public void BuildPerCharacter_ThreeChars_ReturnsThreeMeshes()
         {
             // T021: Per-Character モードで3文字分の Mesh リストが返ること

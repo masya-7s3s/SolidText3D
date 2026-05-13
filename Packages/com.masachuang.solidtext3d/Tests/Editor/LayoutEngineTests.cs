@@ -159,6 +159,7 @@ namespace MasaChuang.SolidText3D.Tests.Editor
                 Assert.AreEqual(0f, glyphs[i].Offset.y, 0.001f, $"MaxWidth=0 のとき Y オフセットが 0 であること (glyph {i})");
         }
 
+
         // ── T027: 縦書きレイアウトテスト ────────────────────────────────
 
         [Test]
@@ -195,6 +196,40 @@ namespace MasaChuang.SolidText3D.Tests.Editor
                 Assert.LessOrEqual(glyphs[i].Offset.y, glyphs[i - 1].Offset.y,
                     $"縦書き: glyph[{i}].Y ({glyphs[i].Offset.y}) <= glyph[{i-1}].Y ({glyphs[i-1].Offset.y})");
             }
+        }
+
+        [Test]
+        public void ApplyVerticalLayout_JapanesePunctuation_IsBiasedToTopRightInCell()
+        {
+            var punctuationGlyphs = CreateDummyGlyphs(1);
+            punctuationGlyphs[0].AdvanceWidth = 0.2f;
+            punctuationGlyphs[0].AdvanceHeight = 0.2f;
+            punctuationGlyphs[0].Bounds = new Rect(0f, 0f, 0.2f, 0.2f);
+
+            var normalGlyphs = CreateDummyGlyphs(1);
+            normalGlyphs[0].AdvanceWidth = 0.2f;
+            normalGlyphs[0].AdvanceHeight = 0.2f;
+            normalGlyphs[0].Bounds = new Rect(0f, 0f, 0.2f, 0.2f);
+
+            var punctuationParams = DefaultParams("。");
+            punctuationParams.WritingMode = WritingMode.Vertical;
+            punctuationParams.VerticalAnchor = VerticalAnchor.Upper;
+
+            var normalParams = DefaultParams("あ");
+            normalParams.WritingMode = WritingMode.Vertical;
+            normalParams.VerticalAnchor = VerticalAnchor.Upper;
+
+            LayoutEngine.ApplyVerticalLayout(punctuationGlyphs, punctuationParams);
+            LayoutEngine.ApplyVerticalLayout(normalGlyphs, normalParams);
+
+            Assert.Greater(punctuationGlyphs[0].Offset.x, normalGlyphs[0].Offset.x,
+                "縦書きの句点は通常文字より右寄せされること");
+            Assert.Greater(punctuationGlyphs[0].Offset.y, normalGlyphs[0].Offset.y,
+                "縦書きの句点は通常文字より上寄せされること");
+            Assert.AreEqual(1.0f, punctuationGlyphs[0].Offset.x, 0.001f,
+                "縦書きの句点は従来どおり右寄せされること");
+            Assert.AreEqual(-0.16f, punctuationGlyphs[0].Offset.y, 0.001f,
+                "縦書きの句点は上端に張り付きすぎない位置に置かれること");
         }
 
         // ── ヘルパー ───────────────────────────────────────────────────────

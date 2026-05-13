@@ -156,7 +156,7 @@ namespace MasaChuang.SolidText3D
             {
                 var result = new List<GlyphContour>();
                 var singleCharOptions = new TextOptions(font);
-                for (int i = 0; i < p.Text.Length; i++)
+                for (int i = 0; i < p.Text.Length;)
                 {
                     // 改行文字は非表示グリフとして登録し、ApplyVerticalLayout で列折り返しに使う
                     if (p.Text[i] == '\n')
@@ -167,13 +167,22 @@ namespace MasaChuang.SolidText3D
                             CharIndex = i,
                             IsVisible = false
                         });
+                        i++;
                         continue;
                     }
 
-                    string ch = p.Text[i].ToString();
+                    int codeUnitCount = 1;
+                    if (i + 1 < p.Text.Length && char.IsSurrogatePair(p.Text[i], p.Text[i + 1]))
+                        codeUnitCount = 2;
+
+                    string ch = p.Text.Substring(i, codeUnitCount);
                     var renderer = new GlyphContourBuilder(p.BezierErrorThreshold, scale);
                     TextRenderer.RenderTextTo(renderer, ch, singleCharOptions);
-                    if (renderer.GlyphContours.Count == 0) continue;
+                    if (renderer.GlyphContours.Count == 0)
+                    {
+                        i += codeUnitCount;
+                        continue;
+                    }
 
                     var g = renderer.GlyphContours[0];
                     // 輪郭を原点基準に正規化する
@@ -208,6 +217,7 @@ namespace MasaChuang.SolidText3D
                         g.IsVisible = true;
                     }
                     result.Add(g);
+                    i += codeUnitCount;
                 }
                 return result;
             }

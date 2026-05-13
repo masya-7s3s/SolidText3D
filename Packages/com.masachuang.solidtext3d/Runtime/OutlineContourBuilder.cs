@@ -22,7 +22,7 @@ namespace MasaChuang.SolidText3D
                 if (glyph == null || glyph.Contours == null || glyph.Contours.Count == 0)
                     return profileSet;
 
-                profileSet.OriginalFilledContoursEm = NormalizeContours(CloneContours(glyph.Contours));
+                profileSet.OriginalFilledContoursEm = CanonicalizeFilledContours(CloneContours(glyph.Contours));
                 if (offsetAmount <= 0f || fontSize <= 0f)
                     return profileSet;
 
@@ -36,6 +36,7 @@ namespace MasaChuang.SolidText3D
 
                 var offsetPaths = new Paths64();
                 clipperOffset.Execute(offsetAmountEm * Scale, offsetPaths);
+                offsetPaths = Clipper.Union(offsetPaths, FillRule.NonZero);
                 profileSet.OffsetFilledContoursEm = NormalizeContours(ToContours(offsetPaths));
 
                 var ringPaths = Clipper.Difference(offsetPaths, originalPaths, FillRule.NonZero);
@@ -46,6 +47,17 @@ namespace MasaChuang.SolidText3D
             {
                 Profiler.EndSample();
             }
+        }
+
+        private static List<List<Vector2>> CanonicalizeFilledContours(List<List<Vector2>> contours)
+        {
+            var normalizedContours = NormalizeContours(contours);
+            var normalizedPaths = ToPaths64(normalizedContours);
+            if (normalizedPaths.Count == 0)
+                return new List<List<Vector2>>();
+
+            var unionPaths = Clipper.Union(normalizedPaths, FillRule.NonZero);
+            return NormalizeContours(ToContours(unionPaths));
         }
 
         private static List<List<Vector2>> CloneContours(List<List<Vector2>> contours)
@@ -121,16 +133,16 @@ namespace MasaChuang.SolidText3D
                 filtered.Add(new List<Vector2>(contour));
             }
 
+            if (filtered.Count == 0)
+                return normalized;
+
             filtered.Sort((left, right) => Mathf.Abs(GetSignedArea(right)).CompareTo(Mathf.Abs(GetSignedArea(left))));
+
+            bool reverseAllContours = GetSignedArea(filtered[0]) < 0f;
             for (int index = 0; index < filtered.Count; index++)
             {
                 var contour = filtered[index];
-                bool isHole = IsHoleContour(filtered, index);
-                float signedArea = GetSignedArea(contour);
-
-                if (!isHole && signedArea < 0f)
-                    contour.Reverse();
-                else if (isHole && signedArea > 0f)
+                if (reverseAllContours)
                     contour.Reverse();
 
                 normalized.Add(contour);
@@ -142,7 +154,7 @@ namespace MasaChuang.SolidText3D
         private static bool IsHoleContour(List<List<Vector2>> sortedContours, int index)
         {
             int containingCount = 0;
-            var samplePoint = GetCentroid(sortedContours[index]);
+            var samplePoint = GetInteriorPoint(sortedContours[index]);
             for (int i = 0; i < index; i++)
             {
                 if (ContainsPoint(sortedContours[i], samplePoint))
@@ -182,6 +194,32 @@ namespace MasaChuang.SolidText3D
 
             float factor = 1f / (6f * signedArea);
             return new Vector2(centroidX * factor, centroidY * factor);
+        }
+
+        private static Vector2 GetInteriorPoint(List<Vector2> contour)
+        {
+            for (int i = 0; i < contour.Count; i++)
+            {
+                int previous = (i + contour.Count - 1) % contour.Count;
+                int next = (i + 1) % contour.Count;
+                var a = contour[previous];
+                var b = contour[i];
+                var c = contour[next];
+
+                if (Mathf.Abs(Cross(b - a, c - a)) <= AreaEpsilon)
+                    continue;
+
+                var centroid = (a + b + c) / 3f;
+                if (ContainsPoint(contour, centroid))
+                    return centroid;
+            }
+
+            return GetCentroid(contour);
+        }
+
+        private static float Cross(Vector2 left, Vector2 right)
+        {
+            return (left.x * right.y) - (left.y * right.x);
         }
 
         private static bool ContainsPoint(List<Vector2> contour, Vector2 point)

@@ -138,6 +138,32 @@ namespace MasaChuang.SolidText3D.Tests.Editor
             };
         }
 
+        private static GlyphContour MakeOverlappingContours()
+        {
+            return new GlyphContour
+            {
+                Contours = new List<List<Vector2>>
+                {
+                    new List<Vector2>
+                    {
+                        new Vector2(0f, 0f),
+                        new Vector2(2f, 0f),
+                        new Vector2(2f, 2f),
+                        new Vector2(0f, 2f),
+                    },
+                    new List<Vector2>
+                    {
+                        new Vector2(1f, 0.5f),
+                        new Vector2(3f, 0.5f),
+                        new Vector2(3f, 2.5f),
+                        new Vector2(1f, 2.5f),
+                    }
+                },
+                AdvanceWidth = 3f,
+                Bounds = new Rect(0f, 0f, 3f, 2.5f)
+            };
+        }
+
         private static Type RequireOutlineContourBuilderType()
         {
             var type = typeof(SolidText3DComponent).Assembly.GetType("MasaChuang.SolidText3D.OutlineContourBuilder");
@@ -328,6 +354,59 @@ namespace MasaChuang.SolidText3D.Tests.Editor
 
             Assert.That(growthRatio, Is.InRange(1.7f, 2.3f),
                 "offset を 2 倍にしたとき、外周長の増加率もおおむね 2 倍（±15%）に収まること");
+        }
+
+        [Test]
+        public void BuildProfiles_OverlappingContours_AreUnionedBeforeRingGeneration()
+        {
+            var profileSet = InvokeBuildProfiles(MakeOverlappingContours(), 0.25f, 1f);
+            var originalContours = GetContourProperty(profileSet, "OriginalFilledContoursEm");
+            var offsetContours = GetContourProperty(profileSet, "OffsetFilledContoursEm");
+            var ringContours = GetContourProperty(profileSet, "RingContoursEm");
+
+            Assert.AreEqual(1, originalContours.Count,
+                "重なり合う contour は original filled profile の段階で union されること");
+            Assert.AreEqual(1, offsetContours.Count,
+                "重なり合う contour の outward offset も単一 profile に結合されること");
+            Assert.AreEqual(2, ringContours.Count,
+                "単連結な union shape の outline ring は outer と inner の 2 contour を持つこと");
+        }
+
+        [Test]
+        public void BuildProfiles_OverlappingContours_RingAreaMatchesOffsetMinusOriginal()
+        {
+            var profileSet = InvokeBuildProfiles(MakeOverlappingContours(), 0.25f, 1f);
+            var originalContours = GetContourProperty(profileSet, "OriginalFilledContoursEm");
+            var offsetContours = GetContourProperty(profileSet, "OffsetFilledContoursEm");
+            var ringContours = GetContourProperty(profileSet, "RingContoursEm");
+
+            float originalArea = GetFilledArea(originalContours);
+            float offsetArea = GetFilledArea(offsetContours);
+            float ringArea = GetFilledArea(ringContours);
+
+            Assert.AreEqual(offsetArea - originalArea, ringArea, 0.05f,
+                "重なり contour でも outline ring の面積は offset minus original を維持すること");
+        }
+
+        [Test]
+        public void BuildProfiles_OverlappingContours_RingContours_KeepOppositeWindings()
+        {
+            var profileSet = InvokeBuildProfiles(MakeOverlappingContours(), 0.25f, 1f);
+            var ringContours = GetContourProperty(profileSet, "RingContoursEm");
+
+            bool hasPositiveArea = false;
+            bool hasNegativeArea = false;
+            foreach (var contour in ringContours)
+            {
+                float signedArea = GetSignedArea(contour);
+                if (signedArea > 0f) hasPositiveArea = true;
+                if (signedArea < 0f) hasNegativeArea = true;
+            }
+
+            Assert.IsTrue(hasPositiveArea,
+                "outline ring には outer contour の winding が含まれること");
+            Assert.IsTrue(hasNegativeArea,
+                "outline ring には inner contour の winding が含まれること");
         }
     }
 }
