@@ -16,7 +16,7 @@ namespace MasaChuang.SolidText3D
         Donut,
 
         /// <summary>
-        /// front silhouette を維持したまま、背面側を埋めた構成で表示する。
+        /// front silhouette を維持したまま、固定背面を filled cap で閉じる構成で表示する。
         /// </summary>
         /// <example>
         /// <code>

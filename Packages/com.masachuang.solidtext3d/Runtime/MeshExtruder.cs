@@ -183,6 +183,8 @@ namespace MasaChuang.SolidText3D
                 }
             }
 
+            bool reverseSideWinding = frontZ < backZ;
+
             // 側面クワッドを輪郭エッジから生成
             foreach (var contour in contours)
             {
@@ -211,12 +213,24 @@ namespace MasaChuang.SolidText3D
                     data.Normals.Add(normal);
                     data.Normals.Add(normal);
 
-                    data.Triangles.Add(sideBase + 0);
-                    data.Triangles.Add(sideBase + 2);
-                    data.Triangles.Add(sideBase + 1);
-                    data.Triangles.Add(sideBase + 0);
-                    data.Triangles.Add(sideBase + 3);
-                    data.Triangles.Add(sideBase + 2);
+                    if (!reverseSideWinding)
+                    {
+                        data.Triangles.Add(sideBase + 0);
+                        data.Triangles.Add(sideBase + 2);
+                        data.Triangles.Add(sideBase + 1);
+                        data.Triangles.Add(sideBase + 0);
+                        data.Triangles.Add(sideBase + 3);
+                        data.Triangles.Add(sideBase + 2);
+                    }
+                    else
+                    {
+                        data.Triangles.Add(sideBase + 0);
+                        data.Triangles.Add(sideBase + 1);
+                        data.Triangles.Add(sideBase + 2);
+                        data.Triangles.Add(sideBase + 0);
+                        data.Triangles.Add(sideBase + 2);
+                        data.Triangles.Add(sideBase + 3);
+                    }
                 }
             }
 

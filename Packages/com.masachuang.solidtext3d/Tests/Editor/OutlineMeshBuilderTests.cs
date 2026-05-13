@@ -206,11 +206,11 @@ namespace MasaChuang.SolidText3D.Tests.Editor
                 1f,
                 1f);
 
-            const float expectedBackZ = -1.0001f;
-            Assert.AreEqual(expectedBackZ, GetMinZ(mesh), 0.001f,
-                "BackFilled の背面 anchor は body back - Z_FIGHT_EPSILON に固定されること");
+            const float expectedBackZ = 0.0001f;
+            Assert.AreEqual(expectedBackZ, GetMaxZ(mesh), 0.001f,
+                "BackFilled の固定背面は body front + Z_FIGHT_EPSILON に配置されること");
             Assert.IsTrue(HasTriangleContainingPointAtZ(mesh, new Vector2(0.5f, 0.5f), expectedBackZ),
-                "BackFilled では背面に rear infill cap があり、元グリフ中心を含む三角形が backZ 平面に存在すること");
+                "BackFilled では背面に単一の rear infill cap があり、元グリフ中心を含む三角形が固定背面 plane に存在すること");
         }
 
         [Test]
@@ -225,11 +225,11 @@ namespace MasaChuang.SolidText3D.Tests.Editor
                 1f,
                 1f);
 
-            const float expectedBackZ = -1.0001f;
+            const float expectedBackZ = 0.0001f;
             float backArea = GetFirstTriangleSignedAreaAtZ(mesh, expectedBackZ);
 
-            Assert.AreNotEqual(0f, backArea,
-                "BackFilled の rear infill は背面 plane 上で退化していない三角形を持つこと");
+            Assert.Greater(backArea, 0f,
+                "BackFilled の単一 rear infill cap は固定背面 plane 上で背面側を向く winding を持つこと");
         }
 
         [Test]
@@ -244,7 +244,7 @@ namespace MasaChuang.SolidText3D.Tests.Editor
                 1f,
                 1f);
 
-            const float expectedFrontZ = -0.6001f;
+            const float expectedFrontZ = -0.3999f;
             Assert.IsFalse(HasTriangleContainingPointAtZ(mesh, new Vector2(0.5f, 0.5f), expectedFrontZ),
                 "BackFilled の前面 plane はリングのままで、元グリフ中心を埋めないこと");
         }
@@ -261,7 +261,7 @@ namespace MasaChuang.SolidText3D.Tests.Editor
                 1f,
                 1f);
 
-            const float expectedFrontZ = -0.6001f;
+            const float expectedFrontZ = -0.3999f;
             float frontArea = GetFirstTriangleSignedAreaAtZ(mesh, expectedFrontZ);
 
             Assert.AreNotEqual(0f, frontArea,

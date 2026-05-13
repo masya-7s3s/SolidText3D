@@ -47,7 +47,7 @@ MonoBehaviour として GameObject に追加して使用します。
 | 値 | 説明 |
 | --- | ---- |
 | `Donut` | front silhouette を維持したまま厚みを前後へ均等配分する |
-| `BackFilled` | front silhouette を維持し、背面に rear infill を追加する |
+| `BackFilled` | front silhouette を維持し、固定背面を単一の filled cap で閉じる |
 
 ## エディタでの使用ガイド
 
@@ -61,7 +61,7 @@ MonoBehaviour として GameObject に追加して使用します。
 
 - `OutlineOffset = 0` のときは outline child を維持したまま mesh だけをクリアする
 - `Donut` と `BackFilled` は正面シルエットを共有する
-- `BackFilled` は背面が本体背面の少し後ろに固定される
+- `BackFilled` は固定背面を filled cap で閉じ、厚みは反対側へ伸びる
 - `OutlineMaterial = null` のときは本体の sharedMaterial を使用する
 
 ## ランタイムでの使用ガイド

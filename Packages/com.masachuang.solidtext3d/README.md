@@ -78,7 +78,7 @@ public sealed class OutlineSample : MonoBehaviour
 | 値 | 説明 |
 | --- | ---- |
 | `Donut` | 厚みを前後に均等配分するリング状 outline |
-| `BackFilled` | 正面シルエットを維持しつつ、背面を本体背面に固定して埋める outline |
+| `BackFilled` | 正面シルエットを維持しつつ、固定背面を単一の filled cap で閉じる outline |
 
 ## カスタムフォント
 

@@ -89,12 +89,28 @@ namespace MasaChuang.SolidText3D.Tests.Editor
 
         private static MethodInfo RequireSharedContourHelper()
         {
-            var method = typeof(MeshExtruder).GetMethod(
-                "BuildContourMeshData",
-                BindingFlags.Static | BindingFlags.NonPublic,
-                null,
-                new[] { typeof(List<List<Vector2>>), typeof(float), typeof(float), typeof(bool) },
-                null);
+            var methods = typeof(MeshExtruder).GetMethods(BindingFlags.Static | BindingFlags.NonPublic);
+            MethodInfo method = null;
+            foreach (var candidate in methods)
+            {
+                if (candidate.Name != "BuildContourMeshData")
+                    continue;
+
+                var parameters = candidate.GetParameters();
+                if (parameters.Length < 4)
+                    continue;
+
+                if (parameters[0].ParameterType != typeof(List<List<Vector2>>)
+                    || parameters[1].ParameterType != typeof(float)
+                    || parameters[2].ParameterType != typeof(float)
+                    || parameters[3].ParameterType != typeof(bool))
+                {
+                    continue;
+                }
+
+                method = candidate;
+                break;
+            }
 
             Assert.IsNotNull(method,
                 "outline が body と同じ cap/side/Z 配置規約を再利用できるよう、MeshExtruder に shared contour helper が必要です。");
@@ -103,7 +119,7 @@ namespace MasaChuang.SolidText3D.Tests.Editor
 
         private static GlyphMeshData InvokeSharedContourHelper(List<List<Vector2>> contours, float frontZ, float backZ, bool includeBackCap)
         {
-            return (GlyphMeshData)RequireSharedContourHelper().Invoke(null, new object[] { contours, frontZ, backZ, includeBackCap });
+            return (GlyphMeshData)RequireSharedContourHelper().Invoke(null, new object[] { contours, frontZ, backZ, includeBackCap, true, true });
         }
 
         private static MethodInfo RequireCapHelper()
@@ -143,6 +159,65 @@ namespace MasaChuang.SolidText3D.Tests.Editor
 
             Assert.Fail($"z={targetZ} の front triangle が見つかりませんでした。");
             return 0f;
+        }
+
+        private static Vector3 GetTriangleNormal(GlyphMeshData data, int triangleIndexStart)
+        {
+            var v0 = data.Vertices[data.Triangles[triangleIndexStart + 0]];
+            var v1 = data.Vertices[data.Triangles[triangleIndexStart + 1]];
+            var v2 = data.Vertices[data.Triangles[triangleIndexStart + 2]];
+            return Vector3.Cross(v1 - v0, v2 - v0).normalized;
+        }
+
+        private static bool ApproximatelyEqual(Vector3 left, Vector3 right)
+        {
+            return Vector3.Distance(left, right) <= 0.0001f;
+        }
+
+        private static bool MatchesQuadVerticesUnordered(IReadOnlyList<Vector3> quadVertices, IReadOnlyList<Vector3> expectedVertices)
+        {
+            if (quadVertices.Count != expectedVertices.Count)
+                return false;
+
+            var matched = new bool[expectedVertices.Count];
+            for (int i = 0; i < quadVertices.Count; i++)
+            {
+                bool found = false;
+                for (int j = 0; j < expectedVertices.Count; j++)
+                {
+                    if (matched[j] || !ApproximatelyEqual(quadVertices[i], expectedVertices[j]))
+                        continue;
+
+                    matched[j] = true;
+                    found = true;
+                    break;
+                }
+
+                if (!found)
+                    return false;
+            }
+
+            return true;
+        }
+
+        private static Vector3 GetQuadNormalByVertices(GlyphMeshData data, params Vector3[] expectedVertices)
+        {
+            for (int i = 0; i <= data.Vertices.Count - 4; i++)
+            {
+                var quadVertices = new[]
+                {
+                    data.Vertices[i + 0],
+                    data.Vertices[i + 1],
+                    data.Vertices[i + 2],
+                    data.Vertices[i + 3],
+                };
+
+                if (MatchesQuadVerticesUnordered(quadVertices, expectedVertices))
+                    return data.Normals[i];
+            }
+
+            Assert.Fail("指定した side quad の頂点組が見つかりませんでした。");
+            return Vector3.zero;
         }
 
         [Test]
@@ -359,16 +434,32 @@ namespace MasaChuang.SolidText3D.Tests.Editor
         }
 
         [Test]
+        public void SharedContourHelper_ReversedZOrder_PreservesSideTriangleFacing()
+        {
+            var contour = MakeSquareContour();
+            var helperData = InvokeSharedContourHelper(contour.Contours, -0.25f, 0.25f, true);
+
+            var sideTriangleNormal = GetTriangleNormal(helperData, 12);
+
+            Assert.AreEqual(Vector3.down, sideTriangleNormal,
+                "frontZ < backZ の場合でも最初の outer side triangle は外側 (-Y) を向くこと");
+        }
+
+        [Test]
         public void BuildGlyphMesh_DonutContour_InnerWallFacesHoleInterior()
         {
             var contour = MakeDonutContour();
             var data = MeshExtruder.BuildGlyphMesh(contour, 1f, 0f);
 
-            Assert.GreaterOrEqual(data.Normals.Count, 28, "ドーナツ形状の cap + side normal が生成されること");
+            var holeTopEdgeNormal = GetQuadNormalByVertices(
+                data,
+                new Vector3(0.5f, 1.5f, 0f),
+                new Vector3(1.5f, 1.5f, 0f),
+                new Vector3(1.5f, 1.5f, -1f),
+                new Vector3(0.5f, 1.5f, -1f));
 
-            for (int i = 24; i < 28; i++)
-                Assert.AreEqual(Vector3.down, data.Normals[i],
-                    "最初の hole side quad は穴の内側を向くこと");
+            Assert.AreEqual(Vector3.down, holeTopEdgeNormal,
+                "hole の上辺 side quad は穴の内側 (-Y) を向くこと");
         }
 
         [Test]

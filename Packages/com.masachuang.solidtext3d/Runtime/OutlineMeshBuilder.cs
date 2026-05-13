@@ -37,6 +37,8 @@ namespace MasaChuang.SolidText3D
                     float frontZ;
                     float backZ;
                     bool includeBackCap = settings.Thickness > 0f;
+                    bool frontRingFaceForward = true;
+                    bool emitRingBackCap = settings.DisplayMode != OutlineDisplayMode.BackFilled;
 
                     if (!includeBackCap)
                     {
@@ -45,8 +47,10 @@ namespace MasaChuang.SolidText3D
                     }
                     else if (settings.DisplayMode == OutlineDisplayMode.BackFilled)
                     {
-                        backZ = -(bodyExtrusionDepth + ZFightEpsilon);
-                        frontZ = backZ + settings.Thickness;
+                        backZ = ZFightEpsilon;
+                        frontZ = backZ - settings.Thickness;
+                        frontRingFaceForward = false;
+                        emitRingBackCap = false;
                     }
                     else
                     {
@@ -56,12 +60,10 @@ namespace MasaChuang.SolidText3D
                         backZ = bodyCenterZ - halfThickness;
                     }
 
-                    bool frontRingFaceForward = true;
-                    bool emitRingBackCap = settings.DisplayMode != OutlineDisplayMode.BackFilled;
                     var glyphMeshData = MeshExtruder.BuildContourMeshData(profileSet.RingContoursEm, frontZ, backZ, includeBackCap, frontRingFaceForward, emitRingBackCap);
                     if (includeBackCap && settings.DisplayMode == OutlineDisplayMode.BackFilled)
                     {
-                        var rearInfillData = MeshExtruder.BuildCapMeshData(profileSet.OffsetFilledContoursEm, backZ, false);
+                        var rearInfillData = MeshExtruder.BuildCapMeshData(profileSet.OffsetFilledContoursEm, backZ, true);
                         AppendGlyphMeshData(glyphMeshData, rearInfillData);
                     }
 
