@@ -5,11 +5,11 @@ namespace MasaChuang.SolidText3D
 {
     /// <summary>
     /// Unity GameObject に 3D テキストメッシュを追加する MonoBehaviour コンポーネント。
-    /// Inspector でパラメータを設定すると、次のフレームで自動的にメッシュが再生成される。
+    /// Inspector やスクリプトでパラメータを変更すると dirty になり、明示的な再生成でメッシュを更新する。
     /// </summary>
     /// <remarks>
-    /// [ExecuteAlways] により Edit Mode でも LateUpdate() が実行される。
-    /// これにより Inspector 変更時のリアルタイムプレビューと Edit Mode テストの両方をサポートする。
+    /// [ExecuteAlways] により Edit Mode でもライフサイクルは維持されるが、
+    /// メッシュ更新は RegenerateMesh() の明示呼び出しでのみ行われる。
     /// </remarks>
     [ExecuteAlways]
     [RequireComponent(typeof(MeshFilter))]
@@ -393,9 +393,7 @@ namespace MasaChuang.SolidText3D
 
         private void LateUpdate()
         {
-            if (_suppressAutoRegenerate) return;
-            if (_isDirty)
-                RegenerateMesh();
+            // 自動再生成は行わない。dirty 状態は明示的な RegenerateMesh() 呼び出しまで維持する。
         }
 
         // ─── メッシュ生成 ────────────────────────────────────────────────

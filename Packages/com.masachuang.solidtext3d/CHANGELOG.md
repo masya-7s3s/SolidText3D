@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- `SolidText3DComponent` の dirty 状態は自動再生成せず、`RegenerateMesh()` の明示呼び出しでのみメッシュ更新するよう変更
+- `SolidText3DInspector` に `Regenerate Mesh` ボタンを追加し、Inspector 編集時のリアルタイム再生成を廃止
+
 ## [2.1.0] - 2026-05-13
 
 ### Added

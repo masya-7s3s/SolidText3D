@@ -70,7 +70,7 @@ public sealed class OutlineSample : MonoBehaviour
 | `LineSpacing` | `float` | 行間係数 |
 | `FontSize` | `float` | em 高さを Unity 単位へ変換するスケール |
 | `ObjectMode` | `ObjectMode` | `SingleObject` / `PerCharacter` |
-| `IsDirty` | `bool` | 次の LateUpdate で再生成が必要かどうか |
+| `IsDirty` | `bool` | 手動で再生成が必要かどうか |
 | `RegenerateMesh()` | `void` | 即時再生成 |
 
 ### OutlineDisplayMode
@@ -88,7 +88,7 @@ public sealed class OutlineSample : MonoBehaviour
 
 ## パフォーマンス
 
-- 通常フレームは dirty flag を見て何もしないため、clean frame の LateUpdate で追加 GC.Alloc を発生させない設計です
+- 自動再生成を行わないため、通常フレームで追加 GC.Alloc を発生させない設計です
 - profiler sample: GlyphMeshBuilder.Build, MeshExtruder.BuildGlyphMesh, OutlineContourBuilder.BuildProfiles, OutlineMeshBuilder.Build, SolidText3DComponent.RegenerateMesh, SolidText3DComponent.UpdateOutlineMesh
 - 2026-05-13 時点で Edit Mode / Play Mode テストは green を確認済みです
 

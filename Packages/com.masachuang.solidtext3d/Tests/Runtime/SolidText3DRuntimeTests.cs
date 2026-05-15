@@ -1,5 +1,4 @@
 ﻿using System.Collections;
-using System.IO;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -13,19 +12,20 @@ namespace MasaChuang.SolidText3D.Tests.Runtime
     public class SolidText3DRuntimeTests
     {
         [UnityTest]
-        public IEnumerator TextChange_UpdatesMeshNextFrame()
+        public IEnumerator TextChange_StaysDirtyUntilManualRegeneration()
         {
             var go = new GameObject("RuntimeTest");
             var comp = go.AddComponent<SolidText3DComponent>();
             comp.Text = "A";
 
-            yield return null; // 1 フレーム待機（LateUpdate でメッシュ再生成）
+            yield return null; // 自動再生成しないため dirty のまま維持される
 
             var mf = go.GetComponent<MeshFilter>();
             Assert.IsNotNull(mf);
-            // フォント未設定時は FR-012 によりメッシュ生成をスキップする。
-            // sharedMesh が null でも例外が出ないことと、ダーティフラグがクリアされることを検証する。
-            Assert.IsFalse(comp.IsDirty, "テキスト変更後 1 フレームでダーティフラグがクリアされること");
+            Assert.IsTrue(comp.IsDirty, "テキスト変更後は明示的に再生成するまでダーティフラグが維持されること");
+
+            comp.RegenerateMesh();
+            Assert.IsFalse(comp.IsDirty, "RegenerateMesh() 実行後にダーティフラグがクリアされること");
 
 #if UNITY_EDITOR
             Object.DestroyImmediate(go);
@@ -68,12 +68,14 @@ namespace MasaChuang.SolidText3D.Tests.Runtime
             comp.LetterSpacing = 5f;
 
             // 変更後、再生成前は IsDirty が true であること
-            Assert.IsTrue(comp.IsDirty, "LateUpdate 実行前はダーティフラグが立っていること");
+            Assert.IsTrue(comp.IsDirty, "手動再生成前はダーティフラグが立っていること");
 
-            yield return null; // 1 フレーム待機
+            yield return null; // 自動再生成しない
 
-            // 1 フレーム後はダーティフラグがクリアされていること
-            Assert.IsFalse(comp.IsDirty, "LateUpdate 実行後はダーティフラグがクリアされること");
+            Assert.IsTrue(comp.IsDirty, "フレーム経過後も手動再生成まではダーティフラグが維持されること");
+
+            comp.RegenerateMesh();
+            Assert.IsFalse(comp.IsDirty, "RegenerateMesh() 実行後はダーティフラグがクリアされること");
 
 #if UNITY_EDITOR
             Object.DestroyImmediate(go);
@@ -91,18 +93,20 @@ namespace MasaChuang.SolidText3D.Tests.Runtime
             var comp = go.AddComponent<SolidText3DComponent>();
             comp.Text = "A";
 
-            yield return null; // 最初のメッシュ生成
+            comp.RegenerateMesh();
 
             var mf = go.GetComponent<MeshFilter>();
+            Assert.IsNotNull(mf);
 
             // FontAsset を null に切り替え → FR-012 によりメッシュ生成をスキップ
             comp.FontAsset = null;
 
-            yield return null; // 再生成
+            yield return null;
 
-            // FontAsset が null の場合はメッシュを生成しない。例外が発生せず
-            // ダーティフラグがクリアされることを検証する（FR-012 準拠）。
-            Assert.IsFalse(comp.IsDirty, "フォント切り替え後にダーティフラグがクリアされること");
+            Assert.IsTrue(comp.IsDirty, "フォント切り替え後は手動再生成までダーティフラグが維持されること");
+
+            comp.RegenerateMesh();
+            Assert.IsFalse(comp.IsDirty, "手動再生成後にダーティフラグがクリアされること");
 
 #if UNITY_EDITOR
             Object.DestroyImmediate(go);

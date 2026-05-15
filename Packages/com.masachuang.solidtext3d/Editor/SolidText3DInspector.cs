@@ -6,38 +6,16 @@ namespace MasaChuang.SolidText3D.Editor
 {
     /// <summary>
     /// SolidText3DComponent 用カスタム Inspector。
-    /// プロパティ変更後にシーンビューのリアルタイム更新を強制する。
+    /// プロパティ変更を dirty として保持し、明示的な再生成操作を提供する。
     /// </summary>
     [CustomEditor(typeof(SolidText3DComponent))]
     public sealed class SolidText3DInspector : UnityEditor.Editor
     {
         private SolidText3DComponent _target;
-        private bool _wasEditingTextField;
 
         private void OnEnable()
         {
             _target = (SolidText3DComponent)target;
-            EditorApplication.update += OnEditorUpdate;
-        }
-
-        private void OnDisable()
-        {
-            EditorApplication.update -= OnEditorUpdate;
-        }
-
-        private void OnEditorUpdate()
-        {
-            if (_target == null) return;
-
-            bool isEditing = EditorGUIUtility.editingTextField;
-            if (_wasEditingTextField && !isEditing)
-            {
-                // フォーカスアウト: 再生成を実行して抑制を解除
-                _target.SuppressAutoRegenerate = false;
-                _target.RegenerateMesh();
-                EditorApplication.QueuePlayerLoopUpdate();
-            }
-            _wasEditingTextField = isEditing;
         }
 
         public override void OnInspectorGUI()
@@ -77,7 +55,6 @@ namespace MasaChuang.SolidText3D.Editor
             {
                 Undo.RecordObject(_target, "Change Text");
                 _target.Text = newText;
-                _target.SuppressAutoRegenerate = true; // 入力中は再生成を抑制
                 EditorUtility.SetDirty(_target);
             }
 
@@ -97,9 +74,6 @@ namespace MasaChuang.SolidText3D.Editor
                 _target.LineSpacing = newLineSpacing;
                 _target.FontSize = newFontSize;
                 EditorUtility.SetDirty(_target);
-                // FloatField は Enter/ブラーで値が確定されるため常に即時再生成する
-                _target.RegenerateMesh();
-                EditorApplication.QueuePlayerLoopUpdate();
             }
 
             EditorGUILayout.Space();
@@ -121,8 +95,6 @@ namespace MasaChuang.SolidText3D.Editor
                 _target.OutlineDisplayMode = newOutlineDisplayMode;
                 _target.OutlineMaterial = newOutlineMaterial;
                 EditorUtility.SetDirty(_target);
-                _target.RegenerateMesh();
-                EditorApplication.QueuePlayerLoopUpdate();
             }
 
             EditorGUILayout.Space();
@@ -143,8 +115,6 @@ namespace MasaChuang.SolidText3D.Editor
                 _target.MaxWidth = newMaxWidth;
                 _target.MaxHeight = newMaxHeight;
                 EditorUtility.SetDirty(_target);
-                _target.RegenerateMesh();
-                EditorApplication.QueuePlayerLoopUpdate();
             }
 
             EditorGUILayout.Space();
@@ -159,8 +129,6 @@ namespace MasaChuang.SolidText3D.Editor
                 _target.WritingMode = newWritingMode;
                 _target.RotateAsciiInVertical = newRotateAscii;
                 EditorUtility.SetDirty(_target);
-                _target.RegenerateMesh();
-                EditorApplication.QueuePlayerLoopUpdate();
             }
 
             EditorGUILayout.Space();
@@ -173,8 +141,20 @@ namespace MasaChuang.SolidText3D.Editor
                 Undo.RecordObject(_target, "Change Object Mode");
                 _target.ObjectMode = newObjectMode;
                 EditorUtility.SetDirty(_target);
-                _target.RegenerateMesh();
-                EditorApplication.QueuePlayerLoopUpdate();
+            }
+
+            EditorGUILayout.Space();
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("Mesh Update", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField(_target.IsDirty ? "Status: Dirty" : "Status: Up to date");
+
+                if (GUILayout.Button("Regenerate Mesh"))
+                {
+                    _target.RegenerateMesh();
+                    EditorUtility.SetDirty(_target);
+                    EditorApplication.QueuePlayerLoopUpdate();
+                }
             }
 
             serializedObject.ApplyModifiedProperties();
