@@ -21,9 +21,10 @@ manifest.json に直接記述する場合の例:
 ## 基本使用
 
 1. GameObject に SolidText3DComponent を追加する
-2. Text と FontAsset を設定する
-3. Extrusion Depth で本体の厚みを調整する
-4. Outline セクションで Enabled をオンにし、Offset Amount / Thickness / Display Mode / Material を調整する
+2. Inspector の Text & Font で Text と Font Asset を設定する
+3. Geometry で Extrusion Depth と Font Size を調整する
+4. 必要なら Layout / Outline / Output を調整する
+5. Mesh Update の Regenerate Mesh を押してメッシュを更新する
 
 期待結果:
 
@@ -48,9 +49,19 @@ public sealed class OutlineSample : MonoBehaviour
         _text.OutlineThickness = 0.1f;
         _text.OutlineDisplayMode = OutlineDisplayMode.BackFilled;
         _text.OutlineMaterial = _outlineMaterial;
+      _text.RegenerateMesh();
     }
 }
 ```
+
+## Inspector 構成
+
+- `Mesh Update`: dirty 状態の確認と `Regenerate Mesh`
+- `Text & Font`: テキスト本文とフォント設定
+- `Geometry`: 押し出し厚み、サイズ、文字間・行間
+- `Layout`: 書字方向、アンカー、折り返し上限
+- `Outline`: アウトラインの有効化と見た目調整
+- `Output`: `SingleObject` / `PerCharacter` の切り替え
 
 ## 主要 API
 

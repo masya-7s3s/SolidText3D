@@ -33,7 +33,7 @@ Inspector の Font Asset では、フォントアセットを選択します。
 
 ## スクリプトからフォントを差し替える
 
-Editor上では、FontAsset を差し替えるだけで再生成できます。
+Editor上では、FontAsset を差し替えると dirty 状態になります。反映するときは RegenerateMesh を呼びます。
 
 ```csharp
 using MasaChuang.SolidText3D;
@@ -63,7 +63,7 @@ public sealed class SwapFontInEditor : MonoBehaviour
 
 ### フォントを設定したのに変わらない
 
-- 一度シーンを保存して、コンポーネントが再生成されるか確認します。
+- Mesh Update の Regenerate Mesh を押すか、スクリプトから RegenerateMesh() を呼びます。
 - Font Asset に同じファイルを再指定してみます。
 - Assets/SolidText3DFonts に .bytes が作られているか確認します。
 

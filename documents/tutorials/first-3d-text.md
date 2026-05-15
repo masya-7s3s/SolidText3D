@@ -31,7 +31,7 @@
 
 ## 3. テキストとフォントを設定する
 
-Inspector で次を設定します。
+Inspector の Text & Font / Geometry で次を設定します。
 
 - Font Asset
 - Text
@@ -75,6 +75,8 @@ Inspector の Outline セクションで次を設定します。
 - Thickness = 0.1
 - Display Mode = Donut
 
+設定を変更したら、Mesh Update セクションの Regenerate Mesh を押して反映します。
+
 ## 6. スクリプトから文字を変える
 
 テキストはスクリプトから変更できます。  
@@ -92,6 +94,7 @@ public sealed class ScoreLabel : MonoBehaviour
     private void Start()
     {
         text3D.Text = "Score: 0";
+        text3D.RegenerateMesh();
     }
 
     private void Update()
@@ -100,12 +103,13 @@ public sealed class ScoreLabel : MonoBehaviour
         {
             score += 100;
             text3D.Text = $"Score: {score}";
+            text3D.RegenerateMesh();
         }
     }
 }
 ```
 
-通常は Text プロパティを変更するだけで、次のフレームで自動更新されます。
+Text プロパティを変更しただけでは dirty 状態になります。見た目へ反映したいタイミングで RegenerateMesh を呼びます。
 
 ## 次に読むもの
 

@@ -34,7 +34,7 @@ Unity の GameObject として扱える 3D テキストを生成し、日本語�
 
 1. このリポジトリを取得します。
 2. Unity で Package Manager を開きます。
-3. + から Add package from disk... を選びます。
+3. 「+」 から Add package from disk... を選びます。
 4. Packages/com.masachuang.solidtext3d/package.json を指定します。
 
 ### manifest.json に直接追加する

@@ -5,23 +5,23 @@
 ## 変更するとすぐ再生成されるわけではない
 
 SolidText3DComponent は、各プロパティの変更時に内部で「再生成が必要」という状態を立てます。  
-そのあと、LateUpdate で必要なときだけ RegenerateMesh を呼びます。
+その時点ではメッシュは更新されず、dirty 状態のまま保持されます。
 
 つまり、通常は次の流れです。
 
 1. Text や ExtrusionDepth などを変更する
 2. コンポーネントが dirty になる
-3. 次の LateUpdate でメッシュを再生成する
+3. 必要なタイミングで RegenerateMesh を呼んでメッシュを再生成する
 
-スクリプトから即時反映したい場合だけ、自分で RegenerateMesh を呼べば十分です。
+Editor では Mesh Update セクションの Regenerate Mesh ボタン、スクリプトでは RegenerateMesh() を使います。
 
 ## Edit Modeでもプレビューされる理由
 
 このコンポーネントは ExecuteAlways です。  
-そのため、Play Mode でなくても Inspector の変更が反映されます。
+そのため、Play Mode でなくても Edit Mode でコンポーネントの状態を保持できます。
 
-また、カスタムInspectorでは Text 入力中の連続再生成を抑え、入力欄からフォーカスが外れたタイミングで再生成するようにしています。  
-長文を打ち込むときに毎文字で作り直し続けないための調整です。
+現在のカスタム Inspector は、Mesh Update、Text & Font、Geometry、Layout、Outline、Output の各セクションに整理されています。  
+変更内容は自動では反映されず、ユーザーが Regenerate Mesh を押したタイミングでプレビューを更新します。
 
 ## フォントの扱い
 

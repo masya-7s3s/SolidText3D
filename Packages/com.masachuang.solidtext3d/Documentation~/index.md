@@ -53,10 +53,19 @@ MonoBehaviour として GameObject に追加して使用します。
 
 1. GameObject を作成する
 2. Solid Text 3D Component を追加する
-3. Text と FontAsset を設定する
-4. Outline セクションで Enabled をオンにする
-5. Offset Amount / Thickness / Display Mode / Material を調整する
-6. Inspector の Regenerate Mesh ボタンを押してメッシュを更新する
+3. `Text & Font` で Text と Font Asset を設定する
+4. `Geometry` で厚みとサイズを調整する
+5. 必要なら `Layout` / `Outline` / `Output` を調整する
+6. `Mesh Update` の `Regenerate Mesh` ボタンを押してメッシュを更新する
+
+### Inspector セクション
+
+- `Mesh Update`: dirty 状態の表示と手動再生成
+- `Text & Font`: テキストとフォントの設定
+- `Geometry`: Extrusion / Font Size / Letter Spacing / Line Spacing
+- `Layout`: Writing Mode / Anchor / Max Width / Max Height
+- `Outline`: Enabled / Offset Amount / Thickness / Display Mode / Material
+- `Output`: Object Mode の切り替え
 
 ### outline の振る舞い
 
