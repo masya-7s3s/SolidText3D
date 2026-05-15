@@ -30,6 +30,7 @@ Thumbs.db
 # IDE / solution files
 # =========================
 *.csproj
+*.csproj.lscache
 *.unityproj
 *.sln
 *.slnx
@@ -77,4 +78,5 @@ docs/
 # =========================
 # Profiler captures (binary, large)
 # =========================
+ProfilerCaptures/
 specs/*/profiler-captures/
