@@ -9,6 +9,9 @@ namespace MasaChuang.SolidText3D
     /// </summary>
     internal static class LayoutEngine
     {
+        private const float VerticalPunctuationHorizontalBias = 1f;
+        private const float VerticalPunctuationVerticalBias = 0.2f;
+
         /// <summary>
         /// 横書きレイアウトを適用する。
         /// LetterSpacing の累積加算と MaxWidth による自動折り返しに対応する。
@@ -50,7 +53,6 @@ namespace MasaChuang.SolidText3D
             {
                 if (lineIndices.Count == 0) continue;
 
-                // 行幅を算出（LetterSpacing 込み、行内の可視グリフ位置でカウント）
                 float lineWidth = 0f;
                 int pos = 0;
                 foreach (int gi in lineIndices)
@@ -61,7 +63,6 @@ namespace MasaChuang.SolidText3D
                     pos++;
                 }
 
-                // 行単位の水平揃えオフセット
                 float alignX = 0f;
                 switch (p.HorizontalAnchor)
                 {
@@ -69,7 +70,6 @@ namespace MasaChuang.SolidText3D
                     case HorizontalAnchor.Right:  alignX = -lineWidth;        break;
                 }
 
-                // 各グリフに揃え + LetterSpacing オフセットを設定
                 pos = 0;
                 foreach (int gi in lineIndices)
                 {
@@ -147,9 +147,21 @@ namespace MasaChuang.SolidText3D
                 float effectiveWidth  = shouldRotate ? charHeight : charWidth;
                 float effectiveHeight = shouldRotate ? charWidth  : charHeight;
 
-                float verticalPadding = (charStep - effectiveHeight) * 0.5f;
-                float charOffsetX = cursorX + (colWidth - effectiveWidth) * 0.5f;
-                g.Offset = new Vector3(charOffsetX, cursorY - verticalPadding, 0f);
+                float horizontalPadding = Mathf.Max(0f, colWidth - effectiveWidth);
+                float verticalPadding = Mathf.Max(0f, charStep - effectiveHeight);
+                bool alignPunctuationToTopRight = !shouldRotate
+                    && !string.IsNullOrEmpty(p.Text)
+                    && g.CharIndex >= 0
+                    && g.CharIndex < p.Text.Length
+                    && IsJapaneseVerticalPunctuation(p.Text[g.CharIndex]);
+
+                float charOffsetX = cursorX + (alignPunctuationToTopRight
+                    ? horizontalPadding * VerticalPunctuationHorizontalBias
+                    : horizontalPadding * 0.5f);
+                float charOffsetY = cursorY - (alignPunctuationToTopRight
+                    ? verticalPadding * VerticalPunctuationVerticalBias
+                    : verticalPadding * 0.5f);
+                g.Offset = new Vector3(charOffsetX, charOffsetY, 0f);
                 glyphs[i] = g;
 
                 while (columns.Count <= col) columns.Add(new List<int>());
@@ -212,13 +224,14 @@ namespace MasaChuang.SolidText3D
                 default: offsetY = -meshBounds.min.y; break;
             }
 
-            // 奥行き: Front=min を原点, Center=-depth/2 相対, Back=-depth 相対
+            // 奥行き: MeshExtruder は front=max.z, back=min.z の規約で面を生成する。
+            // Front は min.z を、Back は max.z を原点に合わせる。
             float offsetZ;
             switch (p.DepthAnchor)
             {
                 case DepthAnchor.Front:  offsetZ = -meshBounds.min.z; break;
-                case DepthAnchor.Center: offsetZ = -meshBounds.min.z - depth * 0.5f; break;
-                case DepthAnchor.Back:   offsetZ = -meshBounds.min.z - depth; break;
+                case DepthAnchor.Center: offsetZ = -meshBounds.center.z; break;
+                case DepthAnchor.Back:   offsetZ = -meshBounds.max.z; break;
                 default: offsetZ = -meshBounds.min.z; break;
             }
 
@@ -237,6 +250,11 @@ namespace MasaChuang.SolidText3D
             // 全角英数字・記号
             if (c >= '\uFF00' && c <= '\uFF60') return true;
             return false;
+        }
+
+        private static bool IsJapaneseVerticalPunctuation(char c)
+        {
+            return c == '、' || c == '。';
         }
     }
 }

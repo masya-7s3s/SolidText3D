@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-05-13
+
+### Added
+
+- `OutlineDisplayMode` (`Donut` / `BackFilled`) と `OutlineSettings` を追加し、outline の表示モード・厚さ・マテリアルを公開 API から制御可能にした
+- `OutlineContourBuilder` と `OutlineMeshBuilder` を追加し、canonical ring profile を共有押し出しコアへ渡す outline 再設計を実装した
+- outline child GameObject の再利用、`OutlineOffset = 0` 時の no-geometry、`OutlineMaterial = null` 時の本体マテリアル fallback を追加した
+- outline の profile / mesh / child lifecycle を検証する Edit Mode / Play Mode テストを追加した
+
+### Changed
+
+- outline front face 生成を outline 専用経路から `MeshExtruder` 共有コアへ統一し、front cap 可視性と winding parity の回帰を防止した
+- `SolidText3DInspector` に Outline セクションを追加し、Enabled / Offset Amount / Thickness / Display Mode / Material を編集可能にした
+- outline 関連の hot path に profiler sample を追加し、clean frame の追加 GC.Alloc が発生しない回帰検証を補強した
+
 ## [2.0.0] - 2026-04-21
 
 ### Breaking Changes
