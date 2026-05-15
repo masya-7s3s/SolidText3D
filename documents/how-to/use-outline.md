@@ -19,6 +19,8 @@ Inspector の Outline セクションで次を設定します。
 - Thickness = 0.1
 - Display Mode = Donut
 
+値を変えたあとは、Mesh Update セクションの Regenerate Mesh で反映します。
+
 ## 各項目の意味
 
 ### Enabled
@@ -69,6 +71,7 @@ public sealed class OutlinePreset : MonoBehaviour
         text3D.OutlineThickness = 0.1f;
         text3D.OutlineDisplayMode = OutlineDisplayMode.BackFilled;
         text3D.OutlineMaterial = outlineMaterial;
+        text3D.RegenerateMesh();
     }
 }
 ```

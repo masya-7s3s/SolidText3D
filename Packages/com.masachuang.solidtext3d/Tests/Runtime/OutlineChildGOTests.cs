@@ -12,6 +12,12 @@ namespace MasaChuang.SolidText3D.Tests.Runtime
     /// </summary>
     public class OutlineChildGOTests
     {
+        private static IEnumerator RegenerateAndWait(SolidText3DComponent component)
+        {
+            component.RegenerateMesh();
+            yield return null;
+        }
+
         private static Material CreateTestMaterial()
         {
             var shader = Shader.Find("Unlit/Color") ?? Shader.Find("Sprites/Default") ?? Shader.Find("Standard");
@@ -38,13 +44,13 @@ namespace MasaChuang.SolidText3D.Tests.Runtime
 
             outlineEnabled.SetValue(component, true);
             outlineOffset.SetValue(component, 0.05f);
-            yield return null;
+            yield return RegenerateAndWait(component);
 
             var initialChild = go.transform.Find("__OutlineMesh__");
             Assert.IsNotNull(initialChild, "outline 有効化後に child GameObject が生成されること");
 
             outlineOffset.SetValue(component, 0f);
-            yield return null;
+            yield return RegenerateAndWait(component);
 
             var reusedChild = go.transform.Find("__OutlineMesh__");
             Assert.IsNotNull(reusedChild, "OutlineOffset = 0 でも child GameObject を破棄しないこと");
@@ -57,7 +63,7 @@ namespace MasaChuang.SolidText3D.Tests.Runtime
                 "OutlineOffset = 0 のとき outline mesh のみクリアされること");
 
             outlineOffset.SetValue(component, 0.05f);
-            yield return null;
+            yield return RegenerateAndWait(component);
 
             var rebuiltChild = go.transform.Find("__OutlineMesh__");
             Assert.IsNotNull(rebuiltChild, "offset 再増加後も outline child が残っていること");
@@ -87,17 +93,17 @@ namespace MasaChuang.SolidText3D.Tests.Runtime
 
             outlineOffset.SetValue(component, 0.05f);
             outlineEnabled.SetValue(component, true);
-            yield return null;
+            yield return RegenerateAndWait(component);
 
             Assert.IsNotNull(go.transform.Find("__OutlineMesh__"), "outline 有効時に child が生成されること");
 
             outlineEnabled.SetValue(component, false);
-            yield return null;
+            yield return RegenerateAndWait(component);
 
             Assert.IsNull(go.transform.Find("__OutlineMesh__"), "OutlineEnabled=false で child が破棄されること");
 
             outlineEnabled.SetValue(component, true);
-            yield return null;
+            yield return RegenerateAndWait(component);
 
             Assert.IsNotNull(go.transform.Find("__OutlineMesh__"), "OutlineEnabled=true で child が再生成されること");
             Assert.AreEqual(0.05f, (float)outlineOffset.GetValue(component), 0.0001f,
@@ -132,14 +138,17 @@ namespace MasaChuang.SolidText3D.Tests.Runtime
             outlineOffset.SetValue(component, 0.05f);
             outlineEnabled.SetValue(component, true);
             outlineMaterialProperty.SetValue(component, null);
-            yield return null;
+            yield return RegenerateAndWait(component);
 
-            var childRenderer = go.transform.Find("__OutlineMesh__").GetComponent<MeshRenderer>();
+            var outlineChild = go.transform.Find("__OutlineMesh__");
+            Assert.IsNotNull(outlineChild, "outline child が生成されること");
+
+            var childRenderer = outlineChild.GetComponent<MeshRenderer>();
             Assert.AreSame(bodyMaterial, childRenderer.sharedMaterial,
                 "OutlineMaterial=null のとき本体 sharedMaterial へフォールバックすること");
 
             outlineMaterialProperty.SetValue(component, outlineMaterial);
-            yield return null;
+            yield return RegenerateAndWait(component);
 
             Assert.AreSame(outlineMaterial, childRenderer.sharedMaterial,
                 "OutlineMaterial 指定時は outline child に専用 material が適用されること");

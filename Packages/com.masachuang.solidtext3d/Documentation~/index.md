@@ -24,7 +24,7 @@ MonoBehaviour として GameObject に追加して使用します。
 | `LineSpacing` | `float` | 行間係数 |
 | `FontSize` | `float` | em スケールの Unity 単位変換 |
 | `ObjectMode` | `ObjectMode` | `SingleObject` / `PerCharacter` |
-| `IsDirty` | `bool` | 次フレームで再生成が必要かどうか |
+| `IsDirty` | `bool` | 手動で再生成が必要かどうか |
 | `RegenerateMesh()` | `void` | 即時再生成 |
 
 ### MeshGenerationParams
@@ -53,9 +53,19 @@ MonoBehaviour として GameObject に追加して使用します。
 
 1. GameObject を作成する
 2. Solid Text 3D Component を追加する
-3. Text と FontAsset を設定する
-4. Outline セクションで Enabled をオンにする
-5. Offset Amount / Thickness / Display Mode / Material を調整する
+3. `Text & Font` で Text と Font Asset を設定する
+4. `Geometry` で厚みとサイズを調整する
+5. 必要なら `Layout` / `Outline` / `Output` を調整する
+6. `Mesh Update` の `Regenerate Mesh` ボタンを押してメッシュを更新する
+
+### Inspector セクション
+
+- `Mesh Update`: dirty 状態の表示と手動再生成
+- `Text & Font`: テキストとフォントの設定
+- `Geometry`: Extrusion / Font Size / Letter Spacing / Line Spacing
+- `Layout`: Writing Mode / Anchor / Max Width / Max Height
+- `Outline`: Enabled / Offset Amount / Thickness / Display Mode / Material
+- `Output`: Object Mode の切り替え
 
 ### outline の振る舞い
 
@@ -81,6 +91,7 @@ public sealed class OutlineRuntimeExample : MonoBehaviour
         _text3D.OutlineOffset = 0.05f;
         _text3D.OutlineThickness = 0.1f;
         _text3D.OutlineDisplayMode = OutlineDisplayMode.Donut;
+        _text3D.RegenerateMesh();
     }
 }
 ```
@@ -111,7 +122,7 @@ _text3D.Text = "Hello 世界";
 
 ### パフォーマンス
 
-- clean frame の LateUpdate は dirty チェックで即 return する
+- 自動再生成は行わないため、更新コストは RegenerateMesh() 呼び出し時だけ発生する
 - profiler sample は outline build の各段に追加済み
 - 2026-05-13 時点で Edit Mode / Play Mode テスト green を確認済み
 

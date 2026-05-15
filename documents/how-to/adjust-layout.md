@@ -20,6 +20,8 @@ text3D.DepthAnchor = DepthAnchor.Center;
 
 タイトルやネームプレートのように、原点基準で配置したい場面ではとても便利です。
 
+Inspector では、これらの設定は Layout セクションにまとまっています。変更後は Regenerate Mesh で反映します。
+
 ## 文字間と行間を調整する
 
 - Letter Spacing: 文字同士の間隔

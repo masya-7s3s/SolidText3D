@@ -1,7 +1,7 @@
 # SolidText3DComponent リファレンス
 
 SolidText3DComponent は、GameObject に3Dテキストメッシュを生成する MonoBehaviour です。  
-Edit Mode と Play Mode の両方で動作し、設定変更時は次のフレームで自動再生成されます。
+Edit Mode と Play Mode の両方で動作し、設定変更時は dirty 状態になり、RegenerateMesh() を呼んだときに再生成されます。
 
 ## 必須コンポーネント
 
@@ -58,6 +58,17 @@ Edit Mode と Play Mode の両方で動作し、設定変更時は次のフレ�
 | メソッド | 戻り値 | 説明 |
 | --- | --- | --- |
 | RegenerateMesh() | void | 即時にメッシュを再生成する |
+
+## Inspector セクション
+
+現行のカスタム Inspector は次の構成です。
+
+- Mesh Update: dirty 状態の確認と手動再生成
+- Text & Font: テキスト本文とフォントの設定
+- Geometry: 押し出し厚み、サイズ、文字間・行間
+- Layout: 書字方向、アンカー、折り返し制限
+- Outline: アウトライン有効化と見た目設定
+- Output: SingleObject / PerCharacter の切り替え
 
 ## enum 一覧
 
