@@ -11,6 +11,10 @@ namespace MasaChuang.SolidText3D
     /// </summary>
     public static class GlyphMeshBuilder
     {
+        private const float RenderFontSize = 72f;
+        private static readonly object RenderFontCacheGate = new object();
+        private static readonly Dictionary<int, SixLabors.Fonts.Font> RenderFontCache = new Dictionary<int, SixLabors.Fonts.Font>();
+
         /// <summary>
         /// 指定したパラメータに基づいてテキストの 3D メッシュを生成する。
         /// </summary>
@@ -18,14 +22,6 @@ namespace MasaChuang.SolidText3D
         /// <returns>生成された Unity Mesh。テキストが空またはフォントが読み込めない場合は空メッシュを返す。</returns>
         public static Mesh Build(MeshGenerationParams p)
         {
-            Profiler.BeginSample("GlyphMeshBuilder.Build");
-            try
-            {
-            // GC 正当化: このアロケーションはパラメータ変更時（メッシュ再生成時）のみ発生する
-            // LateUpdate() 内ではダーティフラグチェックのみを行い、アロケーションは発生しない（憲法 V 準拠）
-            if (string.IsNullOrEmpty(p.Text))
-                return new Mesh();
-
             byte[] fontBytes = GetFontBytes(p);
             if (fontBytes == null || fontBytes.Length == 0)
             {
@@ -33,39 +29,69 @@ namespace MasaChuang.SolidText3D
                 return new Mesh();
             }
 
-            var glyphs = RenderGlyphs(fontBytes, p);
-            if (glyphs == null || glyphs.Count == 0)
-                return new Mesh();
+            var request = new TextStateRequest(0L, default, p.Text, fontBytes, p, false, 0f, 0f, null, OutlineDisplayMode.Donut, ObjectMode.SingleObject);
+            return MeshExtruder.CreateMesh(PrepareDisplayResult(request).BodyMeshData);
+        }
 
-            // レイアウト適用
-            if (p.WritingMode == WritingMode.Vertical)
-                LayoutEngine.ApplyVerticalLayout(glyphs, p);
-            else
-                LayoutEngine.ApplyHorizontalLayout(glyphs, p);
-
-            var mesh = MeshExtruder.Build(glyphs, p);
-
-            // アンカーオフセットを全頂点に加算
-            // 横書き: X 方向は各行のレイアウト時に適用済みのため全体オフセットでは無効化
-            // 縦書き: Y 方向は各列のレイアウト時に適用済みのため全体オフセットでは無効化
-            if (mesh != null && mesh.vertexCount > 0)
+        internal static PreparedDisplayResult PrepareDisplayResult(TextStateRequest request, PreparedDisplayResult reusableResult = null)
+        {
+            Profiler.BeginSample("GlyphMeshBuilder.Build");
+            try
             {
-                var offset = LayoutEngine.CalculateAnchorOffset(mesh.bounds, p);
-                if (p.WritingMode == WritingMode.Horizontal)
-                    offset = new Vector3(0f, offset.y, offset.z);
-                else if (p.WritingMode == WritingMode.Vertical)
-                    offset = new Vector3(offset.x, 0f, offset.z);
-                if (offset != Vector3.zero)
+                var prepared = new PreparedDisplayResult
                 {
-                    var verts = mesh.vertices;
-                    for (int i = 0; i < verts.Length; i++)
-                        verts[i] += offset;
-                    mesh.vertices = verts;
-                    mesh.RecalculateBounds();
-                }
-            }
+                    Version = request.Version,
+                    Signature = request.Signature
+                };
 
-            return mesh;
+                if (string.IsNullOrEmpty(request.Text))
+                {
+                    prepared.ClearsDisplay = true;
+                    return prepared;
+                }
+
+                if (request.FontData == null || request.FontData.Length == 0)
+                    throw new InvalidDataException("FontData is required to prepare display result.");
+
+                var glyphs = RenderGlyphs(request.Signature.FontSourceId, request.FontData, request.GenerationParams);
+                if (glyphs == null || glyphs.Count == 0)
+                {
+                    prepared.ClearsDisplay = true;
+                    return prepared;
+                }
+
+                ApplyLayout(glyphs, request.GenerationParams);
+
+                if (request.ObjectMode == ObjectMode.PerCharacter)
+                {
+                    var combinedBodyData = MeshExtruder.BuildCombinedData(glyphs, request.GenerationParams);
+                    var anchorOffset = GetAnchorOffset(combinedBodyData, request.GenerationParams);
+                    prepared.PerCharacterMeshData = BuildPerCharacterMeshData(glyphs, request.GenerationParams, anchorOffset, reusableResult, request.Signature, out List<Vector3> perCharacterOffsets);
+                    prepared.PerCharacterOffsets = perCharacterOffsets;
+                    prepared.BodyMeshData = default;
+
+                    if (request.OutlineEnabled)
+                    {
+                        prepared.OutlineMeshData = OutlineMeshBuilder.BuildData(glyphs, request.CreateOutlineSettings(), request.GenerationParams.ExtrusionDepth, request.GenerationParams.FontSize);
+                        MeshExtruder.ApplyOffset(prepared.OutlineMeshData, anchorOffset);
+                    }
+
+                    prepared.ClearsDisplay = prepared.PerCharacterMeshData == null || prepared.PerCharacterMeshData.Count == 0;
+                    return prepared;
+                }
+
+                prepared.BodyMeshData = MeshExtruder.BuildCombinedData(glyphs, request.GenerationParams);
+                var bodyOffset = GetAnchorOffset(prepared.BodyMeshData, request.GenerationParams);
+                MeshExtruder.ApplyOffset(prepared.BodyMeshData, bodyOffset);
+
+                if (request.OutlineEnabled)
+                {
+                    prepared.OutlineMeshData = OutlineMeshBuilder.BuildData(glyphs, request.CreateOutlineSettings(), request.GenerationParams.ExtrusionDepth, request.GenerationParams.FontSize);
+                    MeshExtruder.ApplyOffset(prepared.OutlineMeshData, bodyOffset);
+                }
+
+                prepared.ClearsDisplay = prepared.BodyMeshData.Vertices == null || prepared.BodyMeshData.Vertices.Count == 0;
+                return prepared;
             }
             finally
             {
@@ -88,7 +114,7 @@ namespace MasaChuang.SolidText3D
             if (fontBytes == null || fontBytes.Length == 0)
                 return new PerCharacterResult(new List<GlyphContour>(), new List<Mesh>());
 
-            var allGlyphs = RenderGlyphs(fontBytes, p);
+            var allGlyphs = RenderGlyphs(0, fontBytes, p);
             if (allGlyphs == null || allGlyphs.Count == 0)
                 return new PerCharacterResult(new List<GlyphContour>(), new List<Mesh>());
 
@@ -135,20 +161,81 @@ namespace MasaChuang.SolidText3D
             return new PerCharacterResult(visibleGlyphs, meshes);
         }
 
-        private static List<GlyphContour> RenderGlyphs(byte[] fontBytes, MeshGenerationParams p)
+        private static void ApplyLayout(List<GlyphContour> glyphs, MeshGenerationParams p)
         {
-            var collection = new FontCollection();
-            FontFamily family;
-            using (var ms = new MemoryStream(fontBytes))
+            if (p.WritingMode == WritingMode.Vertical)
+                LayoutEngine.ApplyVerticalLayout(glyphs, p);
+            else
+                LayoutEngine.ApplyHorizontalLayout(glyphs, p);
+        }
+
+        private static List<GlyphMeshData> BuildPerCharacterMeshData(
+            List<GlyphContour> glyphs,
+            MeshGenerationParams p,
+            Vector3 anchorOffset,
+            PreparedDisplayResult reusableResult,
+            DisplayResultSignature currentSignature,
+            out List<Vector3> perCharacterOffsets)
+        {
+            var preparedMeshes = new List<GlyphMeshData>();
+            perCharacterOffsets = new List<Vector3>();
+            bool canReuse = reusableResult != null
+                && reusableResult.PerCharacterMeshData != null
+                && reusableResult.PerCharacterOffsets != null
+                && reusableResult.Signature.CanReusePerCharacterLayoutWith(currentSignature);
+
+            foreach (var glyph in glyphs)
             {
-                family = collection.Add((System.IO.Stream)ms);
+                if (!glyph.IsVisible)
+                    continue;
+
+                int visibleIndex = preparedMeshes.Count;
+                Vector3 currentOffset = glyph.Offset + anchorOffset;
+                perCharacterOffsets.Add(currentOffset);
+
+                bool reuseCurrentGlyph = canReuse
+                    && visibleIndex < reusableResult.PerCharacterMeshData.Count
+                    && visibleIndex < reusableResult.PerCharacterOffsets.Count
+                    && visibleIndex < reusableResult.Signature.Text.Length
+                    && visibleIndex < currentSignature.Text.Length
+                    && reusableResult.Signature.Text[visibleIndex] == currentSignature.Text[visibleIndex]
+                    && reusableResult.PerCharacterOffsets[visibleIndex] == currentOffset;
+
+                if (reuseCurrentGlyph)
+                {
+                    preparedMeshes.Add(reusableResult.PerCharacterMeshData[visibleIndex]);
+                    continue;
+                }
+
+                var meshData = MeshExtruder.BuildGlyphMesh(glyph, p.ExtrusionDepth, p.OutlineWidth);
+                MeshExtruder.ApplyOffset(meshData, currentOffset);
+                preparedMeshes.Add(meshData);
             }
 
-            const float renderFontSize = 72f;
-            var font = family.CreateFont(renderFontSize);
+            return preparedMeshes;
+        }
 
-            // FontSize=1 のとき em スクエア(=renderFontSize)が 1 Unity unit になるようスケーリング
-            float scale = (p.FontSize > 0f ? p.FontSize : 1f) / renderFontSize;
+        private static Vector3 GetAnchorOffset(GlyphMeshData meshData, MeshGenerationParams p)
+        {
+            if (meshData.Vertices == null || meshData.Vertices.Count == 0)
+                return Vector3.zero;
+
+            var offset = LayoutEngine.CalculateAnchorOffset(MeshExtruder.CalculateBounds(meshData), p);
+            if (p.WritingMode == WritingMode.Horizontal)
+                return new Vector3(0f, offset.y, offset.z);
+
+            if (p.WritingMode == WritingMode.Vertical)
+                return new Vector3(offset.x, 0f, offset.z);
+
+            return offset;
+        }
+
+        private static List<GlyphContour> RenderGlyphs(int fontSourceId, byte[] fontBytes, MeshGenerationParams p)
+        {
+            var font = GetOrCreateRenderFont(fontSourceId, fontBytes);
+
+            // FontSize=1 のとき em スクエア(=RenderFontSize)が 1 Unity unit になるようスケーリング
+            float scale = (p.FontSize > 0f ? p.FontSize : 1f) / RenderFontSize;
 
             // 縦書きモードの場合、1文字ずつレンダリングして輪郭を原点基準に正規化する
             // (TextRenderer.RenderTextTo は横書き座標で全文字をまとめて出力するため)
@@ -230,6 +317,39 @@ namespace MasaChuang.SolidText3D
             TextRenderer.RenderTextTo(defaultRenderer, p.Text, defaultOptions);
 
             return defaultRenderer.GlyphContours;
+        }
+
+        private static SixLabors.Fonts.Font GetOrCreateRenderFont(int fontSourceId, byte[] fontBytes)
+        {
+            if (fontBytes == null || fontBytes.Length == 0)
+                throw new InvalidDataException("FontData is required to render glyphs.");
+
+            if (fontSourceId != 0)
+            {
+                lock (RenderFontCacheGate)
+                {
+                    if (RenderFontCache.TryGetValue(fontSourceId, out SixLabors.Fonts.Font cachedFont))
+                        return cachedFont;
+                }
+            }
+
+            var collection = new FontCollection();
+            FontFamily family;
+            using (var ms = new MemoryStream(fontBytes))
+            {
+                family = collection.Add((System.IO.Stream)ms);
+            }
+
+            SixLabors.Fonts.Font font = family.CreateFont(RenderFontSize);
+            if (fontSourceId != 0)
+            {
+                lock (RenderFontCacheGate)
+                {
+                    RenderFontCache[fontSourceId] = font;
+                }
+            }
+
+            return font;
         }
 
         private static byte[] GetFontBytes(MeshGenerationParams p)

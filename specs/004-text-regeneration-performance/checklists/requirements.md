@@ -33,3 +33,4 @@
 
 - Validation pass completed on 2026-05-15.
 - Spec keeps implementation options such as asynchronous preparation and reuse strategies out of scope for planning, while preserving the user-facing requirements those approaches must satisfy.
+- Revalidated on 2026-05-17 after clarifying FR-001 and FR-010 boundaries, making FR-016 mandatory, and tightening the user-visible expectation for partial numeric updates in FR-006.

@@ -25,7 +25,10 @@ MonoBehaviour として GameObject に追加して使用します。
 | `FontSize` | `float` | em スケールの Unity 単位変換 |
 | `ObjectMode` | `ObjectMode` | `SingleObject` / `PerCharacter` |
 | `IsDirty` | `bool` | 手動で再生成が必要かどうか |
+| `HasPendingRegeneration` | `bool` | deferred regeneration の in-flight / pending / ready 状態が残っているか |
 | `RegenerateMesh()` | `void` | 即時再生成 |
+| `RequestRegenerateMesh()` | `void` | 高頻度更新向け deferred regeneration を要求する |
+| `DeferredRegenerationFailed` | `event Action<RegenerationFailureInfo>` | keep-last-good を維持したまま deferred failure を通知する |
 
 ### MeshGenerationParams
 
@@ -96,6 +99,46 @@ public sealed class OutlineRuntimeExample : MonoBehaviour
 }
 ```
 
+高頻度更新では同期 `RegenerateMesh()` の代わりに次のように `RequestRegenerateMesh()` を使用します。
+
+```csharp
+using MasaChuang.SolidText3D;
+using UnityEngine;
+
+public sealed class ScoreTickerExample : MonoBehaviour
+{
+    [SerializeField] private SolidText3DComponent _text3D;
+
+    private void Awake()
+    {
+        _text3D.DeferredRegenerationFailed += OnDeferredRegenerationFailed;
+    }
+
+    private void OnDestroy()
+    {
+        _text3D.DeferredRegenerationFailed -= OnDeferredRegenerationFailed;
+    }
+
+    public void UpdateScore(int score)
+    {
+        _text3D.Text = score.ToString();
+        _text3D.RequestRegenerateMesh();
+    }
+
+    private static void OnDeferredRegenerationFailed(RegenerationFailureInfo info)
+    {
+        Debug.LogWarning($"Deferred regeneration failed: v={info.RequestVersion} text={info.RequestedText} msg={info.Message}");
+    }
+}
+```
+
+期待される契約:
+
+- `RegenerateMesh()` は同期のまま維持される
+- `RequestRegenerateMesh()` は latest-only queue を使い、古い completed result で表示を巻き戻さない
+- `HasPendingRegeneration` は deferred path の進行中状態を監視できる
+- failure 時も current visible display は keep-last-good を維持する
+
 ## CJK 文字の使用
 
 デフォルト埋め込みフォントは日本語・中国語・韓国語を含む CJK テキストを扱えます。
@@ -124,6 +167,7 @@ _text3D.Text = "Hello 世界";
 
 - 自動再生成は行わないため、更新コストは RegenerateMesh() 呼び出し時だけ発生する
 - profiler sample は outline build の各段に追加済み
+- deferred regeneration の validation 条件は `submit p95 <= 50ms`、`heavy/light / 5 object の p90 <= 100ms`、`cache-hit median drift <= 10%`
 - 2026-05-13 時点で Edit Mode / Play Mode テスト green を確認済み
 
 ## 既知の制限事項

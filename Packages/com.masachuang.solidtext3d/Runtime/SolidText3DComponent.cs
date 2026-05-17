@@ -1,4 +1,7 @@
-﻿using UnityEngine;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading;
+using UnityEngine;
 using UnityEngine.Profiling;
 
 namespace MasaChuang.SolidText3D
@@ -18,6 +21,7 @@ namespace MasaChuang.SolidText3D
     {
         private const string DefaultFontBytesAssetPath = "Packages/com.masachuang.solidtext3d/Runtime/Resources/Fonts/NotoSansJP-Black.bytes";
         private const string GeneratedFontBytesFolder = "Assets/SolidText3DFonts";
+        private const int PreparedDisplayResultCacheCapacity = 8;
 
         [SerializeField] private string _text = "Hello, World!";
         [SerializeField] private UnityEngine.Object _fontAsset;
@@ -42,12 +46,25 @@ namespace MasaChuang.SolidText3D
         private bool _suppressAutoRegenerate = false;
         private bool _fontMissingWarningIssued = false;
         private int _lastParamHash = 0;
+        private volatile bool _deferredPreparationQueued;
+        private volatile bool _deferredPreparationCompleted;
+        private volatile bool _deferredWorkerStopRequested;
         private MeshFilter _meshFilter;
         private MeshRenderer _meshRenderer;
         private CharacterObjectPool _characterPool;
         private GameObject _outlineChild;
         private MeshFilter _outlineMeshFilter;
         private MeshRenderer _outlineRenderer;
+        private readonly DeferredRegenerationState _deferredRegenerationState = new DeferredRegenerationState();
+        private readonly PreparedDisplayResultCache _preparedDisplayResultCache = new PreparedDisplayResultCache(PreparedDisplayResultCacheCapacity);
+        private readonly object _deferredPreparationGate = new object();
+        private readonly AutoResetEvent _deferredPreparationSignal = new AutoResetEvent(false);
+        private PreparedDisplayResult _lastPreparedDisplayResult;
+        private PreparedDisplayResult _completedPreparationResult;
+        private PreparedDisplayResult _workerReusablePreparedResult;
+        private string _completedPreparationFailureMessage;
+        private TextStateRequest _workerRequest;
+        private Thread _deferredPreparationThread;
 
         private const string OutlineChildName = "__OutlineMesh__";
 
@@ -57,7 +74,7 @@ namespace MasaChuang.SolidText3D
         public string Text
         {
             get => _text;
-            set { _text = value ?? string.Empty; _isDirty = true; }
+            set { _text = value ?? string.Empty; MarkDirty(); }
         }
 
         /// <summary>
@@ -77,7 +94,7 @@ namespace MasaChuang.SolidText3D
                 if (value == null) _fontBytesCache = null;
 #endif
                 _fontMissingWarningIssued = false;
-                _isDirty = true;
+                MarkDirty();
             }
         }
 
@@ -85,7 +102,7 @@ namespace MasaChuang.SolidText3D
         public float ExtrusionDepth
         {
             get => _extrusionDepth;
-            set { _extrusionDepth = value; _isDirty = true; }
+            set { _extrusionDepth = value; MarkDirty(); }
         }
 
         /// <summary>アウトライン幅。</summary>
@@ -113,7 +130,7 @@ namespace MasaChuang.SolidText3D
                     return;
 
                 _outline.Enabled = value;
-                _isDirty = true;
+                MarkDirty();
             }
         }
 
@@ -137,7 +154,7 @@ namespace MasaChuang.SolidText3D
 
                 _outline.OffsetAmount = sanitized;
                 _outlineWidth = sanitized;
-                _isDirty = true;
+                MarkDirty();
             }
         }
 
@@ -160,7 +177,7 @@ namespace MasaChuang.SolidText3D
                     return;
 
                 _outline.Thickness = sanitized;
-                _isDirty = true;
+                MarkDirty();
             }
         }
 
@@ -182,7 +199,7 @@ namespace MasaChuang.SolidText3D
                     return;
 
                 _outline.Material = value;
-                _isDirty = true;
+                MarkDirty();
             }
         }
 
@@ -204,7 +221,7 @@ namespace MasaChuang.SolidText3D
                     return;
 
                 _outline.DisplayMode = value;
-                _isDirty = true;
+                MarkDirty();
             }
         }
 
@@ -212,21 +229,21 @@ namespace MasaChuang.SolidText3D
         public float LetterSpacing
         {
             get => _letterSpacing;
-            set { _letterSpacing = value; _isDirty = true; }
+            set { _letterSpacing = value; MarkDirty(); }
         }
 
         /// <summary>行間スペース。</summary>
         public float LineSpacing
         {
             get => _lineSpacing;
-            set { _lineSpacing = value; _isDirty = true; }
+            set { _lineSpacing = value; MarkDirty(); }
         }
 
         /// <summary>フォントサイズ（Unity ワールド単位）。1 = em スクエアの高さが 1 Unity unit。</summary>
         public float FontSize
         {
             get => _fontSize;
-            set { _fontSize = Mathf.Max(0.001f, value); _isDirty = true; }
+            set { _fontSize = Mathf.Max(0.001f, value); MarkDirty(); }
         }
 
         /// <summary>
@@ -237,7 +254,7 @@ namespace MasaChuang.SolidText3D
         public HorizontalAnchor HorizontalAnchor
         {
             get => _horizontalAnchor;
-            set { _horizontalAnchor = value; _isDirty = true; }
+            set { _horizontalAnchor = value; MarkDirty(); }
         }
 
         /// <summary>
@@ -248,7 +265,7 @@ namespace MasaChuang.SolidText3D
         public VerticalAnchor VerticalAnchor
         {
             get => _verticalAnchor;
-            set { _verticalAnchor = value; _isDirty = true; }
+            set { _verticalAnchor = value; MarkDirty(); }
         }
 
         /// <summary>
@@ -259,7 +276,7 @@ namespace MasaChuang.SolidText3D
         public DepthAnchor DepthAnchor
         {
             get => _depthAnchor;
-            set { _depthAnchor = value; _isDirty = true; }
+            set { _depthAnchor = value; MarkDirty(); }
         }
 
         /// <summary>
@@ -270,7 +287,7 @@ namespace MasaChuang.SolidText3D
         public WritingMode WritingMode
         {
             get => _writingMode;
-            set { _writingMode = value; _isDirty = true; }
+            set { _writingMode = value; MarkDirty(); }
         }
 
         /// <summary>
@@ -279,7 +296,7 @@ namespace MasaChuang.SolidText3D
         public ObjectMode ObjectMode
         {
             get => _objectMode;
-            set { if (_objectMode == value) return; _objectMode = value; _isDirty = true; }
+            set { if (_objectMode == value) return; _objectMode = value; MarkDirty(); }
         }
 
         /// <summary>
@@ -290,7 +307,7 @@ namespace MasaChuang.SolidText3D
         public float MaxWidth
         {
             get => _maxWidth;
-            set { _maxWidth = value; _isDirty = true; }
+            set { _maxWidth = value; MarkDirty(); }
         }
 
         /// <summary>
@@ -301,7 +318,7 @@ namespace MasaChuang.SolidText3D
         public float MaxHeight
         {
             get => _maxHeight;
-            set { _maxHeight = value; _isDirty = true; }
+            set { _maxHeight = value; MarkDirty(); }
         }
 
         /// <summary>
@@ -312,11 +329,21 @@ namespace MasaChuang.SolidText3D
         public bool RotateAsciiInVertical
         {
             get => _rotateAsciiInVertical;
-            set { _rotateAsciiInVertical = value; _isDirty = true; }
+            set { _rotateAsciiInVertical = value; MarkDirty(); }
         }
 
         /// <summary>ダーティフラグ（テスト・内部デバッグ用）。</summary>
         public bool IsDirty => _isDirty;
+
+        /// <summary>
+        /// deferred regeneration の進行中または待機中 request があるかどうかを返す。
+        /// </summary>
+        public bool HasPendingRegeneration => _deferredRegenerationState.HasPendingWork || _deferredPreparationQueued || _deferredPreparationCompleted;
+
+        /// <summary>
+        /// deferred regeneration が失敗したときに通知する。
+        /// </summary>
+        public event Action<RegenerationFailureInfo> DeferredRegenerationFailed;
 
         /// <summary>
         /// true の間、LateUpdate による自動メッシュ再生成を抑制する。
@@ -383,17 +410,20 @@ namespace MasaChuang.SolidText3D
             if (_fontAsset != null)
                 _fontBytesCache = ResolveEditorFontBytesCache(_fontAsset);
 #endif
-            _isDirty = true;
+            MarkDirty();
         }
 
         private void OnDestroy()
         {
+            StopDeferredWorker();
             DestroyOutlineChildIfExists();
         }
 
         private void LateUpdate()
         {
-            // 自動再生成は行わない。dirty 状態は明示的な RegenerateMesh() 呼び出しまで維持する。
+            TryFinalizeDeferredPreparation();
+            TryApplyDeferredResult();
+            TryStartPendingDeferredPreparation();
         }
 
         // ─── メッシュ生成 ────────────────────────────────────────────────
@@ -407,95 +437,30 @@ namespace MasaChuang.SolidText3D
             try
             {
                 _isDirty = false;
+                long requestVersion = _deferredRegenerationState.LastRequestedVersion + 1;
+                _deferredRegenerationState.LastRequestedVersion = requestVersion;
+                _deferredRegenerationState.PendingLatestRequest = null;
+                _deferredRegenerationState.InFlightRequest = null;
+                _deferredRegenerationState.ClearReadyResult();
 
-                // FR-012: フォント未設定時はメッシュ生成をスキップ（警告を1回のみ出力）
-                if (_fontAsset == null && _fontBytesCache == null)
+                if (!TryCaptureRequest(requestVersion, out TextStateRequest request, out string failureMessage))
                 {
-                    if (!_fontMissingWarningIssued)
-                    {
-                        Debug.LogWarning("[SolidText3D] フォントが設定されていません。FontAsset を Inspector でアタッチしてください。");
-                        _fontMissingWarningIssued = true;
-                    }
+                    IssueFontWarning(failureMessage);
                     return;
                 }
 
-                // FR-015: 空文字列時はメッシュをクリアし、PerCharacter 全子 GameObject を破棄
-                if (string.IsNullOrEmpty(_text))
+                if (ShouldSkipApply(request))
                 {
-                    if (_meshFilter == null) _meshFilter = GetComponent<MeshFilter>();
-                    if (_meshFilter != null && _meshFilter.sharedMesh != null)
-                        _meshFilter.sharedMesh.Clear();
-                    _characterPool?.DestroyAll();
-                    _characterPool = null;
+                    MarkRequestSatisfiedWithoutApply(request);
                     return;
                 }
 
-                // FR-016: フォントデータが取得できない場合は直前メッシュを維持し警告を1回のみ出力
-                byte[] fontBytes = GetFontBytes();
-                if (fontBytes == null || fontBytes.Length == 0)
-                {
-                    if (!_fontMissingWarningIssued)
-                    {
-                        Debug.LogWarning("[SolidText3D] フォントデータを読み込めませんでした。直前のメッシュを維持します。");
-                        _fontMissingWarningIssued = true;
-                    }
-                    return;
-                }
+                PreparedDisplayResult preparedResult = TryGetCachedPreparedResult(request, out PreparedDisplayResult cached)
+                    ? cached
+                    : GlyphMeshBuilder.PrepareDisplayResult(request, GetReusablePreparedResult(request));
 
-                // FR-007: 同一パラメータ時は再生成をスキップ（空文字列は常にダーティ扱い）
-                int currentHash = ComputeParamHash();
-                if (currentHash == _lastParamHash)
-                    return;
-                _lastParamHash = currentHash;
-
-                var p = new MeshGenerationParams
-                {
-                    Text = _text,
-                    FontData = fontBytes,
-                    ExtrusionDepth = _extrusionDepth,
-                    OutlineWidth = _outlineWidth,
-                    LetterSpacing = _letterSpacing,
-                    LineSpacing = _lineSpacing,
-                    BezierErrorThreshold = _bezierErrorThreshold,
-                    FontSize = _fontSize,
-                    HorizontalAnchor = _horizontalAnchor,
-                    VerticalAnchor = _verticalAnchor,
-                    DepthAnchor = _depthAnchor,
-                    WritingMode = _writingMode,
-                    MaxWidth = _maxWidth,
-                    MaxHeight = _maxHeight,
-                    RotateAsciiInVertical = _rotateAsciiInVertical
-                };
-
-                if (_meshFilter == null) _meshFilter = GetComponent<MeshFilter>();
-
-                if (_objectMode == ObjectMode.PerCharacter)
-                {
-                    // SingleObject のメッシュを非表示にして PerCharacter と重複しないようにする
-                    if (_meshFilter != null) _meshFilter.sharedMesh = null;
-                    if (_meshRenderer != null) _meshRenderer.enabled = false;
-
-                    // 毎回再生成（テキスト変更時に子を作り直す・MissingReference 防止）
-                    if (_characterPool == null)
-                        _characterPool = new CharacterObjectPool(transform);
-
-                    var mat = _meshRenderer != null ? _meshRenderer.sharedMaterial : null;
-                    var perCharResult = GlyphMeshBuilder.BuildPerCharacter(p);
-                    _characterPool.Sync(perCharResult.Glyphs, perCharResult.Meshes, mat);
-                    UpdateOutlineMesh(p);
-                }
-                else
-                {
-                    // SingleObject に切り替わった際に子オブジェクトを破棄
-                    _characterPool?.DestroyAll();
-                    _characterPool = null;
-
-                    if (_meshRenderer != null) _meshRenderer.enabled = true;
-                    if (_meshFilter != null)
-                        _meshFilter.sharedMesh = GlyphMeshBuilder.Build(p);
-
-                    UpdateOutlineMesh(p);
-                }
+                ApplyPreparedDisplayResult(preparedResult);
+                RecordAppliedResult(preparedResult);
             }
             finally
             {
@@ -503,7 +468,470 @@ namespace MasaChuang.SolidText3D
             }
         }
 
+        /// <summary>
+        /// 高頻度更新向けの deferred regeneration を要求する。
+        /// 呼び出し時点では表示反映を保証しない。
+        /// </summary>
+        public void RequestRegenerateMesh()
+        {
+            _isDirty = false;
+
+            long requestVersion = _deferredRegenerationState.LastRequestedVersion + 1;
+            _deferredRegenerationState.LastRequestedVersion = requestVersion;
+
+            if (!TryCaptureRequest(requestVersion, out TextStateRequest request, out string failureMessage))
+            {
+                RaiseDeferredFailure(requestVersion, _text, failureMessage);
+                return;
+            }
+
+            if (ShouldSkipApply(request))
+            {
+                MarkRequestSatisfiedWithoutApply(request);
+                return;
+            }
+
+            if (TryGetCachedPreparedResult(request, out PreparedDisplayResult cachedResult))
+            {
+                _deferredRegenerationState.ReadyResult = cachedResult;
+                _deferredRegenerationState.PendingLatestRequest = null;
+                return;
+            }
+
+            if (_deferredRegenerationState.InFlightRequest.HasValue || _deferredPreparationQueued)
+            {
+                _deferredRegenerationState.PendingLatestRequest = request;
+                return;
+            }
+
+            StartDeferredPreparation(request);
+        }
+
         // ─── 内部ヘルパー ────────────────────────────────────────────────
+
+        private bool TryCaptureRequest(long version, out TextStateRequest request, out string failureMessage)
+        {
+            EnsureOutlineSettingsInitialized();
+
+            var signature = CreateDisplayResultSignature();
+            var generationParams = CreateMeshGenerationParams(null);
+
+            if (string.IsNullOrEmpty(_text))
+            {
+                request = new TextStateRequest(version, signature, string.Empty, null, generationParams, OutlineEnabled, OutlineOffset, OutlineThickness, OutlineMaterial, OutlineDisplayMode, _objectMode);
+                failureMessage = null;
+                _fontMissingWarningIssued = false;
+                return true;
+            }
+
+            if (!TryGetFontBytesForCurrentText(out byte[] fontBytes, out failureMessage))
+            {
+                request = default;
+                return false;
+            }
+
+            generationParams = CreateMeshGenerationParams(fontBytes);
+            request = new TextStateRequest(version, signature, _text, fontBytes, generationParams, OutlineEnabled, OutlineOffset, OutlineThickness, OutlineMaterial, OutlineDisplayMode, _objectMode);
+            _fontMissingWarningIssued = false;
+            return true;
+        }
+
+        private MeshGenerationParams CreateMeshGenerationParams(byte[] fontBytes)
+        {
+            return new MeshGenerationParams
+            {
+                Text = _text,
+                FontData = fontBytes,
+                ExtrusionDepth = _extrusionDepth,
+                OutlineWidth = _outlineWidth,
+                LetterSpacing = _letterSpacing,
+                LineSpacing = _lineSpacing,
+                BezierErrorThreshold = _bezierErrorThreshold,
+                FontSize = _fontSize,
+                HorizontalAnchor = _horizontalAnchor,
+                VerticalAnchor = _verticalAnchor,
+                DepthAnchor = _depthAnchor,
+                WritingMode = _writingMode,
+                MaxWidth = _maxWidth,
+                MaxHeight = _maxHeight,
+                RotateAsciiInVertical = _rotateAsciiInVertical
+            };
+        }
+
+        private DisplayResultSignature CreateDisplayResultSignature()
+        {
+            int layoutHash = ComputeLayoutHash();
+            int fontSourceId = _fontAsset != null
+                ? _fontAsset.GetInstanceID()
+                : _fontBytesCache != null ? _fontBytesCache.GetInstanceID() : 0;
+            return new DisplayResultSignature(_text, ComputeParamHash(layoutHash), layoutHash, fontSourceId, _objectMode);
+        }
+
+        private bool TryGetFontBytesForCurrentText(out byte[] fontBytes, out string failureMessage)
+        {
+            if (_fontAsset == null && _fontBytesCache == null)
+            {
+                fontBytes = null;
+                failureMessage = "[SolidText3D] フォントが設定されていません。FontAsset を Inspector でアタッチしてください。";
+                return false;
+            }
+
+            fontBytes = GetFontBytes();
+            if (fontBytes == null || fontBytes.Length == 0)
+            {
+                failureMessage = "[SolidText3D] フォントデータを読み込めませんでした。直前のメッシュを維持します。";
+                return false;
+            }
+
+            failureMessage = null;
+            return true;
+        }
+
+        private bool ShouldSkipApply(TextStateRequest request)
+        {
+            return !string.IsNullOrEmpty(request.Text)
+                && request.Signature == _deferredRegenerationState.LastAppliedSignature;
+        }
+
+        private bool TryGetCachedPreparedResult(TextStateRequest request, out PreparedDisplayResult preparedResult)
+        {
+            if (_preparedDisplayResultCache.TryGet(request.Signature, out PreparedDisplayResult cached))
+            {
+                preparedResult = ClonePreparedResult(cached, request.Version, request.Signature);
+                return true;
+            }
+
+            preparedResult = null;
+            return false;
+        }
+
+        private static PreparedDisplayResult ClonePreparedResult(PreparedDisplayResult source, long version, DisplayResultSignature signature)
+        {
+            if (source == null)
+                return null;
+
+            return new PreparedDisplayResult
+            {
+                Version = version,
+                Signature = signature,
+                BodyMeshData = source.BodyMeshData,
+                OutlineMeshData = source.OutlineMeshData,
+                PerCharacterMeshData = source.PerCharacterMeshData,
+                PerCharacterOffsets = source.PerCharacterOffsets,
+                ClearsDisplay = source.ClearsDisplay
+            };
+        }
+
+        private void StartDeferredPreparation(TextStateRequest request)
+        {
+            PreparedDisplayResult reusableResult = GetReusablePreparedResult(request);
+            _deferredRegenerationState.InFlightRequest = request;
+            _deferredRegenerationState.PendingLatestRequest = null;
+
+            lock (_deferredPreparationGate)
+            {
+                _workerRequest = request;
+                _workerReusablePreparedResult = reusableResult;
+                _completedPreparationResult = null;
+                _completedPreparationFailureMessage = null;
+                _deferredPreparationCompleted = false;
+                _deferredPreparationQueued = true;
+            }
+
+            EnsureDeferredWorkerStarted();
+            _deferredPreparationSignal.Set();
+        }
+
+        private PreparedDisplayResult GetReusablePreparedResult(TextStateRequest request)
+        {
+            if (_lastPreparedDisplayResult == null)
+                return null;
+
+            if (!_lastPreparedDisplayResult.Signature.CanReusePerCharacterLayoutWith(request.Signature))
+                return null;
+
+            return _lastPreparedDisplayResult;
+        }
+
+        private void TryFinalizeDeferredPreparation()
+        {
+            if (!_deferredPreparationCompleted || !_deferredRegenerationState.InFlightRequest.HasValue)
+                return;
+
+            TextStateRequest request = _deferredRegenerationState.InFlightRequest.Value;
+            try
+            {
+                PreparedDisplayResult completedResult;
+                string completedFailureMessage;
+                lock (_deferredPreparationGate)
+                {
+                    completedResult = _completedPreparationResult;
+                    completedFailureMessage = _completedPreparationFailureMessage;
+                    _completedPreparationResult = null;
+                    _completedPreparationFailureMessage = null;
+                    _deferredPreparationCompleted = false;
+                }
+
+                if (!string.IsNullOrEmpty(completedFailureMessage))
+                {
+                    RaiseDeferredFailure(request.Version, request.Text, completedFailureMessage);
+                }
+                else if (completedResult != null && completedResult.Version >= _deferredRegenerationState.LastRequestedVersion)
+                {
+                    _deferredRegenerationState.ReadyResult = completedResult;
+                }
+            }
+            finally
+            {
+                _deferredRegenerationState.InFlightRequest = null;
+            }
+        }
+
+        private void TryApplyDeferredResult()
+        {
+            PreparedDisplayResult readyResult = _deferredRegenerationState.ReadyResult;
+            if (readyResult == null)
+                return;
+
+            _deferredRegenerationState.ClearReadyResult();
+            if (readyResult.Version < _deferredRegenerationState.LastRequestedVersion)
+                return;
+
+            ApplyPreparedDisplayResult(readyResult);
+            RecordAppliedResult(readyResult);
+        }
+
+        private void TryStartPendingDeferredPreparation()
+        {
+            if (_deferredPreparationQueued || !_deferredRegenerationState.PendingLatestRequest.HasValue)
+                return;
+
+            TextStateRequest request = _deferredRegenerationState.PendingLatestRequest.Value;
+            _deferredRegenerationState.PendingLatestRequest = null;
+
+            if (TryGetCachedPreparedResult(request, out PreparedDisplayResult cachedResult))
+            {
+                _deferredRegenerationState.ReadyResult = cachedResult;
+                return;
+            }
+
+            StartDeferredPreparation(request);
+        }
+
+        private void EnsureDeferredWorkerStarted()
+        {
+            if (_deferredPreparationThread != null)
+                return;
+
+            lock (_deferredPreparationGate)
+            {
+                if (_deferredPreparationThread != null)
+                    return;
+
+                _deferredWorkerStopRequested = false;
+                _deferredPreparationThread = new Thread(DeferredPreparationWorkerLoop)
+                {
+                    IsBackground = true,
+                    Name = "SolidText3D Deferred Worker"
+                };
+                _deferredPreparationThread.Start();
+            }
+        }
+
+        private void DeferredPreparationWorkerLoop()
+        {
+            while (true)
+            {
+                _deferredPreparationSignal.WaitOne();
+                if (_deferredWorkerStopRequested)
+                    return;
+
+                PreparedDisplayResult completedResult = null;
+                string failureMessage = null;
+                TextStateRequest request;
+                PreparedDisplayResult reusableResult;
+
+                lock (_deferredPreparationGate)
+                {
+                    request = _workerRequest;
+                    reusableResult = _workerReusablePreparedResult;
+                }
+
+                try
+                {
+                    completedResult = GlyphMeshBuilder.PrepareDisplayResult(request, reusableResult);
+                }
+                catch (Exception exception)
+                {
+                    failureMessage = exception.Message;
+                }
+
+                lock (_deferredPreparationGate)
+                {
+                    if (_deferredWorkerStopRequested)
+                        return;
+
+                    _workerReusablePreparedResult = null;
+                    _completedPreparationResult = completedResult;
+                    _completedPreparationFailureMessage = failureMessage;
+                    _deferredPreparationQueued = false;
+                    _deferredPreparationCompleted = true;
+                }
+            }
+        }
+
+        private void StopDeferredWorker()
+        {
+            _deferredWorkerStopRequested = true;
+            _deferredPreparationSignal.Set();
+        }
+
+        private void ApplyPreparedDisplayResult(PreparedDisplayResult preparedResult)
+        {
+            if (_meshFilter == null)
+                _meshFilter = GetComponent<MeshFilter>();
+
+            if (_meshRenderer == null)
+                _meshRenderer = GetComponent<MeshRenderer>();
+
+            if (preparedResult == null)
+                return;
+
+            if (preparedResult.ClearsDisplay)
+            {
+                ClearCurrentDisplay();
+                return;
+            }
+
+            if (preparedResult.PerCharacterMeshData != null)
+            {
+                ApplyPerCharacterPreparedResult(preparedResult);
+            }
+            else
+            {
+                ApplySingleObjectPreparedResult(preparedResult);
+            }
+
+            ApplyPreparedOutlineResult(preparedResult.OutlineMeshData);
+        }
+
+        private void ApplySingleObjectPreparedResult(PreparedDisplayResult preparedResult)
+        {
+            _characterPool?.DestroyAll();
+            _characterPool = null;
+
+            if (_meshRenderer != null)
+                _meshRenderer.enabled = true;
+
+            if (_meshFilter != null)
+                _meshFilter.sharedMesh = MeshExtruder.CreateMesh(preparedResult.BodyMeshData);
+        }
+
+        private void ApplyPerCharacterPreparedResult(PreparedDisplayResult preparedResult)
+        {
+            if (_meshFilter != null)
+                _meshFilter.sharedMesh = null;
+
+            if (_meshRenderer != null)
+                _meshRenderer.enabled = false;
+
+            if (_characterPool == null)
+                _characterPool = new CharacterObjectPool(transform);
+
+            var perCharacterMeshes = new List<Mesh>(preparedResult.PerCharacterMeshData.Count);
+            for (int i = 0; i < preparedResult.PerCharacterMeshData.Count; i++)
+                perCharacterMeshes.Add(MeshExtruder.CreateMesh(preparedResult.PerCharacterMeshData[i]));
+
+            var sharedMaterial = _meshRenderer != null ? _meshRenderer.sharedMaterial : null;
+            _characterPool.Sync(perCharacterMeshes, sharedMaterial);
+        }
+
+        private void ApplyPreparedOutlineResult(GlyphMeshData outlineMeshData)
+        {
+            EnsureOutlineSettingsInitialized();
+
+            if (!_outline.Enabled)
+            {
+                DestroyOutlineChildIfExists();
+                return;
+            }
+
+            EnsureOutlineChild();
+            ApplyOutlineMaterial();
+
+            if (outlineMeshData.Vertices == null || outlineMeshData.Vertices.Count == 0)
+            {
+                ClearOutlineMesh();
+                return;
+            }
+
+            ReplaceOutlineMesh(MeshExtruder.CreateMesh(outlineMeshData));
+        }
+
+        private void ClearCurrentDisplay()
+        {
+            if (_meshFilter == null)
+                _meshFilter = GetComponent<MeshFilter>();
+
+            if (_meshFilter != null && _meshFilter.sharedMesh != null)
+                _meshFilter.sharedMesh.Clear();
+
+            _characterPool?.DestroyAll();
+            _characterPool = null;
+
+            if (_meshRenderer != null)
+                _meshRenderer.enabled = _objectMode != ObjectMode.PerCharacter;
+
+            _lastPreparedDisplayResult = null;
+            DestroyOutlineChildIfExists();
+        }
+
+        private void RecordAppliedResult(PreparedDisplayResult preparedResult)
+        {
+            _deferredRegenerationState.LastAppliedVersion = preparedResult.Version;
+            _deferredRegenerationState.LastAppliedSignature = preparedResult.Signature;
+            _lastParamHash = preparedResult.Signature.HashCode;
+            _lastPreparedDisplayResult = preparedResult.ClearsDisplay
+                ? null
+                : ClonePreparedResult(preparedResult, preparedResult.Version, preparedResult.Signature);
+
+            if (!preparedResult.ClearsDisplay)
+                _preparedDisplayResultCache.Store(ClonePreparedResult(preparedResult, preparedResult.Version, preparedResult.Signature));
+        }
+
+        private void MarkRequestSatisfiedWithoutApply(TextStateRequest request)
+        {
+            _deferredRegenerationState.LastAppliedVersion = request.Version;
+            _deferredRegenerationState.LastAppliedSignature = request.Signature;
+            _lastParamHash = request.Signature.HashCode;
+        }
+
+        private void RaiseDeferredFailure(long requestVersion, string requestedText, string failureMessage)
+        {
+            DeferredRegenerationFailed?.Invoke(new RegenerationFailureInfo(requestVersion, requestedText, failureMessage));
+        }
+
+        private void IssueFontWarning(string failureMessage)
+        {
+            if (_fontMissingWarningIssued)
+                return;
+
+            Debug.LogWarning(failureMessage);
+            _fontMissingWarningIssued = true;
+        }
+
+        private void MarkDirty()
+        {
+            _isDirty = true;
+            InvalidatePendingDeferredRegeneration();
+        }
+
+        private void InvalidatePendingDeferredRegeneration()
+        {
+            _deferredRegenerationState.LastRequestedVersion++;
+            _deferredRegenerationState.PendingLatestRequest = null;
+            _deferredRegenerationState.ClearReadyResult();
+        }
 
         private byte[] GetFontBytes()
         {
@@ -531,10 +959,17 @@ namespace MasaChuang.SolidText3D
         }
 
         // GC Alloc ゼロのハッシュ計算（XOR 結合のみ、new/LINQ/文字列連結なし）
-        private int ComputeParamHash()
+        private int ComputeParamHash(int layoutHash)
+        {
+            int hash = layoutHash;
+            hash ^= _text != null ? _text.GetHashCode() : 0;
+            return hash;
+        }
+
+        private int ComputeLayoutHash()
         {
             EnsureOutlineSettingsInitialized();
-            int hash = _text != null ? _text.GetHashCode() : 0;
+            int hash = 0;
             hash ^= _horizontalAnchor.GetHashCode();
             hash ^= _verticalAnchor.GetHashCode();
             hash ^= _depthAnchor.GetHashCode();
@@ -544,6 +979,9 @@ namespace MasaChuang.SolidText3D
             hash ^= _fontSize.GetHashCode();
             hash ^= _letterSpacing.GetHashCode();
             hash ^= _lineSpacing.GetHashCode();
+            hash ^= _bezierErrorThreshold.GetHashCode();
+            hash ^= _maxWidth.GetHashCode();
+            hash ^= _maxHeight.GetHashCode();
             hash ^= _rotateAsciiInVertical.GetHashCode();
             hash ^= _fontAsset != null ? _fontAsset.GetInstanceID() : 0;
             hash ^= _fontBytesCache != null ? _fontBytesCache.GetInstanceID() : 0;
@@ -700,9 +1138,9 @@ namespace MasaChuang.SolidText3D
                 return;
 
 #if UNITY_EDITOR
-            Object.DestroyImmediate(previousMesh);
+        UnityEngine.Object.DestroyImmediate(previousMesh);
 #else
-            Object.Destroy(previousMesh);
+        UnityEngine.Object.Destroy(previousMesh);
 #endif
         }
 
@@ -714,16 +1152,16 @@ namespace MasaChuang.SolidText3D
             if (_outlineMeshFilter != null && _outlineMeshFilter.sharedMesh != null)
             {
 #if UNITY_EDITOR
-                Object.DestroyImmediate(_outlineMeshFilter.sharedMesh);
+                UnityEngine.Object.DestroyImmediate(_outlineMeshFilter.sharedMesh);
 #else
-                Object.Destroy(_outlineMeshFilter.sharedMesh);
+                UnityEngine.Object.Destroy(_outlineMeshFilter.sharedMesh);
 #endif
             }
 
 #if UNITY_EDITOR
-            Object.DestroyImmediate(_outlineChild);
+            UnityEngine.Object.DestroyImmediate(_outlineChild);
 #else
-            Object.Destroy(_outlineChild);
+            UnityEngine.Object.Destroy(_outlineChild);
 #endif
 
             _outlineChild = null;

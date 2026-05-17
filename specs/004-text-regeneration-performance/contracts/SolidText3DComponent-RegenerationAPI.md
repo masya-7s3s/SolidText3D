@@ -43,6 +43,7 @@ public void RequestRegenerateMesh();
 - 進行中 request は 1 件のみ
 - 待機 queue は FIFO ではなく latest-only
 - 完成結果が current request より古い場合、表示へ適用してはならない
+- submit path は current thread の余分な allocation を避ける
 
 ### `HasPendingRegeneration`
 
@@ -108,6 +109,14 @@ Forbidden:
 - prepared result cache は public API ではなく internal implementation detail とする
 - ただし observable behavior として、同一 display signature の再要求は cold build より短時間で適用されることを目標にする
 - cache 上限到達時は least-recently-used entry から破棄する
+- cache-hit latency は長時間運用後も中央値の 10% 超劣化を避けることを目標にする
+
+## Validation Thresholds
+
+- deferred submit: 95 percentile で 50ms 以下
+- heavy/light 同時更新: 90 percentile で 100ms 以下
+- 5 object 同時更新: 90 percentile で 100ms 以下
+- cache-hit latency drift: 長時間運用後の中央値が初期中央値 +10% 以内
 
 ## Failure / Empty State Semantics
 

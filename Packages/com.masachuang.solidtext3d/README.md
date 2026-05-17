@@ -31,6 +31,7 @@ manifest.json に直接記述する場合の例:
 - Offset Amount を上げると文字外周に outline が生成される
 - OutlineOffset が 0 のときは child は維持したまま outline mesh だけがクリアされる
 - Donut と BackFilled は正面シルエットを共有し、背面構成だけが変わる
+- 高頻度更新では `RequestRegenerateMesh()` を使うと latest-only に追従する
 
 ```csharp
 using MasaChuang.SolidText3D;
@@ -82,7 +83,17 @@ public sealed class OutlineSample : MonoBehaviour
 | `FontSize` | `float` | em 高さを Unity 単位へ変換するスケール |
 | `ObjectMode` | `ObjectMode` | `SingleObject` / `PerCharacter` |
 | `IsDirty` | `bool` | 手動で再生成が必要かどうか |
+| `HasPendingRegeneration` | `bool` | deferred regeneration の進行中/待機中 request があるかどうか |
 | `RegenerateMesh()` | `void` | 即時再生成 |
+| `RequestRegenerateMesh()` | `void` | 高頻度更新向け deferred 再生成 |
+| `DeferredRegenerationFailed` | `event Action<RegenerationFailureInfo>` | deferred regeneration failure を keep-last-good で通知 |
+
+### Regeneration API の使い分け
+
+- `RegenerateMesh()` は同期 API で、呼び出し復帰時点で表示が更新済みです
+- `RequestRegenerateMesh()` は non-blocking submit を目的とした deferred API で、進行中 1 件 + latest-only 待機 1 件に集約されます
+- `HasPendingRegeneration` は deferred path の in-flight / pending / ready 状態が残る間 `true` です
+- `DeferredRegenerationFailed` は失敗 request を通知しますが、直前の visible display は維持されます
 
 ### OutlineDisplayMode
 
@@ -100,6 +111,8 @@ public sealed class OutlineSample : MonoBehaviour
 ## パフォーマンス
 
 - 自動再生成を行わないため、通常フレームで追加 GC.Alloc を発生させない設計です
+- `RequestRegenerateMesh()` の submit path は current thread での余分な allocation を避ける構成です
+- performance validation 条件は `submit p95 <= 50ms`、`heavy/light および 5 object 同時更新の p90 <= 100ms`、`cache-hit median drift <= 10%` を基準にします
 - profiler sample: GlyphMeshBuilder.Build, MeshExtruder.BuildGlyphMesh, OutlineContourBuilder.BuildProfiles, OutlineMeshBuilder.Build, SolidText3DComponent.RegenerateMesh, SolidText3DComponent.UpdateOutlineMesh
 - 2026-05-13 時点で Edit Mode / Play Mode テストは green を確認済みです
 

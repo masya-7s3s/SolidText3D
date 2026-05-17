@@ -31,7 +31,12 @@ namespace MasaChuang.SolidText3D
         /// </summary>
         internal void Sync(List<GlyphContour> visibleGlyphs, List<Mesh> perCharMeshes, Material sharedMaterial = null)
         {
-            int count = visibleGlyphs != null ? visibleGlyphs.Count : 0;
+            Sync(perCharMeshes, sharedMaterial);
+        }
+
+        internal void Sync(List<Mesh> perCharMeshes, Material sharedMaterial = null)
+        {
+            int count = perCharMeshes != null ? perCharMeshes.Count : 0;
 
             // 既存プールエントリを再利用・更新
             for (int i = 0; i < count; i++)

@@ -7,10 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `SolidText3DComponent.RequestRegenerateMesh()`、`HasPendingRegeneration`、`DeferredRegenerationFailed` を追加し、高頻度更新向けの deferred regeneration API を公開
+- prepared-result cache の hit/miss、LRU eviction、cache-hit latency drift、keep-last-good failure、stale-result discard を検証する Edit Mode / Play Mode テストを追加
+
 ### Changed
 
 - `SolidText3DComponent` の dirty 状態は自動再生成せず、`RegenerateMesh()` の明示呼び出しでのみメッシュ更新するよう変更
 - `SolidText3DInspector` に `Regenerate Mesh` ボタンを追加し、Inspector 編集時のリアルタイム再生成を廃止
+- deferred regeneration の submit path を component-local work item 化し、latest-only queue、stale discard、prepared-result reuse を強化
 
 ## [2.1.0] - 2026-05-13
 

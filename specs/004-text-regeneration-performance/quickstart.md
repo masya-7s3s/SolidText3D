@@ -102,6 +102,8 @@ Unity Test Runner または batchmode で以下を実行する。
 - 5 object 以上の同時更新でも最新値への追従が破綻しない
 - 1 つの重い object が他 object の apply を一律停止させない
 - baseline runtime performance を大きく悪化させない
+- `RequestRegenerateMesh()` submit の 95 percentile が 50ms を超えない
+- heavy/light と 5 object の 90 percentile が 100ms を超えない
 
 ## 6. Profiler で確認する
 
@@ -119,11 +121,17 @@ Unity Test Runner または batchmode で以下を実行する。
 
 ## Record
 
-- Date:
-- Unity:
-- Validation Scene:
-- Edit Mode Tests:
-- Play Mode Tests:
-- Build Output:
-- Result:
-- Notes:
+### Current Session Record
+
+- Date: 2026-05-17
+- Unity: 6000.3.13f1
+- Validation Scene: 未記録
+- Edit Mode Tests: コード診断は clean。Unity Test Runner 実行結果の完全採取はこの環境では未実施
+- Play Mode Tests: ユーザー提供の最新 Test Runner 結果で 20 件中 20 件 pass
+- Runtime 性能観測: RequestRegenerateMesh submit p95 = 7.360ms、20 component 平均 frame = 1.44ms、heavy/light latency = pass、5 object latency = pass
+- 60 秒 10 Hz 観測: TimerDisplay_10HzFor60SecondsEquivalent_NeverRollsBackFromLatestRequest は pass
+- 10 分劣化試験: RegenerateMesh_CacheHitMedian_DoesNotDriftMoreThan10PercentAfterLongRun は pass
+- Profiler: この環境では手動観測未実施
+- Build Output: Windows player 手動ビルドは未実施
+- Result: Runtime validation は閾値内で green。Windows player 手動ビルド確認のみ未実施
+- Notes: 5 object latency は SC-006 の『可視更新の 90%』に合わせて object 単位 percentile 集計へテスト補正後に pass。batchmode はこの環境で XML を返さないケースがあり、compile diagnostics とユーザー側実行結果を併用した

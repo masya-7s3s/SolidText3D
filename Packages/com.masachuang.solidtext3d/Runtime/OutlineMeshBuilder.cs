@@ -14,18 +14,24 @@ namespace MasaChuang.SolidText3D
 
         internal static Mesh Build(List<GlyphContour> glyphs, OutlineSettings settings, float bodyExtrusionDepth, float fontSize)
         {
+            return MeshExtruder.CreateMesh(BuildData(glyphs, settings, bodyExtrusionDepth, fontSize));
+        }
+
+        internal static GlyphMeshData BuildData(List<GlyphContour> glyphs, OutlineSettings settings, float bodyExtrusionDepth, float fontSize)
+        {
             Profiler.BeginSample("OutlineMeshBuilder.Build");
             try
             {
-                var mesh = new Mesh();
-                mesh.indexFormat = IndexFormat.UInt32;
+                var combined = new GlyphMeshData
+                {
+                    Vertices = new List<Vector3>(),
+                    Triangles = new List<int>(),
+                    Normals = new List<Vector3>(),
+                    Offset = Vector3.zero
+                };
 
                 if (glyphs == null || glyphs.Count == 0 || settings == null || settings.OffsetAmount <= 0f)
-                    return mesh;
-
-                var allVertices = new List<Vector3>();
-                var allTriangles = new List<int>();
-                var allNormals = new List<Vector3>();
+                    return combined;
 
                 for (int glyphIndex = 0; glyphIndex < glyphs.Count; glyphIndex++)
                 {
@@ -67,22 +73,10 @@ namespace MasaChuang.SolidText3D
                         AppendGlyphMeshData(glyphMeshData, rearInfillData);
                     }
 
-                    int vertexOffset = allVertices.Count;
-
-                    for (int i = 0; i < glyphMeshData.Vertices.Count; i++)
-                        allVertices.Add(glyphMeshData.Vertices[i] + glyph.Offset);
-
-                    allNormals.AddRange(glyphMeshData.Normals);
-
-                    for (int i = 0; i < glyphMeshData.Triangles.Count; i++)
-                        allTriangles.Add(glyphMeshData.Triangles[i] + vertexOffset);
+                    AppendGlyphMeshData(combined, glyphMeshData, glyph.Offset);
                 }
 
-                mesh.SetVertices(allVertices);
-                mesh.SetNormals(allNormals);
-                mesh.SetTriangles(allTriangles, 0);
-                mesh.RecalculateBounds();
-                return mesh;
+                return combined;
             }
             finally
             {
@@ -97,6 +91,21 @@ namespace MasaChuang.SolidText3D
 
             int vertexOffset = target.Vertices.Count;
             target.Vertices.AddRange(addition.Vertices);
+            target.Normals.AddRange(addition.Normals);
+
+            for (int i = 0; i < addition.Triangles.Count; i++)
+                target.Triangles.Add(addition.Triangles[i] + vertexOffset);
+        }
+
+        private static void AppendGlyphMeshData(GlyphMeshData target, GlyphMeshData addition, Vector3 offset)
+        {
+            if (addition.Vertices == null || addition.Vertices.Count == 0)
+                return;
+
+            int vertexOffset = target.Vertices.Count;
+            for (int i = 0; i < addition.Vertices.Count; i++)
+                target.Vertices.Add(addition.Vertices[i] + offset);
+
             target.Normals.AddRange(addition.Normals);
 
             for (int i = 0; i < addition.Triangles.Count; i++)

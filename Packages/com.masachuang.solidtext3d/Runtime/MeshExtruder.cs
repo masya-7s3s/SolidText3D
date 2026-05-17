@@ -20,35 +20,29 @@ namespace MasaChuang.SolidText3D
         /// <returns>生成された Unity Mesh。</returns>
         public static Mesh Build(List<GlyphContour> glyphs, MeshGenerationParams p)
         {
-            // GC 正当化: このアロケーションはパラメータ変更時（メッシュ再生成時）のみ発生する
-            // LateUpdate() 内ではダーティフラグチェックのみを行い、アロケーションは発生しない（憲法 V 準拠）
-            var allVertices = new List<Vector3>();
-            var allTriangles = new List<int>();
-            var allNormals = new List<Vector3>();
+            return CreateMesh(BuildCombinedData(glyphs, p));
+        }
+
+        internal static GlyphMeshData BuildCombinedData(List<GlyphContour> glyphs, MeshGenerationParams p)
+        {
+            var combined = new GlyphMeshData
+            {
+                Vertices = new List<Vector3>(),
+                Triangles = new List<int>(),
+                Normals = new List<Vector3>(),
+                Offset = Vector3.zero
+            };
+
+            if (glyphs == null || glyphs.Count == 0)
+                return combined;
 
             foreach (var glyph in glyphs)
             {
                 var data = BuildGlyphMesh(glyph, p.ExtrusionDepth, p.OutlineWidth);
-                int indexOffset = allVertices.Count;
-                var glyphOffset = glyph.Offset;
-
-                foreach (var v in data.Vertices)
-                    allVertices.Add(v + glyphOffset);
-                allNormals.AddRange(data.Normals);
-
-                for (int i = 0; i < data.Triangles.Count; i++)
-                {
-                    allTriangles.Add(data.Triangles[i] + indexOffset);
-                }
+                AppendGlyphMeshData(combined, data, glyph.Offset);
             }
 
-            var mesh = new Mesh();
-            mesh.indexFormat = IndexFormat.UInt32;
-            mesh.SetVertices(allVertices);
-            mesh.SetNormals(allNormals);
-            mesh.SetTriangles(allTriangles, 0);
-            mesh.RecalculateBounds();
-            return mesh;
+            return combined;
         }
 
         /// <summary>
@@ -98,6 +92,62 @@ namespace MasaChuang.SolidText3D
             finally
             {
                 Profiler.EndSample();
+            }
+        }
+
+        internal static Mesh CreateMesh(GlyphMeshData data)
+        {
+            var mesh = new Mesh();
+            mesh.indexFormat = IndexFormat.UInt32;
+
+            if (data.Vertices == null || data.Vertices.Count == 0)
+                return mesh;
+
+            mesh.SetVertices(data.Vertices);
+            if (data.Normals != null && data.Normals.Count == data.Vertices.Count)
+                mesh.SetNormals(data.Normals);
+            mesh.SetTriangles(data.Triangles, 0);
+            mesh.RecalculateBounds();
+            return mesh;
+        }
+
+        internal static Bounds CalculateBounds(GlyphMeshData data)
+        {
+            if (data.Vertices == null || data.Vertices.Count == 0)
+                return new Bounds(Vector3.zero, Vector3.zero);
+
+            var bounds = new Bounds(data.Vertices[0], Vector3.zero);
+            for (int i = 1; i < data.Vertices.Count; i++)
+                bounds.Encapsulate(data.Vertices[i]);
+
+            return bounds;
+        }
+
+        internal static void ApplyOffset(GlyphMeshData data, Vector3 offset)
+        {
+            if (offset == Vector3.zero || data.Vertices == null)
+                return;
+
+            for (int i = 0; i < data.Vertices.Count; i++)
+                data.Vertices[i] += offset;
+        }
+
+        private static void AppendGlyphMeshData(GlyphMeshData target, GlyphMeshData addition, Vector3 offset)
+        {
+            if (addition.Vertices == null || addition.Vertices.Count == 0)
+                return;
+
+            int vertexOffset = target.Vertices.Count;
+            for (int i = 0; i < addition.Vertices.Count; i++)
+                target.Vertices.Add(addition.Vertices[i] + offset);
+
+            if (addition.Normals != null)
+                target.Normals.AddRange(addition.Normals);
+
+            if (addition.Triangles != null)
+            {
+                for (int i = 0; i < addition.Triangles.Count; i++)
+                    target.Triangles.Add(addition.Triangles[i] + vertexOffset);
             }
         }
 
