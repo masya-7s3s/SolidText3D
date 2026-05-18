@@ -58,6 +58,7 @@ outline は本体メッシュに混ぜ込まれず、__OutlineMesh__ という�
 - OutlineEnabled = false で子オブジェクトを破棄する
 - OutlineEnabled = true で子オブジェクトを生成または再利用する
 - OutlineOffset = 0 では子オブジェクトを残し、メッシュだけ空にする
+- OutlineThickness は本体の ExtrusionDepth に対する比率として扱う
 
 ## PerCharacter は再利用前提のプール方式
 

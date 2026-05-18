@@ -10,7 +10,7 @@
 - 横書きと縦書きを切り替える
 - outline を文字本体とは別メッシュで生成する
 - 文字ごとに子 GameObject へ分けて出力する
-- Play Mode 中の更新を同期または deferred で反映する
+- Edit Mode / Play Mode の両方で同期または deferred に再生成する
 
 ## 最初に知っておくとよいこと
 
@@ -19,6 +19,7 @@
 - 高頻度更新では RequestRegenerateMesh() を使います
 - Font Asset 未設定時はデフォルトの NotoSansJP-Black を使います
 - 横書きの MaxWidth は現行実装では保持だけされ、自動折り返しには使われません
+- ビルド済みプレイヤーで FontAsset を差し替えても、その場で新しいフォントデータを自動解決するわけではありません
 
 ## ドキュメント一覧
 

@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [2.2.2] - 2026-05-19
+
+### Added
+
+- GitHub Actions で `vX.Y.Z` tag push 時に Release と UPM パッケージ zip を生成する workflow を追加
+- UPM の git URL 導入と GitHub Release 運用手順を README に追加
+
+### Changed
+
+- `package.json` に repository / documentation / changelog / license の GitHub メタデータを追加
+
 ## [2.2.1] - 2026-05-18
 
 - 不要なアセットを整理

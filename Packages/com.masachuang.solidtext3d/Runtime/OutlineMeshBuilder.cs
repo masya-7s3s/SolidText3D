@@ -12,12 +12,12 @@ namespace MasaChuang.SolidText3D
     {
         private const float ZFightEpsilon = 0.0001f;
 
-        internal static Mesh Build(List<GlyphContour> glyphs, OutlineSettings settings, float bodyExtrusionDepth, float fontSize)
+        internal static Mesh Build(List<GlyphContour> glyphs, OutlineSettings settings, float bodyExtrusionDepth, float fontSize, DepthAnchor depthAnchor = DepthAnchor.Front)
         {
-            return MeshExtruder.CreateMesh(BuildData(glyphs, settings, bodyExtrusionDepth, fontSize));
+            return MeshExtruder.CreateMesh(BuildData(glyphs, settings, bodyExtrusionDepth, fontSize, depthAnchor));
         }
 
-        internal static GlyphMeshData BuildData(List<GlyphContour> glyphs, OutlineSettings settings, float bodyExtrusionDepth, float fontSize)
+        internal static GlyphMeshData BuildData(List<GlyphContour> glyphs, OutlineSettings settings, float bodyExtrusionDepth, float fontSize, DepthAnchor depthAnchor = DepthAnchor.Front)
         {
             Profiler.BeginSample("OutlineMeshBuilder.Build");
             try
@@ -40,10 +40,10 @@ namespace MasaChuang.SolidText3D
                     if (profileSet.RingContoursEm == null || profileSet.RingContoursEm.Count == 0)
                         continue;
 
+                    float outlineThickness = Mathf.Abs(bodyExtrusionDepth) * settings.Thickness;
                     float frontZ;
                     float backZ;
-                    bool includeBackCap = settings.Thickness > 0f;
-                    bool frontRingFaceForward = true;
+                    bool includeBackCap = outlineThickness > 0f;
                     bool emitRingBackCap = settings.DisplayMode != OutlineDisplayMode.BackFilled;
 
                     if (!includeBackCap)
@@ -51,22 +51,20 @@ namespace MasaChuang.SolidText3D
                         frontZ = 0f;
                         backZ = 0f;
                     }
-                    else if (settings.DisplayMode == OutlineDisplayMode.BackFilled)
-                    {
-                        backZ = ZFightEpsilon;
-                        frontZ = backZ - settings.Thickness;
-                        frontRingFaceForward = false;
-                        emitRingBackCap = false;
-                    }
                     else
                     {
-                        float bodyCenterZ = -bodyExtrusionDepth * 0.5f;
-                        float halfThickness = settings.Thickness * 0.5f;
-                        frontZ = bodyCenterZ + halfThickness;
-                        backZ = bodyCenterZ - halfThickness;
+                        ResolveDepthAnchoredRange(bodyExtrusionDepth, outlineThickness, depthAnchor, out frontZ, out backZ);
+
+                        if (settings.DisplayMode == OutlineDisplayMode.BackFilled)
+                        {
+                            float extrusionDirection = GetExtrusionDirection(bodyExtrusionDepth);
+                            float inwardOffset = Mathf.Min(ZFightEpsilon, outlineThickness * 0.5f);
+                            backZ -= extrusionDirection * inwardOffset;
+                            emitRingBackCap = false;
+                        }
                     }
 
-                    var glyphMeshData = MeshExtruder.BuildContourMeshData(profileSet.RingContoursEm, frontZ, backZ, includeBackCap, frontRingFaceForward, emitRingBackCap);
+                    var glyphMeshData = MeshExtruder.BuildContourMeshData(profileSet.RingContoursEm, frontZ, backZ, includeBackCap, true, emitRingBackCap);
                     if (includeBackCap && settings.DisplayMode == OutlineDisplayMode.BackFilled)
                     {
                         var rearInfillData = MeshExtruder.BuildCapMeshData(profileSet.OffsetFilledContoursEm, backZ, true);
@@ -82,6 +80,43 @@ namespace MasaChuang.SolidText3D
             {
                 Profiler.EndSample();
             }
+        }
+
+        private static void ResolveDepthAnchoredRange(float bodyExtrusionDepth, float outlineThickness, DepthAnchor depthAnchor, out float frontZ, out float backZ)
+        {
+            float bodyFrontZ = 0f;
+            float bodyBackZ = -bodyExtrusionDepth;
+            float extrusionDirection = GetExtrusionDirection(bodyExtrusionDepth);
+
+            switch (depthAnchor)
+            {
+                case DepthAnchor.Center:
+                    float bodyCenterZ = (bodyFrontZ + bodyBackZ) * 0.5f;
+                    float halfSpan = extrusionDirection * outlineThickness * 0.5f;
+                    frontZ = bodyCenterZ - halfSpan;
+                    backZ = bodyCenterZ + halfSpan;
+                    break;
+
+                case DepthAnchor.Back:
+                    backZ = bodyBackZ;
+                    frontZ = bodyBackZ - (extrusionDirection * outlineThickness);
+                    break;
+
+                case DepthAnchor.Front:
+                default:
+                    frontZ = bodyFrontZ;
+                    backZ = bodyFrontZ + (extrusionDirection * outlineThickness);
+                    break;
+            }
+        }
+
+        private static float GetExtrusionDirection(float bodyExtrusionDepth)
+        {
+            float bodyBackZ = -bodyExtrusionDepth;
+            if (Mathf.Approximately(bodyBackZ, 0f))
+                return -1f;
+
+            return Mathf.Sign(bodyBackZ);
         }
 
         private static void AppendGlyphMeshData(GlyphMeshData target, GlyphMeshData addition)

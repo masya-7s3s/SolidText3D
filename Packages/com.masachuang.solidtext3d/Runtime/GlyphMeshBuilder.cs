@@ -72,7 +72,7 @@ namespace MasaChuang.SolidText3D
 
                     if (request.OutlineEnabled)
                     {
-                        prepared.OutlineMeshData = OutlineMeshBuilder.BuildData(glyphs, request.CreateOutlineSettings(), request.GenerationParams.ExtrusionDepth, request.GenerationParams.FontSize);
+                        prepared.OutlineMeshData = OutlineMeshBuilder.BuildData(glyphs, request.CreateOutlineSettings(), request.GenerationParams.ExtrusionDepth, request.GenerationParams.FontSize, request.GenerationParams.DepthAnchor);
                         MeshExtruder.ApplyOffset(prepared.OutlineMeshData, anchorOffset);
                     }
 
@@ -86,7 +86,7 @@ namespace MasaChuang.SolidText3D
 
                 if (request.OutlineEnabled)
                 {
-                    prepared.OutlineMeshData = OutlineMeshBuilder.BuildData(glyphs, request.CreateOutlineSettings(), request.GenerationParams.ExtrusionDepth, request.GenerationParams.FontSize);
+                    prepared.OutlineMeshData = OutlineMeshBuilder.BuildData(glyphs, request.CreateOutlineSettings(), request.GenerationParams.ExtrusionDepth, request.GenerationParams.FontSize, request.GenerationParams.DepthAnchor);
                     MeshExtruder.ApplyOffset(prepared.OutlineMeshData, bodyOffset);
                 }
 

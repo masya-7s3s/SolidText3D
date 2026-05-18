@@ -70,7 +70,8 @@ public sealed class TimerLabel : MonoBehaviour
 ```
 
 この方式では、呼んだその瞬間に必ず表示が変わるわけではありません。  
-ただし、完了した古い結果で表示が巻き戻らないように実装されています。
+ただし、完了した古い結果で表示が巻き戻らないように実装されています。  
+途中で Text や Layout を変えると、未適用の ready result や待機中 request は無効化されます。
 
 ## 進行状況を知りたいとき
 
@@ -133,6 +134,7 @@ text3D.RegenerateMesh();
 - 親側の MeshRenderer は無効化されます
 - 非表示文字は子オブジェクトになりません
 - 余った子オブジェクトは再利用のため非アクティブ化されます
+- SingleObject に戻したときや空文字列を再生成したときは、既存の子オブジェクトを破棄します
 
 ## 毎フレーム更新で気をつけること
 
@@ -145,3 +147,14 @@ text3D.RegenerateMesh();
 
 ビルド済みプレイヤーでは、FontAsset を差し替えただけで新しいフォントデータが自動解決されるわけではありません。  
 そのため、動的なフォント切り替えが必要なら設計を一段下げて扱う必要があります。
+
+## 表示を消したいとき
+
+Text を空文字列にしてから RegenerateMesh() または RequestRegenerateMesh() を呼ぶと、現在の表示をクリアできます。
+
+```csharp
+text3D.Text = string.Empty;
+text3D.RegenerateMesh();
+```
+
+このとき、SingleObject の本体メッシュだけでなく、outline 子オブジェクトや PerCharacter の子オブジェクトも片付けられます。

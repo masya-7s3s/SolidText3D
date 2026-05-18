@@ -191,7 +191,7 @@ namespace MasaChuang.SolidText3D.Editor
                 {
                     EditorGUI.BeginChangeCheck();
                     float newOutlineOffset = EditorGUILayout.FloatField("Offset Amount", _target.OutlineOffset);
-                    float newOutlineThickness = EditorGUILayout.FloatField("Thickness", _target.OutlineThickness);
+                    float newOutlineThickness = EditorGUILayout.FloatField("Thickness Ratio (Body=1)", _target.OutlineThickness);
                     var newOutlineDisplayMode = (OutlineDisplayMode)EditorGUILayout.EnumPopup("Display Mode", _target.OutlineDisplayMode);
                     var newOutlineMaterial = (Material)EditorGUILayout.ObjectField("Material", _target.OutlineMaterial, typeof(Material), false);
                     if (EditorGUI.EndChangeCheck())
@@ -203,6 +203,8 @@ namespace MasaChuang.SolidText3D.Editor
                         _target.OutlineMaterial = newOutlineMaterial;
                         EditorUtility.SetDirty(_target);
                     }
+
+                    EditorGUILayout.HelpBox("Thickness Ratio は本体の Extrusion Depth を 1 とした相対値です。1 で本体と同じ厚さになります。", MessageType.None);
                 }
 
                 if (!_target.OutlineEnabled)
