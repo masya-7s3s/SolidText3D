@@ -1,56 +1,99 @@
 # 更新タイミングと内部動作
 
-このページでは、SolidText3DComponent がいつメッシュを作り直すのか、フォントやマテリアルをどう扱うのかを説明します。
+このページでは、SolidText3DComponent がいつメッシュを作り直すのか、同期更新と deferred 更新がどう違うのか、フォントやマテリアルをどう扱うのかを説明します。
 
-## 変更するとすぐ再生成されるわけではない
+## 設定変更だけでは表示は変わらない
 
-SolidText3DComponent は、各プロパティの変更時に内部で「再生成が必要」という状態を立てます。  
-その時点ではメッシュは更新されず、dirty 状態のまま保持されます。
+SolidText3DComponent は、Text や FontSize などのプロパティを変更したときに dirty 状態になるだけです。  
+その場で自動再生成は行いません。
 
-つまり、通常は次の流れです。
+通常の流れは次の通りです。
 
-1. Text や ExtrusionDepth などを変更する
-2. コンポーネントが dirty になる
-3. 必要なタイミングで RegenerateMesh を呼んでメッシュを再生成する
+1. プロパティを変更する
+2. dirty 状態になる
+3. RegenerateMesh() か RequestRegenerateMesh() を呼ぶ
 
-Editor では Mesh Update セクションの Regenerate Mesh ボタン、スクリプトでは RegenerateMesh() を使います。
+ここで重要なのは、LateUpdate も dirty を見て自動再生成するわけではないという点です。  
+LateUpdate は deferred regeneration の完了処理だけを担当します。
 
-## Edit Modeでもプレビューされる理由
+## RegenerateMesh() は同期更新
 
-このコンポーネントは ExecuteAlways です。  
-そのため、Play Mode でなくても Edit Mode でコンポーネントの状態を保持できます。
+RegenerateMesh() は、呼び出し中に次の処理を行います。
 
-現在のカスタム Inspector は、Mesh Update、Text & Font、Geometry、Layout、Outline、Output の各セクションに整理されています。  
-変更内容は自動では反映されず、ユーザーが Regenerate Mesh を押したタイミングでプレビューを更新します。
+1. 現在の設定から request を作る
+2. フォントを解決する
+3. 前回と同一署名なら適用をスキップする
+4. 必要なら PreparedDisplayResult を生成する
+5. その場でメッシュへ適用する
+
+そのため、呼び出しが返った時点で表示反映まで終わっています。  
+初回表示、ボタン操作、確実に同期反映したい UI で使いやすい API です。
+
+## RequestRegenerateMesh() は deferred 更新
+
+RequestRegenerateMesh() は、高頻度更新向けの non-blocking API です。  
+呼び出し時点では表示反映を保証せず、準備処理を裏側で進めます。
+
+現在の実装では、次のように動きます。
+
+- 進行中 request は 1 件だけ持つ
+- 追加 request は latest-only で 1 件だけ待機させる
+- ワーカースレッドで PrepareDisplayResult を組み立てる
+- Main Thread の LateUpdate で完了 result を取り込み、表示へ適用する
+
+これにより、タイマーやスコア更新のような用途で、古い request がいくつもたまるのを防ぎます。
+
+## HasPendingRegeneration が表すもの
+
+HasPendingRegeneration は、次のいずれかが残っている間 true です。
+
+- 進行中の request
+- latest-only で待機している request
+- まだ適用されていない ready result
+
+つまり「deferred path が完全に落ち着いたか」を見るための状態フラグです。
+
+## deferred 失敗時は keep-last-good
+
+deferred path でフォント取得や準備に失敗した場合、DeferredRegenerationFailed イベントが発火します。  
+ただし、表示は失敗した新結果に切り替わらず、直前の正常表示を維持します。
+
+この挙動は、ランタイム更新中に一時的な失敗が起きても画面が急に空になりにくいようにするためです。
+
+## 後から設定を変えたとき、古い deferred request はどうなるか
+
+プロパティ変更時には内部バージョンが進み、待機中の deferred result は無効化されます。  
+そのため、古い結果があとから戻ってきても、最新状態を巻き戻しにくい構成になっています。
 
 ## フォントの扱い
 
-フォント解決は次の順で行われます。
+フォント解決の優先順は次の通りです。
 
-1. Editorなら、選択した FontAsset から直接バイト列を読む
-2. それが無理なら、保持している .bytes キャッシュを使う
-3. それも無理なら、パッケージ内の NotoSansJP-Black を使う
+1. Editor では FontAsset から直接読めたフォントデータ
+2. 内部で保持している .bytes キャッシュ
+3. パッケージ内の NotoSansJP-Black
 
-フォントが完全に取得できない場合は、警告を一度だけ出して、その時点のメッシュを維持します。
+フォントが取得できない場合、同期 path では警告を出し、deferred path では failure event で通知します。  
+どちらの場合も、直前の正常表示を維持する方向で動きます。
 
 ## マテリアルの扱い
 
-起動時に本体の MeshRenderer を確認し、マテリアル未設定やエラーシェーダー状態なら、自動で URP/Lit または Standard を探して設定します。  
-これは、URPプロジェクトで標準マテリアルが紫になる状況を避けるためです。
+起動時に本体 MeshRenderer を確認し、マテリアル未設定やエラーシェーダー状態なら URP/Lit または Standard を探して設定します。  
+これは、URP 環境で紫色のデフォルト表示になる状況を避けるためです。
 
-アウトライン側は、専用マテリアルが設定されていればそれを使い、なければ本体と同じ sharedMaterial を使います。
+outline 側は、専用 Material が設定されていればそれを使い、なければ本体の sharedMaterial を使います。
 
 ## 空文字列の扱い
 
-Text が空文字列になると、本体メッシュはクリアされます。  
-PerCharacter モードなら、文字ごとの子オブジェクトも破棄されます。
+Text が空文字列になると、表示はクリアされます。
 
-そのため、表示を完全に消したいときは GameObject を無効化しなくても、Text を空にするだけで対応できます。
+- 本体メッシュは空になる
+- PerCharacter モードの子オブジェクトは破棄される
+- outline 子オブジェクトも削除される
 
-## 再生成を避ける工夫
+そのため、表示を消したいだけなら GameObject を無効化しなくても Text を空にすれば対応できます。
 
-内部では、現在の設定値からパラメータハッシュを作っています。  
-同じ値で再生成要求が来ても、前回と同じなら処理をスキップします。
+## 同じ内容を再適用したとき
 
-これは、無駄なメッシュ作成を減らすための仕組みです。  
-ただし、Text を毎フレーム変えていれば当然ハッシュも変わるので、その分は再生成されます。
+空文字列以外では、前回適用済みの署名と同じ request は表示適用をスキップします。  
+これは無駄な再生成を避けるための最適化です。

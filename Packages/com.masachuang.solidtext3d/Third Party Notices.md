@@ -90,10 +90,10 @@ IN THE SOFTWARE.
 
 ---
 
-## 4. Noto Sans JP Regular
+## 4. Noto Sans JP
 
 **バージョン**: v53  
-**用途**: デフォルト埋め込みフォント（日本語・CJK 文字のサポート）  
+**用途**: 同梱フォントファミリー。現行のデフォルト埋め込みフォントは NotoSansJP-Black です。  
 **ライセンス**: SIL Open Font License 1.1  
 **URL**: https://fonts.google.com/noto/specimen/Noto+Sans+JP  
 **著作権**: Copyright 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'

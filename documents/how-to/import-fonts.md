@@ -2,38 +2,40 @@
 
 このガイドでは、独自の TTF / OTF フォントを Solid Text 3D で使う方法を説明します。
 
-## Editorで使う手順
+## Editor で使う手順
 
 1. TTF または OTF ファイルを Assets 配下へ置きます。
 2. Unity のインポート完了を待ちます。
 3. SolidText3DComponent の Font Asset に、そのフォントを割り当てます。
+4. Regenerate Mesh を押して表示を更新します。
 
-Inspector の Font Asset では、フォントアセットを選択します。  
-実装上は、インポートされた .ttf / .otf を検知して、Assets/SolidText3DFonts 配下に .bytes キャッシュが自動生成されます。
+Inspector の Font Asset には Font を割り当てます。  
+実装では、.ttf / .otf のインポート時に .bytes キャッシュも自動生成します。
 
 ## 自動で行われること
 
-フォントを Assets に入れると、エディタ側で次の処理が行われます。
+フォントを Assets に入れると、Editor 側で次の処理が行われます。
 
 - フォントファイルを .bytes に変換する
 - Assets/SolidText3DFonts/{GUID}.bytes を生成する
-- そのフォントを参照している SolidText3DComponent の内部キャッシュを更新する
+- 同じフォントを参照している SolidText3DComponent の内部キャッシュを更新する
 
-そのため、通常は自分で .bytes を作る必要はありません。
+通常は、自分で .bytes ファイルを作る必要はありません。
 
-## どのフォントが使われるか
+## 実際のフォント解決順
 
-優先順位は次の通りです。
+現在の実装での優先順位は次の通りです。
 
-1. 選択したフォントから読めたデータ
-2. エディタで生成または保持されている .bytes キャッシュ
+1. Editor なら Font Asset から直接読めたフォントデータ
+2. 内部で保持している .bytes キャッシュ
 3. パッケージ内のデフォルトフォント NotoSansJP-Black
 
-フォントが未設定でも、デフォルトフォントが見つかれば表示できます。
+Font Asset を設定していなくても、デフォルトフォントが見つかれば表示できます。
 
-## スクリプトからフォントを差し替える
+## スクリプトから差し替える
 
-Editor上では、FontAsset を差し替えると dirty 状態になります。反映するときは RegenerateMesh を呼びます。
+Editor 上では、FontAsset を差し替えると dirty 状態になります。  
+表示に反映するときは RegenerateMesh() を呼びます。
 
 ```csharp
 using MasaChuang.SolidText3D;
@@ -54,24 +56,29 @@ public sealed class SwapFontInEditor : MonoBehaviour
 
 ## ビルド済みプレイヤーでの注意点
 
-ビルド後のプレイヤーでは、FontAsset に新しい Font を代入しただけでは、その場で .ttf / .otf を読み直す仕組みはありません。  
-プレイヤー実行中にフォント自体を動的に切り替えたい場合は、SolidText3DComponent を使うより、byte[] を用意して GlyphMeshBuilder.Build に渡す方法の方が確実です。
+ビルド後のプレイヤーでは、FontAsset に新しい Font を代入しただけでは、その場で .ttf / .otf を再読込しません。  
+実装上、ランタイム側は FontAsset setter で .bytes キャッシュを解決しないためです。
 
-これはゲーム実装で毎回必要になるものではなく、ランタイムカスタマイズを強く行いたい場合の上級者向け手段です。
+そのため、ビルド済みプレイヤーで動的にフォントを切り替えたい場合は、次のどちらかで考えるのが安全です。
+
+- 事前に Editor で設定した Font Asset を使い分ける
+- より低レベルな API で byte 配列を扱う
+
+通常のラベル表示なら、まずは Editor でフォントを設定して使う運用で十分です。
 
 ## うまく表示されないとき
 
-### フォントを設定したのに変わらない
+### フォントを設定したのに見た目が変わらない
 
-- Mesh Update の Regenerate Mesh を押すか、スクリプトから RegenerateMesh() を呼びます。
-- Font Asset に同じファイルを再指定してみます。
-- Assets/SolidText3DFonts に .bytes が作られているか確認します。
+- Regenerate Mesh を押すか、スクリプトから RegenerateMesh() を呼びます
+- Font Asset を設定し直します
+- Assets/SolidText3DFonts に .bytes が生成されているか確認します
 
-### フォントが読めなかったという警告が出る
+### フォントが読めない警告が出る
 
-実装では、フォントデータが読めない場合に直前のメッシュを維持し、警告を出します。  
-表示が消えるのではなく、前の状態が残ることがあります。
+現在の表示は keep-last-good で維持されます。  
+新しいフォントへの切り替えに失敗しても、直前のメッシュが残ることがあります。
 
-### とりあえず動く状態に戻したい
+### とりあえず表示を戻したい
 
-Font Asset を外すと、デフォルトフォント NotoSansJP-Black が使われます。
+Font Asset を外すと、デフォルトフォント NotoSansJP-Black にフォールバックします。

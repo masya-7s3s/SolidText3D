@@ -13,8 +13,61 @@ namespace MasaChuang.SolidText3D.Tests.Editor
     /// </summary>
     public class SolidText3DComponentTests
     {
+        private static readonly FieldInfo DeferredStateField = typeof(SolidText3DComponent)
+            .GetField("_deferredRegenerationState", BindingFlags.NonPublic | BindingFlags.Instance);
+        private static readonly FieldInfo FontAssetField = typeof(SolidText3DComponent)
+            .GetField("_fontAsset", BindingFlags.NonPublic | BindingFlags.Instance);
+        private static readonly FieldInfo FontBytesCacheField = typeof(SolidText3DComponent)
+            .GetField("_fontBytesCache", BindingFlags.NonPublic | BindingFlags.Instance);
+
         private GameObject _go;
         private SolidText3DComponent _component;
+
+        private static DeferredRegenerationState GetDeferredState(SolidText3DComponent component)
+        {
+            Assert.IsNotNull(DeferredStateField, "deferred regeneration state field が必要です。");
+            return (DeferredRegenerationState)DeferredStateField.GetValue(component);
+        }
+
+        private static void AssertSynchronousRegenerationContract(SolidText3DComponent component)
+        {
+            var state = GetDeferredState(component);
+            Assert.IsFalse(component.IsDirty, "同期再生成後は dirty が解消されること");
+            Assert.IsFalse(component.HasPendingRegeneration, "同期再生成後は pending regeneration が残らないこと");
+            Assert.AreEqual(state.LastRequestedVersion, state.LastAppliedVersion,
+                "同期再生成は呼び出し復帰時点で request が適用済みであること");
+            Assert.IsFalse(state.InFlightRequest.HasValue, "同期再生成後に in-flight request が残らないこと");
+            Assert.IsFalse(state.PendingLatestRequest.HasValue, "同期再生成後に pending latest request が残らないこと");
+            Assert.IsNull(state.ReadyResult, "同期再生成後に apply 待ち result が残らないこと");
+        }
+
+        private static void AssertDeferredRegenerationQueued(SolidText3DComponent component)
+        {
+            var state = GetDeferredState(component);
+            Assert.IsFalse(component.IsDirty, "deferred request submit 後は dirty がクリアされること");
+            Assert.IsTrue(component.HasPendingRegeneration, "deferred request submit 後は pending regeneration が存在すること");
+            Assert.Greater(state.LastRequestedVersion, state.LastAppliedVersion,
+                "deferred request submit 直後は未適用 request version が存在すること");
+            Assert.IsTrue(state.InFlightRequest.HasValue || state.PendingLatestRequest.HasValue || state.ReadyResult != null,
+                "deferred request submit 後は in-flight / pending / ready のいずれかに状態が残ること");
+        }
+
+            private static void AssertNoDeferredRegenerationQueued(SolidText3DComponent component)
+            {
+                var state = GetDeferredState(component);
+                Assert.IsFalse(component.HasPendingRegeneration, "same-display request は deferred regeneration を積まないこと");
+                Assert.IsFalse(state.InFlightRequest.HasValue, "same-display request で in-flight request を作らないこと");
+                Assert.IsFalse(state.PendingLatestRequest.HasValue, "same-display request で pending latest request を作らないこと");
+                Assert.IsNull(state.ReadyResult, "same-display request で apply 待ち result を作らないこと");
+            }
+
+        private static void ForceFontUnavailable(SolidText3DComponent component)
+        {
+            Assert.IsNotNull(FontAssetField);
+            Assert.IsNotNull(FontBytesCacheField);
+            FontAssetField.SetValue(component, null);
+            FontBytesCacheField.SetValue(component, new TextAsset(string.Empty));
+        }
 
         [SetUp]
         public void SetUp()
@@ -88,21 +141,78 @@ namespace MasaChuang.SolidText3D.Tests.Editor
             Assert.IsFalse(_component.IsDirty, "RegenerateMesh() 後にダーティフラグがクリアされること");
         }
 
+        [Test]
+        public void RegenerateMesh_SatisfiesSynchronousRegenerationContract()
+        {
+            _component.Text = "Sync";
+
+            _component.RegenerateMesh();
+
+            AssertSynchronousRegenerationContract(_component);
+        }
+
+        [Test]
+        public void RequestRegenerateMesh_QueuesDeferredRegenerationWork()
+        {
+            _component.Text = "Deferred";
+
+            _component.RequestRegenerateMesh();
+
+            AssertDeferredRegenerationQueued(_component);
+        }
+
+        [Test]
+        public void RequestRegenerateMesh_SameDisplay_DoesNotQueueDeferredWork()
+        {
+            _component.Text = "12:34";
+            _component.RegenerateMesh();
+
+            _component.RequestRegenerateMesh();
+
+            AssertNoDeferredRegenerationQueued(_component);
+        }
+
+        [Test]
+        public void RequestRegenerateMesh_CaptureFailure_RaisesDeferredFailure_AndKeepsLastGoodDisplay()
+        {
+            _component.Text = "GOOD";
+            _component.RegenerateMesh();
+            var state = GetDeferredState(_component);
+            var lastGoodSignature = state.LastAppliedSignature;
+            int failureCount = 0;
+            RegenerationFailureInfo failureInfo = default;
+            _component.DeferredRegenerationFailed += info =>
+            {
+                failureCount++;
+                failureInfo = info;
+            };
+
+            ForceFontUnavailable(_component);
+            _component.Text = "BROKEN";
+            _component.RequestRegenerateMesh();
+
+            Assert.AreEqual(1, failureCount, "capture failure 時は DeferredRegenerationFailed を 1 回通知すること");
+            Assert.AreEqual("BROKEN", failureInfo.RequestedText);
+            Assert.AreEqual(lastGoodSignature, state.LastAppliedSignature,
+                "deferred failure でも visible display は keep-last-good を維持すること");
+            Assert.IsFalse(_component.HasPendingRegeneration, "capture failure 後に pending regeneration を残さないこと");
+        }
+
         // T005: US1 — フォント Inspector アタッチ ─────────────────────────
 
         [Test]
         public void FontAsset_Missing_MaintainsPreviousMesh()
         {
-            // FR-016: フォント Missing 時に直前メッシュ維持・LogWarning 1 回のみ
-            // まず有効なフォントアセットで一度メッシュ生成
+            // 明示フォント未設定でもデフォルトフォント fallback により再生成を継続できること
+            _component.FontAsset = null;
+            _component.Text = "Fallback";
+            _component.RegenerateMesh();
             _component.FontAsset = null;
             _component.RegenerateMesh();
-            // Missing フォント警告は1回のみ出力されること
-            LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex(".*フォント.*"));
-            _component.FontAsset = null;
-            _component.RegenerateMesh();
-            // メッシュフィルターが存在すること（直前メッシュ維持）
-            Assert.IsNotNull(_go.GetComponent<MeshFilter>());
+
+            var meshFilter = _go.GetComponent<MeshFilter>();
+            Assert.IsNotNull(meshFilter);
+            Assert.IsNotNull(meshFilter.sharedMesh, "デフォルトフォント fallback 後もメッシュが維持されること");
         }
 
         [Test]
@@ -129,13 +239,17 @@ namespace MasaChuang.SolidText3D.Tests.Editor
         }
 
         [Test]
-        public void FontAsset_NotSet_SkipsMeshGeneration()
+        public void FontAsset_NotSet_UsesDefaultFont()
         {
-            // FR-012: フォントが未設定の場合に RegenerateMesh() が即座にリターンしてメッシュ生成を行わないことを検証
-            LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex(".*フォント.*"));
+            // デフォルトフォントが利用可能な環境では、明示フォント未設定でもメッシュ生成できること
             _component.FontAsset = null;
+            _component.Text = "Default Font";
             _component.RegenerateMesh();
-            // ダーティフラグはクリアされること
+
+            var meshFilter = _go.GetComponent<MeshFilter>();
+            Assert.IsNotNull(meshFilter);
+            Assert.IsNotNull(meshFilter.sharedMesh, "デフォルトフォントでメッシュが生成されること");
+            Assert.Greater(meshFilter.sharedMesh.vertexCount, 0, "デフォルトフォントで生成されたメッシュに頂点が含まれること");
             Assert.IsFalse(_component.IsDirty);
         }
 
@@ -176,11 +290,14 @@ namespace MasaChuang.SolidText3D.Tests.Editor
             _component.Text = "A";
             _component.FontAsset = sansFont;
 
+            var computeLayoutHashMethod = typeof(SolidText3DComponent).GetMethod("ComputeLayoutHash", BindingFlags.NonPublic | BindingFlags.Instance);
             var computeHashMethod = typeof(SolidText3DComponent).GetMethod("ComputeParamHash", BindingFlags.NonPublic | BindingFlags.Instance);
-            int sansHash = (int)computeHashMethod.Invoke(_component, null);
+            int sansLayoutHash = (int)computeLayoutHashMethod.Invoke(_component, null);
+            int sansHash = (int)computeHashMethod.Invoke(_component, new object[] { sansLayoutHash });
 
             _component.FontAsset = serifFont;
-            int serifHash = (int)computeHashMethod.Invoke(_component, null);
+            int serifLayoutHash = (int)computeLayoutHashMethod.Invoke(_component, null);
+            int serifHash = (int)computeHashMethod.Invoke(_component, new object[] { serifLayoutHash });
 
             Assert.AreNotEqual(sansHash, serifHash,
                 "フォント変更時は再生成ハッシュも変化すること");
@@ -192,8 +309,6 @@ namespace MasaChuang.SolidText3D.Tests.Editor
         public void RegenerateMesh_SameParams_SkipsRegeneration()
         {
             // FR-007: 同一パラメータハッシュ時に再生成がスキップされること
-            // フォント未設定のため警告が出るが、ハッシュ一致のスキップ検証は可能
-            LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex(".*フォント.*"));
             _component.FontAsset = null;
             _component.Text = "SameText";
             _component.RegenerateMesh(); // 1回目（ダーティクリア）
@@ -207,8 +322,6 @@ namespace MasaChuang.SolidText3D.Tests.Editor
         public void RegenerateMesh_SameParams_ZeroGCAlloc()
         {
             // SC-003 検証: 同一パラメータ時に GC アロケーションが発生しないこと
-            // フォント未設定状態でダーティをクリアしておく
-            LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex(".*フォント.*"));
             _component.FontAsset = null;
             _component.Text = "GCTest";
             _component.RegenerateMesh();

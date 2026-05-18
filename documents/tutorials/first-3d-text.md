@@ -1,14 +1,14 @@
-# はじめて3Dテキストを表示する
+# はじめて 3D テキストを表示する
 
 このチュートリアルでは、シーンに Solid Text 3D を追加し、文字を立体表示するところまでを行います。
 
 ## ゴール
 
-- GameObjectに3Dテキストを表示できる
-- テキスト内容と厚みを調整できる
-- 必要ならアウトラインも追加できる
+- Scene 上に 3D テキストを表示できる
+- Text、Font、厚みを調整できる
+- 必要なら outline を追加できる
 
-## 1. パッケージをプロジェクトに入れる
+## 1. パッケージを追加する
 
 ローカルパッケージとして使う場合は、Unity Package Manager で次の手順を行います。
 
@@ -17,31 +17,30 @@
 3. Add package from disk... を選びます。
 4. Packages/com.masachuang.solidtext3d/package.json を指定します。
 
-サンプルも確認したい場合は、Package Manager の Samples から次を Import できます。
+サンプルも確認したい場合は、Package Manager の Samples から取り込めます。
 
 - Basic Usage
 - CJK Example
 
-## 2. 3Dテキスト用のGameObjectを作る
+## 2. GameObject を作る
 
-1. Hierarchy で空のGameObjectを作ります。
+1. Hierarchy で空の GameObject を作ります。
 2. Inspector で SolidText3DComponent を追加します。
 
-このコンポーネントは自動で MeshFilter と MeshRenderer を利用します。UI用の RectTransform ではなく、ワールド空間に置く3Dオブジェクトです。
+このコンポーネントは MeshFilter と MeshRenderer を使うワールド空間向け 3D オブジェクトです。  
+UI 用の RectTransform ベースではありません。
 
-## 3. テキストとフォントを設定する
+## 3. 文字とフォントを設定する
 
-Inspector の Text & Font / Geometry で次を設定します。
+Inspector の Text & Font と Geometry で次を設定します。
 
-- Font Asset
 - Text
+- Font Asset
 - Extrusion Depth
 - Font Size
 
-最初に何もフォントを設定しなくても、パッケージに含まれる NotoSansJP-Black が使われます。  
-そのままでも日本語を含むテキストを試せます。
-
-試しに以下のような文字列を入れてみてください。
+Font Asset を空のままでも、パッケージ同梱の NotoSansJP-Black が使われます。  
+まずは次のようなテキストで動作を確認すると分かりやすいです。
 
 ```text
 Hello, World!
@@ -49,38 +48,44 @@ Hello, World!
 Hello 世界
 ```
 
-## 4. 見た目を整える
+## 4. Material を設定する
 
-まずは次の2つを調整すると、見た目の変化が分かりやすいです。
+見た目を整えたい場合は、MeshRenderer の Material を設定してください。  
+何も設定されていない場合、実装は URP/Lit または Standard のデフォルト材質を自動で探して設定しますが、最終的な質感や色は自分で割り当てた方が分かりやすいです。
 
-- Extrusion Depth: 文字の厚み
-- Font Size: 文字全体の大きさ
+## 5. メッシュを生成する
 
-必要なら MeshRenderer の Material も設定してください。  
-URP環境では、適切なマテリアルがない場合に URP/Lit か Standard へ自動で合わせようとしますが、最終的な見た目は自分のマテリアルを割り当てた方が分かりやすいです。
+Text や Font Size を設定しただけでは、まだ表示は更新されません。  
+Mesh Update セクションの Regenerate Mesh を押して反映します。
 
-## 5. アウトラインを付ける
+これが Solid Text 3D の基本です。
 
-Inspector の Outline セクションで次を設定します。
+1. 設定を変える
+2. dirty 状態になる
+3. Regenerate Mesh で表示へ反映する
 
-- Enabled: オン
-- Offset Amount: 0.03 から 0.08 くらい
-- Thickness: 0.05 から 0.15 くらい
-- Display Mode: Donut または BackFilled
-- Material: 必要なら専用マテリアル
+## 6. outline を付ける
 
-最初は次の組み合わせが試しやすい設定です。
+必要なら Outline セクションで次を設定します。
+
+- Enabled を On
+- Offset Amount を 0.03 から 0.08 程度
+- Thickness を 0.05 から 0.15 程度
+- Display Mode を Donut または BackFilled
+- Material は必要なら専用のものを設定
+
+最初は次の組み合わせから始めると調整しやすいです。
 
 - Offset Amount = 0.05
 - Thickness = 0.1
 - Display Mode = Donut
 
-設定を変更したら、Mesh Update セクションの Regenerate Mesh を押して反映します。
+変更後はもう一度 Regenerate Mesh を押します。
 
-## 6. スクリプトから文字を変える
+## 7. スクリプトから更新する
 
 テキストはスクリプトから変更できます。  
-次の例では、Play Mode中にスペースキーを押すたびに表示を更新します。
+表示を確実に更新したいときは RegenerateMesh() を呼びます。
 
 ```csharp
 using MasaChuang.SolidText3D;
@@ -99,20 +104,21 @@ public sealed class ScoreLabel : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            score += 100;
-            text3D.Text = $"Score: {score}";
-            text3D.RegenerateMesh();
-        }
+        if (!Input.GetKeyDown(KeyCode.Space))
+            return;
+
+        score += 100;
+        text3D.Text = $"Score: {score}";
+        text3D.RegenerateMesh();
     }
 }
 ```
 
-Text プロパティを変更しただけでは dirty 状態になります。見た目へ反映したいタイミングで RegenerateMesh を呼びます。
+Text を代入しただけでは dirty になるだけで、見た目は変わりません。  
+高頻度更新で使う RequestRegenerateMesh() については [スクリプトから更新する](../how-to/update-from-script.md) で詳しく説明します。
 
 ## 次に読むもの
 
-- 独自フォントを使いたい: [独自フォントを使う](../how-to/import-fonts.md)
-- スクリプトから即時反映や文字単位制御をしたい: [スクリプトから更新する](../how-to/update-from-script.md)
-- 縦書きやアンカー配置を使いたい: [縦書き・アンカー・文字配置を調整する](../how-to/adjust-layout.md)
+- フォントを差し替えたい: [独自フォントを使う](../how-to/import-fonts.md)
+- スクリプト更新を使い分けたい: [スクリプトから更新する](../how-to/update-from-script.md)
+- 縦書きやアンカーを調整したい: [縦書き・アンカー・文字配置を調整する](../how-to/adjust-layout.md)
