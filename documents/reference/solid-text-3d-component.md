@@ -28,7 +28,7 @@ SolidText3DComponent は、GameObject に 3D テキストメッシュを生成�
 | 項目 | 型 | 初期値 | 説明 |
 | --- | --- | --- | --- |
 | Text | string | Hello, World! | 表示する文字列。null を代入すると空文字列として扱います。 |
-| FontAsset | UnityEngine.Object | null | Inspector で割り当てるフォント参照。未設定時はデフォルトフォントへフォールバックします。 |
+| FontAsset | UnityEngine.Object | null | Inspector では通常 Font を割り当てるフォント参照です。未設定時はデフォルトフォントへフォールバックします。 |
 | ExtrusionDepth | float | 0.25 | 文字本体の押し出し厚みです。 |
 | FontSize | float | 1 | em 高さを Unity ワールド単位へ変換するサイズです。 |
 
@@ -38,7 +38,7 @@ SolidText3DComponent は、GameObject に 3D テキストメッシュを生成�
 | --- | --- | --- | --- |
 | OutlineEnabled | bool | false | outline を有効化します。false のとき outline 子オブジェクトは破棄されます。 |
 | OutlineOffset | float | 0.05 | 文字外周へのオフセット量です。0 未満は 0 に丸められます。 |
-| OutlineThickness | float | 0.25 | outline の奥行きです。0 未満は 0 に丸められます。 |
+| OutlineThickness | float | 1 | outline の奥行き比率です。1 は本体の ExtrusionDepth と同じ厚さを表します。0 未満は 0 に丸められます。 |
 | OutlineDisplayMode | OutlineDisplayMode | Donut | outline の奥行き構成です。 |
 | OutlineMaterial | Material | null | null の場合は本体 MeshRenderer の sharedMaterial を使います。 |
 | OutlineWidth | float | 0.05 相当 | OutlineOffset の別名です。既存 API 互換のために残されています。 |
@@ -160,6 +160,11 @@ PerCharacter モードの子オブジェクトも破棄され、outline 子オ�
 
 空文字列以外では、前回と同じ署名であれば表示適用をスキップします。  
 「呼んだ回数」ではなく「最終的な表示状態」が基準です。
+
+### dirty 時の deferred invalidation
+
+Text や Layout を変更して dirty になると、待機中の latest request と ready result は破棄されます。  
+そのため、古い deferred 結果が後から適用される可能性を下げています。
 
 ### フォント解決の優先順位
 

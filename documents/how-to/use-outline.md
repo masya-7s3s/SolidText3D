@@ -41,7 +41,7 @@ Off にすると、outline 用の子オブジェクトは破棄されます。
 ### Thickness
 
 outline の奥行きです。  
-文字本体の ExtrusionDepth とは独立しています。
+本体の ExtrusionDepth を 1 とした相対値で解釈されます。
 
 ### Display Mode
 
@@ -85,6 +85,7 @@ public sealed class OutlinePreset : MonoBehaviour
 - Donut: 文字のまわりに均一な縁取り感を出したいとき
 - BackFilled: 背面側をしっかり埋めて厚み感を強めたいとき
 
+正面シルエットはどちらもほぼ共通で、違いは主に奥行き方向の構成です。  
 まずは Donut で形を確認し、必要なら BackFilled に切り替えると判断しやすいです。
 
 ## outline が見えないとき

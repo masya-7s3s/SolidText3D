@@ -9,7 +9,7 @@
 3. SolidText3DComponent の Font Asset に、そのフォントを割り当てます。
 4. Regenerate Mesh を押して表示を更新します。
 
-Inspector の Font Asset には Font を割り当てます。  
+Inspector の Font Asset には通常 Font を割り当てます。  
 実装では、.ttf / .otf のインポート時に .bytes キャッシュも自動生成します。
 
 ## 自動で行われること
@@ -31,6 +31,9 @@ Inspector の Font Asset には Font を割り当てます。
 3. パッケージ内のデフォルトフォント NotoSansJP-Black
 
 Font Asset を設定していなくても、デフォルトフォントが見つかれば表示できます。
+
+補足として、公開プロパティの型は UnityEngine.Object ですが、Inspector の通常運用では Font を割り当てる前提です。  
+Editor 上で .bytes の TextAsset を直接扱う経路はありますが、ユーザー向けの基本運用としては Font を使うのが安全です。
 
 ## スクリプトから差し替える
 
@@ -62,7 +65,7 @@ public sealed class SwapFontInEditor : MonoBehaviour
 そのため、ビルド済みプレイヤーで動的にフォントを切り替えたい場合は、次のどちらかで考えるのが安全です。
 
 - 事前に Editor で設定した Font Asset を使い分ける
-- より低レベルな API で byte 配列を扱う
+- より低レベルな API で byte 配列を扱う経路を別途設計する
 
 通常のラベル表示なら、まずは Editor でフォントを設定して使う運用で十分です。
 
@@ -77,7 +80,8 @@ public sealed class SwapFontInEditor : MonoBehaviour
 ### フォントが読めない警告が出る
 
 現在の表示は keep-last-good で維持されます。  
-新しいフォントへの切り替えに失敗しても、直前のメッシュが残ることがあります。
+新しいフォントへの切り替えに失敗しても、直前のメッシュが残ることがあります。  
+deferred regeneration 中であれば DeferredRegenerationFailed イベントでも失敗を取得できます。
 
 ### とりあえず表示を戻したい
 

@@ -16,6 +16,8 @@ SolidText3DComponent は、Text や FontSize などのプロパティを変更�
 ここで重要なのは、LateUpdate も dirty を見て自動再生成するわけではないという点です。  
 LateUpdate は deferred regeneration の完了処理だけを担当します。
 
+SolidText3DComponent 自体は ExecuteAlways なので Edit Mode でも存在し続けますが、メッシュ更新のトリガーはあくまで明示呼び出しです。
+
 ## RegenerateMesh() は同期更新
 
 RegenerateMesh() は、呼び出し中に次の処理を行います。
@@ -64,6 +66,8 @@ deferred path でフォント取得や準備に失敗した場合、DeferredRege
 
 プロパティ変更時には内部バージョンが進み、待機中の deferred result は無効化されます。  
 そのため、古い結果があとから戻ってきても、最新状態を巻き戻しにくい構成になっています。
+
+実際には dirty 化のタイミングで pending latest request と ready result をクリアし、次回の regenerate 呼び出しで新しい request version を採番します。
 
 ## フォントの扱い
 

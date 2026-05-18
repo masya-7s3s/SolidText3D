@@ -28,7 +28,8 @@
 2. Inspector で SolidText3DComponent を追加します。
 
 このコンポーネントは MeshFilter と MeshRenderer を使うワールド空間向け 3D オブジェクトです。  
-UI 用の RectTransform ベースではありません。
+UI 用の RectTransform ベースではありません。  
+必要な MeshFilter / MeshRenderer が欠けていても Awake 時に自動で補われます。
 
 ## 3. 文字とフォントを設定する
 
@@ -56,7 +57,8 @@ Hello 世界
 ## 5. メッシュを生成する
 
 Text や Font Size を設定しただけでは、まだ表示は更新されません。  
-Mesh Update セクションの Regenerate Mesh を押して反映します。
+Mesh Update セクションの Regenerate Mesh を押して反映します。  
+これは Edit Mode でも Play Mode でも同じです。
 
 これが Solid Text 3D の基本です。
 
@@ -73,6 +75,9 @@ Mesh Update セクションの Regenerate Mesh を押して反映します。
 - Thickness を 0.05 から 0.15 程度
 - Display Mode を Donut または BackFilled
 - Material は必要なら専用のものを設定
+
+Thickness は本体の Extrusion Depth を 1 とした相対値です。  
+例えば Extrusion Depth が 0.25 で Thickness が 0.1 のとき、outline の厚みは 0.025 相当になります。
 
 最初は次の組み合わせから始めると調整しやすいです。
 
