@@ -63,18 +63,15 @@ Assets/AddressableAssetsData/**/*.hash
 # =========================
 # GitHub Copilot
 # =========================
-.github/
+/.github/*
+!/.github/workflows/
+!/.github/workflows/**
 docs/
 
 # =========================
 # Markdownlint configuration
 # =========================
 .markdownlint-cli2.jsonc
-
-# =========================
-# SpecKit
-# =========================
-.github/
 
 # =========================
 # Profiler captures (binary, large)
