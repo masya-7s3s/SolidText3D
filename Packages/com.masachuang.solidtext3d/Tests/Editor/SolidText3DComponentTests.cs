@@ -69,6 +69,29 @@ namespace MasaChuang.SolidText3D.Tests.Editor
             FontBytesCacheField.SetValue(component, new TextAsset(string.Empty));
         }
 
+        private static string FindFontAssetPath(string fileName)
+        {
+            string nameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+            string[] guids = AssetDatabase.FindAssets($"{nameWithoutExtension} t:Font", new[] { "Assets" });
+            for (int i = 0; i < guids.Length; i++)
+            {
+                string assetPath = AssetDatabase.GUIDToAssetPath(guids[i]);
+                if (string.Equals(Path.GetFileName(assetPath), fileName, System.StringComparison.OrdinalIgnoreCase))
+                    return assetPath;
+            }
+
+            return null;
+        }
+
+        private static Font LoadFontByFileName(string fileName)
+        {
+            string assetPath = FindFontAssetPath(fileName);
+            if (string.IsNullOrEmpty(assetPath))
+                return null;
+
+            return AssetDatabase.LoadAssetAtPath<Font>(assetPath);
+        }
+
         [SetUp]
         public void SetUp()
         {
@@ -256,8 +279,8 @@ namespace MasaChuang.SolidText3D.Tests.Editor
         [Test]
         public void GetFontBytes_FontAssetOverridesExistingDefaultCache()
         {
-            var serifFont = AssetDatabase.LoadAssetAtPath<Font>(
-                "Assets/Samples/Solid Text 3D/2.0.0/CJK Example/NotoSerifJP-Black.ttf");
+            string serifFontAssetPath = FindFontAssetPath("NotoSerifJP-Black.ttf");
+            var serifFont = LoadFontByFileName("NotoSerifJP-Black.ttf");
             Assert.IsNotNull(serifFont, "比較用フォントが存在すること");
 
             var defaultBytes = AssetDatabase.LoadAssetAtPath<TextAsset>(
@@ -270,8 +293,7 @@ namespace MasaChuang.SolidText3D.Tests.Editor
 
             var getFontBytesMethod = typeof(SolidText3DComponent).GetMethod("GetFontBytes", BindingFlags.NonPublic | BindingFlags.Instance);
             var actualBytes = (byte[])getFontBytesMethod.Invoke(_component, null);
-            var expectedBytes = File.ReadAllBytes(Path.GetFullPath(
-                "Assets/Samples/Solid Text 3D/2.0.0/CJK Example/NotoSerifJP-Black.ttf"));
+            var expectedBytes = File.ReadAllBytes(Path.GetFullPath(serifFontAssetPath));
 
             Assert.IsNotNull(actualBytes);
             Assert.AreEqual(expectedBytes.Length, actualBytes.Length,
@@ -281,9 +303,8 @@ namespace MasaChuang.SolidText3D.Tests.Editor
         [Test]
         public void ComputeParamHash_FontAssetChange_ChangesHash()
         {
-            var sansFont = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NotoSansJP-Black.ttf");
-            var serifFont = AssetDatabase.LoadAssetAtPath<Font>(
-                "Assets/Samples/Solid Text 3D/2.0.0/CJK Example/NotoSerifJP-Black.ttf");
+            var sansFont = LoadFontByFileName("NotoSansJP-Black.ttf");
+            var serifFont = LoadFontByFileName("NotoSerifJP-Black.ttf");
             Assert.IsNotNull(sansFont);
             Assert.IsNotNull(serifFont);
 

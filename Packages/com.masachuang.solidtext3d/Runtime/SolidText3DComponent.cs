@@ -159,7 +159,7 @@ namespace MasaChuang.SolidText3D
         }
 
         /// <summary>
-        /// outline の奥行き。0 以上。
+    /// outline の奥行き比率。本体の ExtrusionDepth を 1 とした相対値。0 以上。
         /// </summary>
         /// <example>
         /// <code>
@@ -1069,7 +1069,7 @@ namespace MasaChuang.SolidText3D
                 if (_outlineMeshFilter == null)
                     return;
 
-                ReplaceOutlineMesh(OutlineMeshBuilder.Build(outlineGlyphs, _outline, _extrusionDepth, _fontSize));
+                ReplaceOutlineMesh(OutlineMeshBuilder.Build(outlineGlyphs, _outline, _extrusionDepth, _fontSize, _depthAnchor));
             }
             finally
             {

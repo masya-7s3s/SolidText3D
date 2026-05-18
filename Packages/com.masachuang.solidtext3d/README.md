@@ -52,7 +52,7 @@ public sealed class OutlineSample : MonoBehaviour
         text3D.Text = "Solid Text 3D";
         text3D.OutlineEnabled = true;
         text3D.OutlineOffset = 0.05f;
-        text3D.OutlineThickness = 0.1f;
+      text3D.OutlineThickness = 0.1f; // body depth に対する 10%
         text3D.OutlineDisplayMode = OutlineDisplayMode.BackFilled;
         text3D.OutlineMaterial = outlineMaterial;
         text3D.RegenerateMesh();
@@ -72,6 +72,7 @@ public sealed class OutlineSample : MonoBehaviour
 - 横書きの MaxWidth は現行実装では自動折り返しに使われません
 - 縦書きの MaxHeight は列折り返しに使われます
 - outline は __OutlineMesh__ という子オブジェクトで別管理されます
+- OutlineThickness は本体の Extrusion Depth を 1 とした相対値です
 - OutlineOffset が 0 のときは outline 子オブジェクトを残したままメッシュだけ空になります
 - PerCharacter では可視文字ごとに Char_0, Char_1... の子オブジェクトを生成し、余剰分は再利用のため非アクティブ化します
 

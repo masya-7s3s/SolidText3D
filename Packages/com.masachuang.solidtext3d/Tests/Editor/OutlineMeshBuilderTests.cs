@@ -158,8 +158,8 @@ namespace MasaChuang.SolidText3D.Tests.Editor
                 1f);
 
             Assert.Greater(mesh.vertexCount, 0, "outline mesh が生成されること");
-            Assert.IsTrue(HasTriangleAtZ(mesh, -0.3f),
-                "body depth 1 / thickness 0.4 の Donut では front cap が body center 基準で +0.2f の Z=-0.3 平面に存在すること");
+            Assert.IsTrue(HasTriangleAtZ(mesh, 0f),
+                "DepthAnchor.Front の Donut では front cap が body front と同じ Z=0 平面に存在すること");
         }
 
         [Test]
@@ -206,11 +206,11 @@ namespace MasaChuang.SolidText3D.Tests.Editor
                 1f,
                 1f);
 
-            const float expectedBackZ = 0.0001f;
-            Assert.AreEqual(expectedBackZ, GetMaxZ(mesh), 0.001f,
-                "BackFilled の固定背面は body front + Z_FIGHT_EPSILON に配置されること");
+            const float expectedBackZ = -0.3999f;
+            Assert.AreEqual(0f, GetMaxZ(mesh), 0.001f,
+                "DepthAnchor.Front の BackFilled でも前面は body front に揃うこと");
             Assert.IsTrue(HasTriangleContainingPointAtZ(mesh, new Vector2(0.5f, 0.5f), expectedBackZ),
-                "BackFilled では背面に単一の rear infill cap があり、元グリフ中心を含む三角形が固定背面 plane に存在すること");
+                "BackFilled では背面に単一の rear infill cap があり、元グリフ中心を含む三角形が anchored back plane に存在すること");
         }
 
         [Test]
@@ -225,11 +225,11 @@ namespace MasaChuang.SolidText3D.Tests.Editor
                 1f,
                 1f);
 
-            const float expectedBackZ = 0.0001f;
+            const float expectedBackZ = -0.3999f;
             float backArea = GetFirstTriangleSignedAreaAtZ(mesh, expectedBackZ);
 
             Assert.Greater(backArea, 0f,
-                "BackFilled の単一 rear infill cap は固定背面 plane 上で背面側を向く winding を持つこと");
+                "BackFilled の単一 rear infill cap は anchored back plane 上で背面側を向く winding を持つこと");
         }
 
         [Test]
@@ -244,7 +244,7 @@ namespace MasaChuang.SolidText3D.Tests.Editor
                 1f,
                 1f);
 
-            const float expectedFrontZ = -0.3999f;
+            const float expectedFrontZ = 0f;
             Assert.IsFalse(HasTriangleContainingPointAtZ(mesh, new Vector2(0.5f, 0.5f), expectedFrontZ),
                 "BackFilled の前面 plane はリングのままで、元グリフ中心を埋めないこと");
         }
@@ -261,7 +261,7 @@ namespace MasaChuang.SolidText3D.Tests.Editor
                 1f,
                 1f);
 
-            const float expectedFrontZ = -0.3999f;
+            const float expectedFrontZ = 0f;
             float frontArea = GetFirstTriangleSignedAreaAtZ(mesh, expectedFrontZ);
 
             Assert.AreNotEqual(0f, frontArea,
@@ -294,7 +294,7 @@ namespace MasaChuang.SolidText3D.Tests.Editor
         }
 
         [Test]
-        public void Build_DonutMode_CentersThicknessAroundBodyCenter()
+        public void Build_DonutMode_DepthAnchorFront_AlignsToBodyFront()
         {
             var mesh = OutlineMeshBuilder.Build(
                 new List<GlyphContour> { MakeSquareContour() },
@@ -302,10 +302,57 @@ namespace MasaChuang.SolidText3D.Tests.Editor
                 1f,
                 1f);
 
+            Assert.AreEqual(0f, GetMaxZ(mesh), 0.001f,
+                "DepthAnchor.Front の Donut 前面は body front と一致すること");
+            Assert.AreEqual(-0.4f, GetMinZ(mesh), 0.001f,
+                "DepthAnchor.Front の Donut 背面は body front から後方へ厚み分だけ配置されること");
+        }
+
+        [Test]
+        public void Build_DonutMode_DepthAnchorCenter_CentersThicknessAroundBodyCenter()
+        {
+            var mesh = OutlineMeshBuilder.Build(
+                new List<GlyphContour> { MakeSquareContour() },
+                MakeSettings(0.25f, 0.4f),
+                1f,
+                1f,
+                DepthAnchor.Center);
+
             Assert.AreEqual(-0.3f, GetMaxZ(mesh), 0.001f,
-                "Donut の前面は body center + halfThickness に配置されること");
+                "DepthAnchor.Center の Donut 前面は body center + halfThickness に配置されること");
             Assert.AreEqual(-0.7f, GetMinZ(mesh), 0.001f,
-                "Donut の背面は body center - halfThickness に配置されること");
+                "DepthAnchor.Center の Donut 背面は body center - halfThickness に配置されること");
+        }
+
+        [Test]
+        public void Build_DonutMode_ScalesThicknessRelativeToBodyDepth()
+        {
+            var mesh = OutlineMeshBuilder.Build(
+                new List<GlyphContour> { MakeSquareContour() },
+                MakeSettings(0.25f, 0.25f),
+                2f,
+                1f);
+
+            Assert.AreEqual(0f, GetMaxZ(mesh), 0.001f,
+                "DepthAnchor.Front では outline thickness=0.25 でも前面は body front に固定されること");
+            Assert.AreEqual(-0.5f, GetMinZ(mesh), 0.001f,
+                "outline thickness=0.25 は body depth=2 に対する 25% として背面 Z に反映されること");
+        }
+
+        [Test]
+        public void Build_DonutMode_DepthAnchorBack_AlignsToBodyBack()
+        {
+            var mesh = OutlineMeshBuilder.Build(
+                new List<GlyphContour> { MakeSquareContour() },
+                MakeSettings(0.25f, 0.4f),
+                1f,
+                1f,
+                DepthAnchor.Back);
+
+            Assert.AreEqual(-0.6f, GetMaxZ(mesh), 0.001f,
+                "DepthAnchor.Back の Donut 前面は body back から前方へ厚み分だけ配置されること");
+            Assert.AreEqual(-1f, GetMinZ(mesh), 0.001f,
+                "DepthAnchor.Back の Donut 背面は body back と一致すること");
         }
 
         [Test]

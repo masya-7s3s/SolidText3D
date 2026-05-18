@@ -24,7 +24,7 @@ MonoBehaviour として GameObject に追加して使用します。
 | ExtrusionDepth | float | 本体メッシュの押し出し深さです。 |
 | OutlineEnabled | bool | outline の有効化です。false で outline 子オブジェクトを破棄します。 |
 | OutlineOffset | float | outline の外側オフセット量です。 |
-| OutlineThickness | float | outline の奥行きです。 |
+| OutlineThickness | float | outline の奥行き比率です。1 で本体の ExtrusionDepth と同じ厚さになります。 |
 | OutlineDisplayMode | OutlineDisplayMode | Donut または BackFilled を切り替えます。 |
 | OutlineMaterial | Material | null の場合は本体 sharedMaterial を使います。 |
 | LetterSpacing | float | 追加の文字間隔です。 |
@@ -59,7 +59,7 @@ RequestRegenerateMesh() は latest-only で古い request を圧縮し、古い 
 - Text & Font: テキストとフォントの設定
 - Geometry: Extrusion Depth、Font Size、Letter Spacing、Line Spacing
 - Layout: Writing Mode、Anchor、Max Width、Max Height
-- Outline: Enabled、Offset Amount、Thickness、Display Mode、Material
+- Outline: Enabled、Offset Amount、Thickness Ratio (Body=1)、Display Mode、Material
 - Output: Object Mode の切り替え
 
 ## outline の振る舞い
@@ -67,6 +67,7 @@ RequestRegenerateMesh() は latest-only で古い request を圧縮し、古い 
 - outline は __OutlineMesh__ という子オブジェクトで別管理されます
 - OutlineEnabled = false で子オブジェクトごと破棄されます
 - OutlineOffset = 0 では子オブジェクトを残したままメッシュだけ空になります
+- OutlineThickness は本体の ExtrusionDepth を 1 とした相対値として解釈されます
 - Donut と BackFilled は正面シルエットを共有し、違いは主に奥行き方向です
 
 ## フォントの扱い
