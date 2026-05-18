@@ -38,7 +38,6 @@ namespace MasaChuang.SolidText3D.Tests.Editor
             Assert.IsTrue(_component.IsDirty, "テキスト変更後にダーティフラグが立つこと");
 
             _component.FontAsset = null;
-            LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex(".*フォント.*"));
             Assert.DoesNotThrow(() => _component.RegenerateMesh(),
                 "手動の RegenerateMesh() が呼び出せること");
             Assert.IsFalse(_component.IsDirty, "RegenerateMesh() 後にダーティフラグがクリアされること");

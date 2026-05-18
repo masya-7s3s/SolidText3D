@@ -30,7 +30,7 @@ namespace MasaChuang.SolidText3D.Tests.Runtime
             Assert.IsNotNull(FontAssetField);
             Assert.IsNotNull(FontBytesCacheField);
             FontAssetField.SetValue(component, null);
-            FontBytesCacheField.SetValue(component, null);
+            FontBytesCacheField.SetValue(component, new TextAsset(string.Empty));
         }
 
         private static IEnumerator WaitForDeferredToSettle(SolidText3DComponent component, int maxFrames = 240)

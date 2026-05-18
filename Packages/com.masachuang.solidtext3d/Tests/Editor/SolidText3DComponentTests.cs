@@ -66,7 +66,7 @@ namespace MasaChuang.SolidText3D.Tests.Editor
             Assert.IsNotNull(FontAssetField);
             Assert.IsNotNull(FontBytesCacheField);
             FontAssetField.SetValue(component, null);
-            FontBytesCacheField.SetValue(component, null);
+            FontBytesCacheField.SetValue(component, new TextAsset(string.Empty));
         }
 
         [SetUp]
@@ -203,16 +203,16 @@ namespace MasaChuang.SolidText3D.Tests.Editor
         [Test]
         public void FontAsset_Missing_MaintainsPreviousMesh()
         {
-            // FR-016: フォント Missing 時に直前メッシュ維持・LogWarning 1 回のみ
-            // まず有効なフォントアセットで一度メッシュ生成
+            // 明示フォント未設定でもデフォルトフォント fallback により再生成を継続できること
+            _component.FontAsset = null;
+            _component.Text = "Fallback";
+            _component.RegenerateMesh();
             _component.FontAsset = null;
             _component.RegenerateMesh();
-            // Missing フォント警告は1回のみ出力されること
-            LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex(".*フォント.*"));
-            _component.FontAsset = null;
-            _component.RegenerateMesh();
-            // メッシュフィルターが存在すること（直前メッシュ維持）
-            Assert.IsNotNull(_go.GetComponent<MeshFilter>());
+
+            var meshFilter = _go.GetComponent<MeshFilter>();
+            Assert.IsNotNull(meshFilter);
+            Assert.IsNotNull(meshFilter.sharedMesh, "デフォルトフォント fallback 後もメッシュが維持されること");
         }
 
         [Test]
@@ -239,13 +239,17 @@ namespace MasaChuang.SolidText3D.Tests.Editor
         }
 
         [Test]
-        public void FontAsset_NotSet_SkipsMeshGeneration()
+        public void FontAsset_NotSet_UsesDefaultFont()
         {
-            // FR-012: フォントが未設定の場合に RegenerateMesh() が即座にリターンしてメッシュ生成を行わないことを検証
-            LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex(".*フォント.*"));
+            // デフォルトフォントが利用可能な環境では、明示フォント未設定でもメッシュ生成できること
             _component.FontAsset = null;
+            _component.Text = "Default Font";
             _component.RegenerateMesh();
-            // ダーティフラグはクリアされること
+
+            var meshFilter = _go.GetComponent<MeshFilter>();
+            Assert.IsNotNull(meshFilter);
+            Assert.IsNotNull(meshFilter.sharedMesh, "デフォルトフォントでメッシュが生成されること");
+            Assert.Greater(meshFilter.sharedMesh.vertexCount, 0, "デフォルトフォントで生成されたメッシュに頂点が含まれること");
             Assert.IsFalse(_component.IsDirty);
         }
 
@@ -305,8 +309,6 @@ namespace MasaChuang.SolidText3D.Tests.Editor
         public void RegenerateMesh_SameParams_SkipsRegeneration()
         {
             // FR-007: 同一パラメータハッシュ時に再生成がスキップされること
-            // フォント未設定のため警告が出るが、ハッシュ一致のスキップ検証は可能
-            LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex(".*フォント.*"));
             _component.FontAsset = null;
             _component.Text = "SameText";
             _component.RegenerateMesh(); // 1回目（ダーティクリア）
@@ -320,8 +322,6 @@ namespace MasaChuang.SolidText3D.Tests.Editor
         public void RegenerateMesh_SameParams_ZeroGCAlloc()
         {
             // SC-003 検証: 同一パラメータ時に GC アロケーションが発生しないこと
-            // フォント未設定状態でダーティをクリアしておく
-            LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex(".*フォント.*"));
             _component.FontAsset = null;
             _component.Text = "GCTest";
             _component.RegenerateMesh();

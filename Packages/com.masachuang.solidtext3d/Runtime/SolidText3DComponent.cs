@@ -384,20 +384,7 @@ namespace MasaChuang.SolidText3D
                     _meshRenderer.sharedMaterial = new Material(shader) { name = "SolidText3D Default" };
             }
 
-            // フォント未設定時はパッケージ内の NotoSansJP-Black をデフォルトフォントとして自動設定
-            if (_fontAsset == null && _fontBytesCache == null)
-            {
-#if UNITY_EDITOR
-                var defaultFont = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(
-                    DefaultFontBytesAssetPath);
-                if (defaultFont != null)
-                    _fontBytesCache = defaultFont as TextAsset;
-#else
-                var defaultAsset = Resources.Load<TextAsset>("Fonts/NotoSansJP-Black");
-                if (defaultAsset != null)
-                    _fontBytesCache = defaultAsset;
-#endif
-            }
+            EnsureDefaultFontBytesCache();
 
             if (_objectMode == ObjectMode.PerCharacter)
                 _characterPool = new CharacterObjectPool(transform);
@@ -512,6 +499,7 @@ namespace MasaChuang.SolidText3D
         private bool TryCaptureRequest(long version, out TextStateRequest request, out string failureMessage)
         {
             EnsureOutlineSettingsInitialized();
+            EnsureDefaultFontBytesCache();
 
             var signature = CreateDisplayResultSignature();
             var generationParams = CreateMeshGenerationParams(null);
@@ -569,17 +557,10 @@ namespace MasaChuang.SolidText3D
 
         private bool TryGetFontBytesForCurrentText(out byte[] fontBytes, out string failureMessage)
         {
-            if (_fontAsset == null && _fontBytesCache == null)
-            {
-                fontBytes = null;
-                failureMessage = "[SolidText3D] フォントが設定されていません。FontAsset を Inspector でアタッチしてください。";
-                return false;
-            }
-
             fontBytes = GetFontBytes();
             if (fontBytes == null || fontBytes.Length == 0)
             {
-                failureMessage = "[SolidText3D] フォントデータを読み込めませんでした。直前のメッシュを維持します。";
+                failureMessage = "[SolidText3D] フォントデータを読み込めませんでした。デフォルトフォントを含めた利用可能なフォントを確認してください。";
                 return false;
             }
 
@@ -935,6 +916,8 @@ namespace MasaChuang.SolidText3D
 
         private byte[] GetFontBytes()
         {
+            EnsureDefaultFontBytesCache();
+
 #if UNITY_EDITOR
             byte[] fontBytes = TryReadEditorFontBytesFromAsset(_fontAsset);
             if (fontBytes != null && fontBytes.Length > 0)
@@ -956,6 +939,18 @@ namespace MasaChuang.SolidText3D
                 return defaultAsset.bytes;
 #endif
             return null;
+        }
+
+        private void EnsureDefaultFontBytesCache()
+        {
+            if (_fontAsset != null || _fontBytesCache != null)
+                return;
+
+#if UNITY_EDITOR
+            _fontBytesCache = UnityEditor.AssetDatabase.LoadAssetAtPath<TextAsset>(DefaultFontBytesAssetPath);
+#else
+            _fontBytesCache = Resources.Load<TextAsset>("Fonts/NotoSansJP-Black");
+#endif
         }
 
         // GC Alloc ゼロのハッシュ計算（XOR 結合のみ、new/LINQ/文字列連結なし）
