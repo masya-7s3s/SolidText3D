@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.3] - 2026-05-19
+
+### Changed
+
+- GitHub Release / Git URL のインストール例を `v2.2.3` 基準に更新
+
 ## [2.2.2] - 2026-05-19
 
 ### Added

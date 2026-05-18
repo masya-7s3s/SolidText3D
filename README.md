@@ -40,10 +40,10 @@ Unity Package Manager で GitHub のタグ付きリリースを直接指定で�
 4. 次の URL を入力します。
 
 ```text
-https://github.com/masya-7s3s/SolidText3D.git?path=/Packages/com.masachuang.solidtext3d#v2.2.2
+https://github.com/masya-7s3s/SolidText3D.git?path=/Packages/com.masachuang.solidtext3d#v2.2.3
 ```
 
-`#v2.2.2` の部分は使いたい Release tag に置き換えてください。  
+`#v2.2.3` の部分は使いたい Release tag に置き換えてください。  
 このリポジトリは Unity プロジェクト全体を含むため、`?path=/Packages/com.masachuang.solidtext3d` の指定が必要です。
 
 ### manifest.json に直接追加する
@@ -51,7 +51,7 @@ https://github.com/masya-7s3s/SolidText3D.git?path=/Packages/com.masachuang.soli
 ```json
 {
   "dependencies": {
-    "com.masachuang.solidtext3d": "https://github.com/masya-7s3s/SolidText3D.git?path=/Packages/com.masachuang.solidtext3d#v2.2.2"
+    "com.masachuang.solidtext3d": "https://github.com/masya-7s3s/SolidText3D.git?path=/Packages/com.masachuang.solidtext3d#v2.2.3"
   }
 }
 ```

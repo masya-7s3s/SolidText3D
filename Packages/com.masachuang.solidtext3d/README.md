@@ -21,10 +21,10 @@ TTF / OTF フォントから 3D テキストメッシュを生成する Unity UP
 3. 次の URL を入力します
 
 ```text
-https://github.com/masya-7s3s/SolidText3D.git?path=/Packages/com.masachuang.solidtext3d#v2.2.2
+https://github.com/masya-7s3s/SolidText3D.git?path=/Packages/com.masachuang.solidtext3d#v2.2.3
 ```
 
-`#v2.2.2` は使いたい Release tag に置き換えます。  
+`#v2.2.3` は使いたい Release tag に置き換えます。  
 このリポジトリは Unity プロジェクト全体を含むため、`?path=/Packages/com.masachuang.solidtext3d` を付けます。
 
 ### ローカル package.json から導入する
@@ -38,7 +38,7 @@ manifest.json に直接記述する場合の例です。
 ```json
 {
   "dependencies": {
-    "com.masachuang.solidtext3d": "https://github.com/masya-7s3s/SolidText3D.git?path=/Packages/com.masachuang.solidtext3d#v2.2.2"
+    "com.masachuang.solidtext3d": "https://github.com/masya-7s3s/SolidText3D.git?path=/Packages/com.masachuang.solidtext3d#v2.2.3"
   }
 }
 ```
