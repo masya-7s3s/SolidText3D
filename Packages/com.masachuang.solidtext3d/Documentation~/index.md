@@ -2,104 +2,85 @@
 
 ## 概要
 
-Solid Text 3D は TTF/OTF フォントのグリフから 3D ポリゴンメッシュを生成する Unity UPM パッケージです。SixLabors.Fonts で輪郭を抽出し、LibTessDotNet と共有押し出しコアで本体メッシュを生成します。outline は Clipper2 で canonical ring profile を確定してから、Donut / BackFilled の 2 モードで立体化します。
+Solid Text 3D は、TTF / OTF フォントのグリフから 3D ポリゴンメッシュを生成する Unity UPM パッケージです。  
+現在の実装では、Font Asset、outline、縦書き、PerCharacter、deferred regeneration を公開 API と Inspector から扱えます。
 
-## API リファレンス
+## 最初に知っておくとよいこと
 
-### SolidText3DComponent
+- 設定変更だけでは表示は更新されません
+- 即時反映したい場合は RegenerateMesh() を使います
+- 高頻度更新では RequestRegenerateMesh() を使います
+- Font Asset 未設定時は NotoSansJP-Black を使います
+- 横書きの MaxWidth は現行実装では自動折り返しに使われません
+
+## SolidText3DComponent
 
 MonoBehaviour として GameObject に追加して使用します。
 
 | プロパティ/メソッド | 型 | 説明 |
 | ------------------ | --- | ---- |
-| `Text` | `string` | 表示テキスト。変更時に dirty が立つ |
-| `FontAsset` | `UnityEngine.Object` | Inspector で指定するフォントアセット |
-| `ExtrusionDepth` | `float` | 本体メッシュの押し出し深さ |
-| `OutlineEnabled` | `bool` | outline child の生成・再利用を切り替える |
-| `OutlineOffset` | `float` | outline の外側オフセット量 |
-| `OutlineThickness` | `float` | outline の厚み |
-| `OutlineDisplayMode` | `OutlineDisplayMode` | `Donut` または `BackFilled` |
-| `OutlineMaterial` | `Material` | null の場合は本体 sharedMaterial を継承 |
-| `LetterSpacing` | `float` | 追加の文字間スペース |
-| `LineSpacing` | `float` | 行間係数 |
-| `FontSize` | `float` | em スケールの Unity 単位変換 |
-| `ObjectMode` | `ObjectMode` | `SingleObject` / `PerCharacter` |
-| `IsDirty` | `bool` | 手動で再生成が必要かどうか |
-| `HasPendingRegeneration` | `bool` | deferred regeneration の in-flight / pending / ready 状態が残っているか |
-| `RegenerateMesh()` | `void` | 即時再生成 |
-| `RequestRegenerateMesh()` | `void` | 高頻度更新向け deferred regeneration を要求する |
-| `DeferredRegenerationFailed` | `event Action<RegenerationFailureInfo>` | keep-last-good を維持したまま deferred failure を通知する |
+| Text | string | 表示テキストです。変更すると dirty 状態になります。 |
+| FontAsset | UnityEngine.Object | Font または TextAsset を参照できます。Editor では Font から直接データを読めます。 |
+| ExtrusionDepth | float | 本体メッシュの押し出し深さです。 |
+| OutlineEnabled | bool | outline の有効化です。false で outline 子オブジェクトを破棄します。 |
+| OutlineOffset | float | outline の外側オフセット量です。 |
+| OutlineThickness | float | outline の奥行きです。 |
+| OutlineDisplayMode | OutlineDisplayMode | Donut または BackFilled を切り替えます。 |
+| OutlineMaterial | Material | null の場合は本体 sharedMaterial を使います。 |
+| LetterSpacing | float | 追加の文字間隔です。 |
+| LineSpacing | float | 横書きでは行間倍率、縦書きでは列幅倍率です。 |
+| FontSize | float | em から Unity 単位へのスケールです。 |
+| HorizontalAnchor | HorizontalAnchor | 横方向の基準位置です。 |
+| VerticalAnchor | VerticalAnchor | 縦方向の基準位置です。 |
+| DepthAnchor | DepthAnchor | 奥行き方向の基準位置です。 |
+| WritingMode | WritingMode | Horizontal / Vertical を切り替えます。 |
+| ObjectMode | ObjectMode | SingleObject / PerCharacter を切り替えます。 |
+| MaxWidth | float | 横書き用の値として保持されますが、現行実装では自動折り返しに使われません。 |
+| MaxHeight | float | 縦書きの列折り返し高さです。 |
+| RotateAsciiInVertical | bool | 縦書き時に印字可能 ASCII を 90 度回転します。 |
+| IsDirty | bool | 再生成が必要な状態かどうかです。 |
+| HasPendingRegeneration | bool | deferred path の in-flight / pending / ready 状態が残っているかを表します。 |
+| SuppressAutoRegenerate | bool | 公開フラグですが、現行実装ではこの値だけで再生成挙動は変わりません。 |
+| RegenerateMesh() | void | 同期的に表示へ反映します。 |
+| RequestRegenerateMesh() | void | 高頻度更新向け deferred regeneration を要求します。 |
+| DeferredRegenerationFailed | event | deferred regeneration 失敗を通知します。表示は keep-last-good を維持します。 |
 
-### MeshGenerationParams
+## Regeneration API の使い分け
 
-メッシュ生成パラメータをまとめた struct です。
+- RegenerateMesh(): 呼び出した時点で表示反映まで完了させたいとき
+- RequestRegenerateMesh(): タイマーやスコアのような高頻度更新で使いたいとき
+- HasPendingRegeneration: deferred 更新が収束したかを見たいとき
 
-| フィールド | 型 | 説明 |
-| ---------- | --- | ---- |
-| `Text` | `string` | 表示テキスト |
-| `FontData` | `byte[]` | フォントバイト配列 |
-| `ExtrusionDepth` | `float` | 押し出し深さ |
-| `OutlineWidth` | `float` | 互換用 alias。内部では outline offset として扱う |
-| `LetterSpacing` | `float` | 文字間スペース |
-| `LineSpacing` | `float` | 行間係数 |
-| `FontSize` | `float` | em から Unity 単位へのスケール |
-| `BezierErrorThreshold` | `float` | ベジェ曲線の適応分割誤差閾値 |
+RequestRegenerateMesh() は latest-only で古い request を圧縮し、古い completed result で表示が巻き戻らないように実装されています。
 
-### OutlineDisplayMode
+## Inspector セクション
 
-| 値 | 説明 |
-| --- | ---- |
-| `Donut` | front silhouette を維持したまま厚みを前後へ均等配分する |
-| `BackFilled` | front silhouette を維持し、固定背面を単一の filled cap で閉じる |
+- Mesh Update: dirty 状態の表示と Regenerate Mesh
+- Text & Font: テキストとフォントの設定
+- Geometry: Extrusion Depth、Font Size、Letter Spacing、Line Spacing
+- Layout: Writing Mode、Anchor、Max Width、Max Height
+- Outline: Enabled、Offset Amount、Thickness、Display Mode、Material
+- Output: Object Mode の切り替え
 
-## エディタでの使用ガイド
+## outline の振る舞い
 
-1. GameObject を作成する
-2. Solid Text 3D Component を追加する
-3. `Text & Font` で Text と Font Asset を設定する
-4. `Geometry` で厚みとサイズを調整する
-5. 必要なら `Layout` / `Outline` / `Output` を調整する
-6. `Mesh Update` の `Regenerate Mesh` ボタンを押してメッシュを更新する
+- outline は __OutlineMesh__ という子オブジェクトで別管理されます
+- OutlineEnabled = false で子オブジェクトごと破棄されます
+- OutlineOffset = 0 では子オブジェクトを残したままメッシュだけ空になります
+- Donut と BackFilled は正面シルエットを共有し、違いは主に奥行き方向です
 
-### Inspector セクション
+## フォントの扱い
 
-- `Mesh Update`: dirty 状態の表示と手動再生成
-- `Text & Font`: テキストとフォントの設定
-- `Geometry`: Extrusion / Font Size / Letter Spacing / Line Spacing
-- `Layout`: Writing Mode / Anchor / Max Width / Max Height
-- `Outline`: Enabled / Offset Amount / Thickness / Display Mode / Material
-- `Output`: Object Mode の切り替え
+フォント解決の優先順は次の通りです。
 
-### outline の振る舞い
+1. Editor では Font Asset から直接読めたデータ
+2. 内部の .bytes キャッシュ
+3. パッケージ同梱の NotoSansJP-Black
 
-- `OutlineOffset = 0` のときは outline child を維持したまま mesh だけをクリアする
-- `Donut` と `BackFilled` は正面シルエットを共有する
-- `BackFilled` は固定背面を filled cap で閉じ、厚みは反対側へ伸びる
-- `OutlineMaterial = null` のときは本体の sharedMaterial を使用する
+Editor では .ttf / .otf のインポート時に Assets/SolidText3DFonts/{GUID}.bytes を自動生成します。  
+ビルド済みプレイヤーで FontAsset を差し替えても、その場で新しいフォントデータを自動解決するわけではありません。
 
-## ランタイムでの使用ガイド
-
-```csharp
-using MasaChuang.SolidText3D;
-using UnityEngine;
-
-public sealed class OutlineRuntimeExample : MonoBehaviour
-{
-    [SerializeField] private SolidText3DComponent _text3D;
-
-    private void Start()
-    {
-        _text3D.Text = "Hello, Outline";
-        _text3D.OutlineEnabled = true;
-        _text3D.OutlineOffset = 0.05f;
-        _text3D.OutlineThickness = 0.1f;
-        _text3D.OutlineDisplayMode = OutlineDisplayMode.Donut;
-        _text3D.RegenerateMesh();
-    }
-}
-```
-
-高頻度更新では同期 `RegenerateMesh()` の代わりに次のように `RequestRegenerateMesh()` を使用します。
+## ランタイムでの使用例
 
 ```csharp
 using MasaChuang.SolidText3D;
@@ -107,71 +88,60 @@ using UnityEngine;
 
 public sealed class ScoreTickerExample : MonoBehaviour
 {
-    [SerializeField] private SolidText3DComponent _text3D;
+    [SerializeField] private SolidText3DComponent text3D;
 
-    private void Awake()
+    private void OnEnable()
     {
-        _text3D.DeferredRegenerationFailed += OnDeferredRegenerationFailed;
+        text3D.DeferredRegenerationFailed += OnDeferredRegenerationFailed;
     }
 
-    private void OnDestroy()
+    private void OnDisable()
     {
-        _text3D.DeferredRegenerationFailed -= OnDeferredRegenerationFailed;
+        text3D.DeferredRegenerationFailed -= OnDeferredRegenerationFailed;
     }
 
     public void UpdateScore(int score)
     {
-        _text3D.Text = score.ToString();
-        _text3D.RequestRegenerateMesh();
+        text3D.Text = score.ToString();
+        text3D.RequestRegenerateMesh();
     }
 
     private static void OnDeferredRegenerationFailed(RegenerationFailureInfo info)
     {
-        Debug.LogWarning($"Deferred regeneration failed: v={info.RequestVersion} text={info.RequestedText} msg={info.Message}");
+        Debug.LogWarning($"Deferred regeneration failed: {info.Message}");
     }
 }
 ```
 
-期待される契約:
+## CJK テキスト
 
-- `RegenerateMesh()` は同期のまま維持される
-- `RequestRegenerateMesh()` は latest-only queue を使い、古い completed result で表示を巻き戻さない
-- `HasPendingRegeneration` は deferred path の進行中状態を監視できる
-- failure 時も current visible display は keep-last-good を維持する
-
-## CJK 文字の使用
-
-デフォルト埋め込みフォントは日本語・中国語・韓国語を含む CJK テキストを扱えます。
+デフォルトフォントで日本語を含む CJK テキストを扱えます。
 
 ```csharp
-_text3D.Text = "立体文字";
-_text3D.Text = "汉字";
-_text3D.Text = "한글";
-_text3D.Text = "Hello 世界";
+text3D.Text = "立体文字";
+text3D.Text = "Hello 世界";
 ```
 
 ## トラブルシューティング
 
-### 正面から outline が見えない
+### outline が見えない
 
-- `OutlineEnabled` が true か確認する
-- `OutlineOffset` が 0 より大きいか確認する
-- `OutlineDisplayMode` に関係なく front silhouette は同一なので、見え方の差は背面側だけか確認する
+- OutlineEnabled が true か確認します
+- OutlineOffset が 0 より大きいか確認します
+- 本体と同じ Material で見分けづらくなっていないか確認します
 
 ### フォントが読み込まれない
 
-- FontAsset に有効な TextAsset が割り当たっているか確認する
-- ランタイムで直接与える場合は `MeshGenerationParams.FontData` を使用する
+- Editor では Font Asset か .bytes キャッシュを確認します
+- ランタイムでは直前の正常表示が残ることがあります
 
-### パフォーマンス
+### 横書きで折り返されない
 
-- 自動再生成は行わないため、更新コストは RegenerateMesh() 呼び出し時だけ発生する
-- profiler sample は outline build の各段に追加済み
-- deferred regeneration の validation 条件は `submit p95 <= 50ms`、`heavy/light / 5 object の p90 <= 100ms`、`cache-hit median drift <= 10%`
-- 2026-05-13 時点で Edit Mode / Play Mode テスト green を確認済み
+現行実装では MaxWidth を使いません。  
+横書きで行を分ける場合は改行文字を入れてください。
 
 ## 既知の制限事項
 
 - SixLabors.Fonts は Unity 6 / CoreCLR 前提です
-- 複雑な glyph では dirty 時の再生成コストが上がります
-- Windows player build の最終手動確認ログは quickstart に記録運用です
+- 複雑な glyph では再生成コストが上がります
+- PerCharacter は SingleObject よりオブジェクト数が増えます

@@ -1,14 +1,23 @@
 ﻿# Solid Text 3D
 
-TTF/OTF フォントのグリフから 3D ポリゴンメッシュを生成する Unity UPM パッケージです。CJK テキスト、ランタイム更新、Per-Character 配置に加えて、文字本体とは独立した outline を Donut / BackFilled の 2 モードで生成できます。
+TTF / OTF フォントから 3D テキストメッシュを生成する Unity UPM パッケージです。  
+横書き、縦書き、CJK テキスト、outline、PerCharacter 出力、deferred regeneration に対応しています。
+
+## 特徴
+
+- Font Asset から 3D テキストを生成
+- Font Asset 未設定時は NotoSansJP-Black を使用
+- outline を Donut / BackFilled の 2 モードで生成
+- SingleObject / PerCharacter を切り替え可能
+- 同期更新の RegenerateMesh() と高頻度更新向け RequestRegenerateMesh() を使い分け可能
 
 ## インストール
 
-1. Unity Package Manager を開く
-2. 「+」→ 「Add package from disk...」を選ぶ
-3. Packages/com.masachuang.solidtext3d/package.json を指定する
+1. Unity Package Manager を開きます
+2. 追加メニューから Add package from disk... を選びます
+3. Packages/com.masachuang.solidtext3d/package.json を指定します
 
-manifest.json に直接記述する場合の例:
+manifest.json に直接記述する場合の例です。
 
 ```json
 {
@@ -18,20 +27,16 @@ manifest.json に直接記述する場合の例:
 }
 ```
 
-## 基本使用
+## 最短の使い方
 
-1. GameObject に SolidText3DComponent を追加する
-2. Inspector の Text & Font で Text と Font Asset を設定する
-3. Geometry で Extrusion Depth と Font Size を調整する
-4. 必要なら Layout / Outline / Output を調整する
-5. Mesh Update の Regenerate Mesh を押してメッシュを更新する
+1. GameObject に SolidText3DComponent を追加します
+2. Text & Font で Text と Font Asset を設定します
+3. Geometry で Extrusion Depth と Font Size を調整します
+4. 必要なら Layout / Outline / Output を調整します
+5. Mesh Update の Regenerate Mesh を押します
 
-期待結果:
-
-- Offset Amount を上げると文字外周に outline が生成される
-- OutlineOffset が 0 のときは child は維持したまま outline mesh だけがクリアされる
-- Donut と BackFilled は正面シルエットを共有し、背面構成だけが変わる
-- 高頻度更新では `RequestRegenerateMesh()` を使うと latest-only に追従する
+重要なのは、設定変更だけでは表示が更新されないことです。  
+表示に反映するには Regenerate Mesh か RequestRegenerateMesh() が必要です。
 
 ```csharp
 using MasaChuang.SolidText3D;
@@ -39,89 +44,52 @@ using UnityEngine;
 
 public sealed class OutlineSample : MonoBehaviour
 {
-    [SerializeField] private SolidText3DComponent _text;
-    [SerializeField] private Material _outlineMaterial;
+    [SerializeField] private SolidText3DComponent text3D;
+    [SerializeField] private Material outlineMaterial;
 
     private void Start()
     {
-        _text.Text = "Solid Text 3D";
-        _text.OutlineEnabled = true;
-        _text.OutlineOffset = 0.05f;
-        _text.OutlineThickness = 0.1f;
-        _text.OutlineDisplayMode = OutlineDisplayMode.BackFilled;
-        _text.OutlineMaterial = _outlineMaterial;
-      _text.RegenerateMesh();
+        text3D.Text = "Solid Text 3D";
+        text3D.OutlineEnabled = true;
+        text3D.OutlineOffset = 0.05f;
+        text3D.OutlineThickness = 0.1f;
+        text3D.OutlineDisplayMode = OutlineDisplayMode.BackFilled;
+        text3D.OutlineMaterial = outlineMaterial;
+        text3D.RegenerateMesh();
     }
 }
 ```
 
-## Inspector 構成
+## 更新 API の使い分け
 
-- `Mesh Update`: dirty 状態の確認と `Regenerate Mesh`
-- `Text & Font`: テキスト本文とフォント設定
-- `Geometry`: 押し出し厚み、サイズ、文字間・行間
-- `Layout`: 書字方向、アンカー、折り返し上限
-- `Outline`: アウトラインの有効化と見た目調整
-- `Output`: `SingleObject` / `PerCharacter` の切り替え
+- RegenerateMesh(): 呼び出した時点で同期的に表示へ反映します
+- RequestRegenerateMesh(): 高頻度更新向けの deferred API です
+- HasPendingRegeneration: deferred path の進行中状態を確認できます
+- DeferredRegenerationFailed: deferred 失敗時に通知します。表示は keep-last-good を維持します
 
-## 主要 API
+## 実装準拠の注意点
 
-### SolidText3DComponent
-
-| プロパティ | 型 | 説明 |
-| --------- | --- | ---- |
-| `Text` | `string` | 表示テキスト |
-| `FontAsset` | `UnityEngine.Object` | Inspector で割り当てるフォントアセット |
-| `ExtrusionDepth` | `float` | 本体メッシュの押し出し深さ |
-| `OutlineEnabled` | `bool` | outline child の生成・維持を切り替える |
-| `OutlineOffset` | `float` | outline の外側オフセット量 |
-| `OutlineThickness` | `float` | outline の厚み |
-| `OutlineDisplayMode` | `OutlineDisplayMode` | `Donut` / `BackFilled` |
-| `OutlineMaterial` | `Material` | null のとき本体 material を継承 |
-| `LetterSpacing` | `float` | 文字間スペース |
-| `LineSpacing` | `float` | 行間係数 |
-| `FontSize` | `float` | em 高さを Unity 単位へ変換するスケール |
-| `ObjectMode` | `ObjectMode` | `SingleObject` / `PerCharacter` |
-| `IsDirty` | `bool` | 手動で再生成が必要かどうか |
-| `HasPendingRegeneration` | `bool` | deferred regeneration の進行中/待機中 request があるかどうか |
-| `RegenerateMesh()` | `void` | 即時再生成 |
-| `RequestRegenerateMesh()` | `void` | 高頻度更新向け deferred 再生成 |
-| `DeferredRegenerationFailed` | `event Action<RegenerationFailureInfo>` | deferred regeneration failure を keep-last-good で通知 |
-
-### Regeneration API の使い分け
-
-- `RegenerateMesh()` は同期 API で、呼び出し復帰時点で表示が更新済みです
-- `RequestRegenerateMesh()` は non-blocking submit を目的とした deferred API で、進行中 1 件 + latest-only 待機 1 件に集約されます
-- `HasPendingRegeneration` は deferred path の in-flight / pending / ready 状態が残る間 `true` です
-- `DeferredRegenerationFailed` は失敗 request を通知しますが、直前の visible display は維持されます
-
-### OutlineDisplayMode
-
-| 値 | 説明 |
-| --- | ---- |
-| `Donut` | 厚みを前後に均等配分するリング状 outline |
-| `BackFilled` | 正面シルエットを維持しつつ、固定背面を単一の filled cap で閉じる outline |
+- 横書きの MaxWidth は現行実装では自動折り返しに使われません
+- 縦書きの MaxHeight は列折り返しに使われます
+- outline は __OutlineMesh__ という子オブジェクトで別管理されます
+- OutlineOffset が 0 のときは outline 子オブジェクトを残したままメッシュだけ空になります
+- PerCharacter では可視文字ごとに Char_0, Char_1... の子オブジェクトを生成し、余剰分は再利用のため非アクティブ化します
 
 ## カスタムフォント
 
-1. TTF/OTF を Assets 配下へ配置する
-2. 必要なら生成された .bytes TextAsset を FontAsset に割り当てる
-3. ランタイムで直接与える場合は MeshGenerationParams.FontData に byte[] を設定する
+1. TTF / OTF を Assets 配下へ配置します
+2. SolidText3DComponent の Font Asset に Font を割り当てます
+3. 必要なら RegenerateMesh() で反映します
 
-## パフォーマンス
+Editor では .ttf / .otf のインポート時に Assets/SolidText3DFonts 配下へ .bytes キャッシュを自動生成します。  
+ビルド済みプレイヤーで FontAsset を差し替えても、その場で新しいフォントデータを解決するわけではありません。
 
-- 自動再生成を行わないため、通常フレームで追加 GC.Alloc を発生させない設計です
-- `RequestRegenerateMesh()` の submit path は current thread での余分な allocation を避ける構成です
-- performance validation 条件は `submit p95 <= 50ms`、`heavy/light および 5 object 同時更新の p90 <= 100ms`、`cache-hit median drift <= 10%` を基準にします
-- profiler sample: GlyphMeshBuilder.Build, MeshExtruder.BuildGlyphMesh, OutlineContourBuilder.BuildProfiles, OutlineMeshBuilder.Build, SolidText3DComponent.RegenerateMesh, SolidText3DComponent.UpdateOutlineMesh
-- 2026-05-13 時点で Edit Mode / Play Mode テストは green を確認済みです
+## 詳細ドキュメント
 
-## 既知の制限
-
-- SixLabors.Fonts は Unity 6 / CoreCLR 前提です
-- very complex glyph では dirty 時の再生成コストが増えます
-- Windows player の最終手動ビルド記録は quickstart に追記運用です
+- Documentation~/index.md: パッケージ同梱の詳細ガイド
+- CHANGELOG.md: 変更履歴
+- Third Party Notices.md: サードパーティライセンス
 
 ## ライセンス
 
-MIT License。詳細は LICENSE.md を参照してください。サードパーティライセンスは Third Party Notices.md を参照してください。
+MIT License です。詳細は LICENSE.md を参照してください。

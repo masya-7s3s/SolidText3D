@@ -1,10 +1,42 @@
 # スクリプトから更新する
 
-このガイドでは、Play Mode中にテキストを変更したり、手動で反映したり、文字ごとに扱う方法を説明します。
+このガイドでは、Play Mode 中にテキストを変更し、用途に応じて同期更新と deferred 更新を使い分ける方法を説明します。
 
-## もっとも基本的な更新
+## 基本ルール
 
-Text を変更すると、コンポーネントは dirty 状態になります。
+SolidText3DComponent は、プロパティを変更しただけでは表示を更新しません。  
+変更後にどちらかを呼びます。
+
+- RegenerateMesh(): 即時に反映したいとき
+- RequestRegenerateMesh(): 高頻度更新でフレームを詰まらせたくないとき
+
+## 即時に反映する
+
+ボタン押下、会話ウィンドウの見出し、演出の開始時など、呼んだ直後に見た目を更新したい場合は RegenerateMesh() を使います。
+
+```csharp
+using MasaChuang.SolidText3D;
+using UnityEngine;
+
+public sealed class RoundStartLabel : MonoBehaviour
+{
+    [SerializeField] private SolidText3DComponent text3D;
+
+    public void ShowRound(int round)
+    {
+        text3D.Text = $"ROUND {round}";
+        text3D.ExtrusionDepth = 0.18f;
+        text3D.RegenerateMesh();
+    }
+}
+```
+
+複数の設定を変える場合は、全部変更してから最後に 1 回だけ RegenerateMesh() を呼ぶのが安全です。
+
+## 高頻度更新では RequestRegenerateMesh() を使う
+
+タイマー、スコア、HP 表示のように短い間隔で何度も更新する場合は RequestRegenerateMesh() が向いています。  
+この API は non-blocking で request を投入し、古い request を latest-only で圧縮します。
 
 ```csharp
 using MasaChuang.SolidText3D;
@@ -14,26 +46,44 @@ public sealed class TimerLabel : MonoBehaviour
 {
     [SerializeField] private SolidText3DComponent text3D;
 
+    private void OnEnable()
+    {
+        text3D.DeferredRegenerationFailed += OnDeferredRegenerationFailed;
+    }
+
+    private void OnDisable()
+    {
+        text3D.DeferredRegenerationFailed -= OnDeferredRegenerationFailed;
+    }
+
     private void Update()
     {
         text3D.Text = Time.time.ToString("F1");
+        text3D.RequestRegenerateMesh();
+    }
+
+    private static void OnDeferredRegenerationFailed(RegenerationFailureInfo info)
+    {
+        Debug.LogWarning($"Deferred regeneration failed: {info.Message}");
     }
 }
 ```
 
-見た目へ反映したいタイミングで RegenerateMesh を呼びます。
+この方式では、呼んだその瞬間に必ず表示が変わるわけではありません。  
+ただし、完了した古い結果で表示が巻き戻らないように実装されています。
 
-## 変更を反映する
+## 進行状況を知りたいとき
 
-値を変えた直後に見た目を更新したい場合は、RegenerateMesh を呼びます。
+deferred 更新中かどうかは HasPendingRegeneration で確認できます。
 
 ```csharp
-text3D.Text = "GO!";
-text3D.ExtrusionDepth = 0.2f;
-text3D.RegenerateMesh();
+if (!text3D.HasPendingRegeneration)
+{
+    Debug.Log("最新の deferred request がいったん収束しています。");
+}
 ```
 
-プロパティ変更のたびに毎フレーム何度も呼ぶと重くなりやすいので、必要な変更をまとめてから呼ぶのが安全です。
+待機中、実行中、適用待ち ready result のいずれかが残っている間は true です。
 
 ## よく使う調整項目
 
@@ -59,11 +109,12 @@ text3D.RegenerateMesh();
 - MaxHeight
 - RotateAsciiInVertical
 
-これらを変更すると、コンポーネントは内部で再生成が必要な状態になります。
+これらを変更すると dirty 状態になります。  
+ただし MaxWidth は現行の横書き自動折り返しには使われません。
 
 ## 文字ごとに別オブジェクトへ分ける
 
-ObjectMode を PerCharacter にすると、可視文字ごとに子GameObjectが作られます。
+ObjectMode を PerCharacter にすると、可視文字ごとに子 GameObject を作ります。
 
 ```csharp
 text3D.ObjectMode = ObjectMode.PerCharacter;
@@ -73,31 +124,24 @@ text3D.RegenerateMesh();
 このモードは次の用途に向いています。
 
 - 文字ごとにアニメーションを付ける
-- 文字ごとに別マテリアルを当てる
-- 文字単位で位置や回転を制御する
+- 文字ごとに個別の位置や回転を制御する
+- 一部の文字だけ差し替える演出を行う
 
 実装上のポイントは次の通りです。
 
-- 子オブジェクト名は Char_0, Char_1, Char_2... の形式
-- 本体側の MeshRenderer は無効化される
-- スペースや改行のような非表示文字は子オブジェクトにならない
-- SingleObject に戻すと子オブジェクトは破棄される
+- 子オブジェクト名は Char_0, Char_1, Char_2... です
+- 親側の MeshRenderer は無効化されます
+- 非表示文字は子オブジェクトになりません
+- 余った子オブジェクトは再利用のため非アクティブ化されます
 
-## 毎フレーム更新するときの考え方
+## 毎フレーム更新で気をつけること
 
-Solid Text 3D は、変更がないフレームでは何もしないように設計されています。  
-ただし、Text を毎フレーム書き換えて毎回 RegenerateMesh を呼べば、そのたびに再生成されます。
+- 同期反映が必要ない限り RegenerateMesh() を毎フレーム呼ばない
+- 表示内容が本当に変わったときだけ Text を更新する
+- 文字数の多い長文を高頻度で更新しない
+- PerCharacter は SingleObject よりオブジェクト数が増えるので必要な場所だけ使う
 
-ゲーム内のスコアやタイマーのように常時更新する用途でも使えますが、次の点を意識すると扱いやすくなります。
+## ランタイムでフォントを差し替えたいとき
 
-- 本当に表示が変わったときだけ Text を更新する
-- 変更をまとめてから RegenerateMesh を 1 回だけ呼ぶ
-- 文字数が多い長文を毎フレーム再生成しない
-- PerCharacter は SingleObject よりコストが増えやすいので、必要な場所だけ使う
-
-## 高度なカスタマイズが必要な場合
-
-SolidText3DComponent ではなく、GlyphMeshBuilder.Build と MeshGenerationParams を使って自分で Mesh を作ることもできます。  
-これは、独自の生成タイミングを持たせたい場合や、byte[] ベースでフォントを扱いたい場合に向いています。
-
-通常のゲームUIやワールドラベルであれば、まずは SolidText3DComponent を使う方が簡単です。
+ビルド済みプレイヤーでは、FontAsset を差し替えただけで新しいフォントデータが自動解決されるわけではありません。  
+そのため、動的なフォント切り替えが必要なら設計を一段下げて扱う必要があります。

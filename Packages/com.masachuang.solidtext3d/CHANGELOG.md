@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `SolidText3DComponent` の dirty 状態は自動再生成せず、`RegenerateMesh()` の明示呼び出しでのみメッシュ更新するよう変更
 - `SolidText3DInspector` に `Regenerate Mesh` ボタンを追加し、Inspector 編集時のリアルタイム再生成を廃止
 - deferred regeneration の submit path を component-local work item 化し、latest-only queue、stale discard、prepared-result reuse を強化
+- パッケージ同梱ドキュメント（`README.md`、`Documentation~/index.md`、`Documentation~/BREAKING_CHANGES.md`、`Third Party Notices.md`）を、明示的な regeneration API、FontAsset の実動作、outline child のライフサイクル、レイアウト制約を含む現在実装準拠の内容へ更新
+- パッケージドキュメント上のフォント案内を現行デフォルトの `NotoSansJP-Black` 基準にそろえ、`FontAsset` に `Font` を割り当てる通常運用と `.bytes` キャッシュの補助的な役割を明確化
 
 ## [2.1.0] - 2026-05-13
 

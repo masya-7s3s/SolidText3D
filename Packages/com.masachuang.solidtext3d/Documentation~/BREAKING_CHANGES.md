@@ -62,14 +62,14 @@ GetComponent<SolidText3DComponent>().Font = "Assets/Fonts/MyFont.ttf";
 #### 変更後 (v2.0)
 
 ```csharp
-// Inspector でフォントアセットを設定するか、スクリプトで代入する
-var fontTextAsset = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Fonts/MyFont.bytes");
-GetComponent<SolidText3DComponent>().FontAsset = fontTextAsset;
+// 通常は Font を割り当てる
+var fontAsset = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/MyFont.ttf");
+GetComponent<SolidText3DComponent>().FontAsset = fontAsset;
 ```
 
-> **ヒント**: `.ttf`/`.otf` を Unity プロジェクトにインポートすると、  
-> `FontAssetPostprocessor` が自動的に隣接する `.bytes` ファイルを生成します。  
-> 生成された `.bytes` TextAsset を `FontAsset` フィールドに割り当ててください。
+> **ヒント**: `.ttf` / `.otf` を Unity プロジェクトにインポートすると、  
+> `FontAssetPostprocessor` が `Assets/SolidText3DFonts/{GUID}.bytes` を自動生成します。  
+> Editor では Font をそのまま割り当てればよく、必要に応じて TextAsset を直接使うこともできます。
 
 ---
 
@@ -86,7 +86,7 @@ v2.0.0 で追加された主要な API を以下に示します。
 | `ObjectMode` | enum | SingleObject / PerCharacter |
 | `LayoutEngine` | class | レイアウト計算ユーティリティ |
 | `CharacterObjectPool` | class | Per-Character モード用 GameObject プール |
-| `SolidText3DComponent.SuppressAutoRegenerate` | property | デバウンス制御フラグ |
+| `SolidText3DComponent.SuppressAutoRegenerate` | property | 公開フラグ。現行実装ではこの値だけで再生成挙動は変わらない |
 | `SolidText3DComponent.IsDirty` | property | ダーティ状態の読み取り |
 | `SolidText3DComponent.RegenerateMesh()` | method | 外部からの即座な再生成トリガー |
 | `GlyphMeshBuilder.BuildPerCharacter()` | method | Per-Character 用メッシュ一括生成 |

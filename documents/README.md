@@ -1,28 +1,26 @@
 # Solid Text 3D ドキュメント
 
-このドキュメントは、Unityでゲームを開発するユーザー向けに Solid Text 3D の使い方をまとめたものです。  
-対象は、シーンに3Dテキストを配置したい人、スクリプトから表示を更新したい人、必要に応じて挙動を理解してカスタマイズしたい人です。
-
-内容は、現在の実装コードを基準に整理しています。Spec Kit 配下の設計文書ではなく、実際のコンポーネント、エディタ拡張、サンプル、テストで確認できる挙動を優先しています。
+このドキュメントは、Solid Text 3D を Unity プロジェクトで使う人のための実装準拠ガイドです。  
+設計メモではなく、現在のコンポーネント、Inspector、Editor 拡張、テストで確認できる挙動を正としてまとめています。
 
 ## このパッケージでできること
 
-- TTF / OTF フォントから3Dメッシュ文字を生成する
-- 日本語・中国語・韓国語を含むCJKテキストを表示する
-- Play Mode中にテキストを更新する
-- 文字本体とは別にアウトラインメッシュを生成する
+- TTF / OTF フォントから 3D テキストメッシュを生成する
+- 日本語を含む CJK テキストを表示する
 - 横書きと縦書きを切り替える
-- 文字ごとに別GameObjectへ分けて扱う
+- outline を文字本体とは別メッシュで生成する
+- 文字ごとに子 GameObject へ分けて出力する
+- Play Mode 中の更新を同期または deferred で反映する
 
-## 想定環境
+## 最初に知っておくとよいこと
 
-- Unity 6系
-- パッケージバージョン 2.1.0
-- ワールド空間に配置する MeshFilter + MeshRenderer ベースの3Dテキスト
+- プロパティを変更しただけでは表示は更新されません
+- 即時反映したいときは RegenerateMesh() を使います
+- 高頻度更新では RequestRegenerateMesh() を使います
+- Font Asset 未設定時はデフォルトの NotoSansJP-Black を使います
+- 横書きの MaxWidth は現行実装では保持だけされ、自動折り返しには使われません
 
-## ドキュメントの読み方
-
-Diátaxis形式で整理しています。
+## ドキュメント一覧
 
 ### Tutorials
 
@@ -44,10 +42,10 @@ Diátaxis形式で整理しています。
 - [更新タイミングと内部動作](explanation/runtime-behavior.md)
 - [レイアウト・アウトライン・文字単位オブジェクトの仕組み](explanation/layout-and-objects.md)
 
-## どこから始めるべきか
+## 読み始めの目安
 
-- まず使いたい: [はじめて3Dテキストを表示する](tutorials/first-3d-text.md)
+- まず表示してみたい: [はじめて3Dテキストを表示する](tutorials/first-3d-text.md)
 - フォントを差し替えたい: [独自フォントを使う](how-to/import-fonts.md)
-- UIやゲーム中の数値を更新したい: [スクリプトから更新する](how-to/update-from-script.md)
-- 配置や見た目を追い込みたい: [アウトラインを設定する](how-to/use-outline.md)、[縦書き・アンカー・文字配置を調整する](how-to/adjust-layout.md)
-- 仕組みを理解して応用したい: [更新タイミングと内部動作](explanation/runtime-behavior.md)、[レイアウト・アウトライン・文字単位オブジェクトの仕組み](explanation/layout-and-objects.md)
+- 数値やラベルをスクリプトから更新したい: [スクリプトから更新する](how-to/update-from-script.md)
+- 見た目を詰めたい: [アウトラインを設定する](how-to/use-outline.md) と [縦書き・アンカー・文字配置を調整する](how-to/adjust-layout.md)
+- 挙動の理由まで把握したい: [更新タイミングと内部動作](explanation/runtime-behavior.md) と [レイアウト・アウトライン・文字単位オブジェクトの仕組み](explanation/layout-and-objects.md)
