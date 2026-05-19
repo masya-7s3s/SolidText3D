@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `SolidText3DComponent.MonospaceMode` と Inspector の `Monospace Mode` を追加し、全角を 1em、半角を 0.5em の固定セルで配置する等幅表示モードを公開した
+
+### Changed
+
+- 横書きでは固定セルベースの配置、縦書きでは半角 / 全角セル幅判定を使うことで、`MonospaceMode` 時の混在文字レイアウトを安定させた
+- GitHub Actions の release workflow を `actions/checkout@v5` と GitHub CLI ベースへ更新し、Node 20 非推奨化の影響を避けつつ既存 release への zip 差し替えにも対応した
+- ルート `README.md` のドキュメント一覧と参照パスをハイパーリンク化し、GitHub 上で辿りやすくした
+- `Samples~/BasicUsage` と `Samples~/CJKExample` を更新し、Text 更新後に `RegenerateMesh()` を呼ぶよう修正するとともに、スペースキー入力を Input System / Legacy Input Manager の両方で扱えるようにした
+- CJK サンプルの表示文字列を、日本語だけでなく環境依存文字や記号を含む内容へ更新した
+
 ## [2.2.3] - 2026-05-19
 
 ### Changed

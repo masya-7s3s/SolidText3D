@@ -22,6 +22,8 @@
 - Basic Usage
 - CJK Example
 
+現在の Samples は、テキスト更新後に RegenerateMesh() を呼ぶ実装で、スペースキー入力は Input System / Legacy Input Manager の両方に対応しています。
+
 ## 2. GameObject を作る
 
 1. Hierarchy で空の GameObject を作ります。
