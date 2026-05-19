@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.4] - 2026-05-20
+
 ### Added
 
 - `SolidText3DComponent.MonospaceMode` と Inspector の `Monospace Mode` を追加し、全角を 1em、半角を 0.5em の固定セルで配置する等幅表示モードを公開した

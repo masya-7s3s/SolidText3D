@@ -1,6 +1,6 @@
 ﻿{
   "name": "com.masachuang.solidtext3d",
-  "version": "2.2.3",
+  "version": "2.2.4",
   "displayName": "Solid Text 3D",
   "description": "Generate 3D polygon meshes from TTF/OTF font glyphs as Unity GameObjects (MeshFilter + MeshRenderer). Supports CJK text, runtime updates, per-character layout, and configurable outline modes.",
   "unity": "6000.0",
