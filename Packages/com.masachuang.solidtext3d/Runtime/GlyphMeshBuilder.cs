@@ -316,7 +316,32 @@ namespace MasaChuang.SolidText3D
             var defaultRenderer = new GlyphContourBuilder(p.BezierErrorThreshold, scale);
             TextRenderer.RenderTextTo(defaultRenderer, p.Text, defaultOptions);
 
-            return defaultRenderer.GlyphContours;
+            var horizontalGlyphs = defaultRenderer.GlyphContours;
+            PopulateHorizontalCharIndices(horizontalGlyphs, p.Text);
+            return horizontalGlyphs;
+        }
+
+        private static void PopulateHorizontalCharIndices(List<GlyphContour> glyphs, string text)
+        {
+            if (glyphs == null || glyphs.Count == 0 || string.IsNullOrEmpty(text))
+                return;
+
+            int glyphIndex = 0;
+            for (int textIndex = 0; textIndex < text.Length && glyphIndex < glyphs.Count;)
+            {
+                if (text[textIndex] == '\n')
+                {
+                    textIndex++;
+                    continue;
+                }
+
+                var glyph = glyphs[glyphIndex];
+                glyph.CharIndex = textIndex;
+                glyphs[glyphIndex] = glyph;
+
+                glyphIndex++;
+                textIndex += char.IsSurrogatePair(text, textIndex) ? 2 : 1;
+            }
         }
 
         private static SixLabors.Fonts.Font GetOrCreateRenderFont(int fontSourceId, byte[] fontBytes)

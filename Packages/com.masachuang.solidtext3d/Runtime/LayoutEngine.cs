@@ -53,6 +53,12 @@ namespace MasaChuang.SolidText3D
             {
                 if (lineIndices.Count == 0) continue;
 
+                if (p.MonospaceMode)
+                {
+                    ApplyHorizontalMonospaceLayout(glyphs, lineIndices, p, fontSize);
+                    continue;
+                }
+
                 float lineWidth = 0f;
                 int pos = 0;
                 foreach (int gi in lineIndices)
@@ -78,6 +84,39 @@ namespace MasaChuang.SolidText3D
                     glyphs[gi] = g;
                     pos++;
                 }
+            }
+        }
+
+        private static void ApplyHorizontalMonospaceLayout(List<GlyphContour> glyphs, List<int> lineIndices, MeshGenerationParams p, float fontSize)
+        {
+            float lineWidth = 0f;
+            float cursorX = 0f;
+            var localOffsets = new float[lineIndices.Count];
+
+            for (int index = 0; index < lineIndices.Count; index++)
+            {
+                int gi = lineIndices[index];
+                var g = glyphs[gi];
+                float cellWidth = GetMonospaceCellWidth(g, p, fontSize);
+                float horizontalPadding = Mathf.Max(0f, cellWidth - g.Bounds.width) * 0.5f;
+                localOffsets[index] = cursorX + horizontalPadding - g.Bounds.xMin;
+                lineWidth = cursorX + cellWidth;
+                cursorX += cellWidth + p.LetterSpacing;
+            }
+
+            float alignX = 0f;
+            switch (p.HorizontalAnchor)
+            {
+                case HorizontalAnchor.Center: alignX = -lineWidth * 0.5f; break;
+                case HorizontalAnchor.Right:  alignX = -lineWidth;        break;
+            }
+
+            for (int index = 0; index < lineIndices.Count; index++)
+            {
+                int gi = lineIndices[index];
+                var g = glyphs[gi];
+                g.Offset = new Vector3(alignX + localOffsets[index], 0f, 0f);
+                glyphs[gi] = g;
             }
         }
 
@@ -135,7 +174,9 @@ namespace MasaChuang.SolidText3D
 
                 // 各文字を charStep の固定セル内で垂直・水平中央揃え
                 // 正規化後グリフ: X=[0, charWidth], Y=[-charHeight, 0]（上端が 0）
-                float charWidth = g.AdvanceWidth > 0f ? g.AdvanceWidth : colWidth;
+                float charWidth = p.MonospaceMode
+                    ? GetMonospaceCellWidth(g, p, fontSize)
+                    : (g.AdvanceWidth > 0f ? g.AdvanceWidth : colWidth);
 
                 // RotateAsciiInVertical: 印字可能 ASCII（0x21-0x7E）を 90 度時計回り回転
                 bool shouldRotate = p.RotateAsciiInVertical
@@ -255,6 +296,38 @@ namespace MasaChuang.SolidText3D
         private static bool IsJapaneseVerticalPunctuation(char c)
         {
             return c == '、' || c == '。';
+        }
+
+        private static float GetMonospaceCellWidth(GlyphContour glyph, MeshGenerationParams p, float fontSize)
+        {
+            char sourceChar;
+            if (TryGetSourceCharacter(glyph, p, out sourceChar))
+                return IsHalfWidthMonospaceCharacter(sourceChar) ? fontSize * 0.5f : fontSize;
+
+            float inferredAdvance = glyph.AdvanceWidth > 0f ? glyph.AdvanceWidth : glyph.Bounds.width;
+            return inferredAdvance <= fontSize * 0.75f ? fontSize * 0.5f : fontSize;
+        }
+
+        private static bool TryGetSourceCharacter(GlyphContour glyph, MeshGenerationParams p, out char sourceChar)
+        {
+            sourceChar = '\0';
+            if (string.IsNullOrEmpty(p.Text))
+                return false;
+
+            if (glyph.CharIndex < 0 || glyph.CharIndex >= p.Text.Length)
+                return false;
+
+            sourceChar = p.Text[glyph.CharIndex];
+            return true;
+        }
+
+        private static bool IsHalfWidthMonospaceCharacter(char c)
+        {
+            if (c <= '\u007F') return true;
+            if (c >= '\uFF61' && c <= '\uFF9F') return true;
+            if (c >= '\uFFA0' && c <= '\uFFDC') return true;
+            if (c >= '\uFFE8' && c <= '\uFFEE') return true;
+            return false;
         }
     }
 }

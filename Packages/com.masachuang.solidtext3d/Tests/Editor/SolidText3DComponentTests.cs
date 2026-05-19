@@ -19,9 +19,11 @@ namespace MasaChuang.SolidText3D.Tests.Editor
             .GetField("_fontAsset", BindingFlags.NonPublic | BindingFlags.Instance);
         private static readonly FieldInfo FontBytesCacheField = typeof(SolidText3DComponent)
             .GetField("_fontBytesCache", BindingFlags.NonPublic | BindingFlags.Instance);
+        private const string TemporaryComparisonFontFolder = "Assets/SolidText3DTestFonts";
 
         private GameObject _go;
         private SolidText3DComponent _component;
+        private string _temporaryComparisonFontAssetPath;
 
         private static DeferredRegenerationState GetDeferredState(SolidText3DComponent component)
         {
@@ -72,7 +74,7 @@ namespace MasaChuang.SolidText3D.Tests.Editor
         private static string FindFontAssetPath(string fileName)
         {
             string nameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
-            string[] guids = AssetDatabase.FindAssets($"{nameWithoutExtension} t:Font", new[] { "Assets" });
+            string[] guids = AssetDatabase.FindAssets($"{nameWithoutExtension} t:Font");
             for (int i = 0; i < guids.Length; i++)
             {
                 string assetPath = AssetDatabase.GUIDToAssetPath(guids[i]);
@@ -92,6 +94,84 @@ namespace MasaChuang.SolidText3D.Tests.Editor
             return AssetDatabase.LoadAssetAtPath<Font>(assetPath);
         }
 
+        private string GetComparisonFontAssetPath()
+        {
+            string assetPath = FindFontAssetPath("NotoSerifJP-Black.ttf");
+            if (!string.IsNullOrEmpty(assetPath))
+                return assetPath;
+
+            if (!string.IsNullOrEmpty(_temporaryComparisonFontAssetPath))
+                return _temporaryComparisonFontAssetPath;
+
+            string defaultFontAssetPath = FindFontAssetPath("NotoSansJP-Black.ttf");
+            string excludedFullPath = string.IsNullOrEmpty(defaultFontAssetPath)
+                ? null
+                : Path.GetFullPath(defaultFontAssetPath);
+            string systemFontPath = FindSystemFontFile(excludedFullPath);
+            Assert.IsNotNull(systemFontPath, "比較用フォントが存在すること");
+
+            EnsureTemporaryComparisonFontFolder();
+
+            string targetPath = AssetDatabase.GenerateUniqueAssetPath(
+                $"{TemporaryComparisonFontFolder}/{Path.GetFileNameWithoutExtension(systemFontPath)}-comparison{Path.GetExtension(systemFontPath)}");
+            File.Copy(systemFontPath, Path.GetFullPath(targetPath), overwrite: false);
+            AssetDatabase.ImportAsset(targetPath, ImportAssetOptions.ForceSynchronousImport);
+            _temporaryComparisonFontAssetPath = targetPath;
+            return _temporaryComparisonFontAssetPath;
+        }
+
+        private static string FindSystemFontFile(string excludedFullPath)
+        {
+            string[] fontDirectories =
+            {
+                System.Environment.GetFolderPath(System.Environment.SpecialFolder.Fonts),
+                "/System/Library/Fonts",
+                "/Library/Fonts",
+                "/usr/share/fonts",
+                "/usr/local/share/fonts"
+            };
+            string[] patterns = { "*.ttf", "*.otf", "*.ttc" };
+
+            for (int directoryIndex = 0; directoryIndex < fontDirectories.Length; directoryIndex++)
+            {
+                string fontDirectory = fontDirectories[directoryIndex];
+                if (string.IsNullOrEmpty(fontDirectory) || !Directory.Exists(fontDirectory))
+                    continue;
+
+                for (int patternIndex = 0; patternIndex < patterns.Length; patternIndex++)
+                {
+                    try
+                    {
+                        foreach (string candidatePath in Directory.EnumerateFiles(fontDirectory, patterns[patternIndex], SearchOption.AllDirectories))
+                        {
+                            string candidateFullPath = Path.GetFullPath(candidatePath);
+                            if (string.Equals(candidateFullPath, excludedFullPath, System.StringComparison.OrdinalIgnoreCase))
+                                continue;
+
+                            return candidateFullPath;
+                        }
+                    }
+                    catch (System.UnauthorizedAccessException)
+                    {
+                    }
+                    catch (System.IO.DirectoryNotFoundException)
+                    {
+                    }
+                    catch (System.IO.IOException)
+                    {
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private static void EnsureTemporaryComparisonFontFolder()
+        {
+            if (!AssetDatabase.IsValidFolder(TemporaryComparisonFontFolder))
+                AssetDatabase.CreateFolder("Assets", Path.GetFileName(TemporaryComparisonFontFolder));
+        }
+
         [SetUp]
         public void SetUp()
         {
@@ -102,6 +182,20 @@ namespace MasaChuang.SolidText3D.Tests.Editor
         [TearDown]
         public void TearDown()
         {
+            if (!string.IsNullOrEmpty(_temporaryComparisonFontAssetPath))
+            {
+                AssetDatabase.DeleteAsset(_temporaryComparisonFontAssetPath);
+                _temporaryComparisonFontAssetPath = null;
+
+                string tempFolderFullPath = Path.GetFullPath(TemporaryComparisonFontFolder);
+                if (AssetDatabase.IsValidFolder(TemporaryComparisonFontFolder) &&
+                    Directory.Exists(tempFolderFullPath) &&
+                    Directory.GetFileSystemEntries(tempFolderFullPath).Length == 0)
+                {
+                    AssetDatabase.DeleteAsset(TemporaryComparisonFontFolder);
+                }
+            }
+
             if (_go != null)
                 Object.DestroyImmediate(_go);
         }
@@ -154,6 +248,14 @@ namespace MasaChuang.SolidText3D.Tests.Editor
             _component.RegenerateMesh();
             _component.OutlineWidth = 0.1f;
             Assert.IsTrue(_component.IsDirty, "OutlineWidth 変更後にダーティフラグが立つこと");
+        }
+
+        [Test]
+        public void SetMonospaceMode_MarksDirty()
+        {
+            _component.RegenerateMesh();
+            _component.MonospaceMode = true;
+            Assert.IsTrue(_component.IsDirty, "MonospaceMode 変更後にダーティフラグが立つこと");
         }
 
         [Test]
@@ -279,8 +381,8 @@ namespace MasaChuang.SolidText3D.Tests.Editor
         [Test]
         public void GetFontBytes_FontAssetOverridesExistingDefaultCache()
         {
-            string serifFontAssetPath = FindFontAssetPath("NotoSerifJP-Black.ttf");
-            var serifFont = LoadFontByFileName("NotoSerifJP-Black.ttf");
+            string serifFontAssetPath = GetComparisonFontAssetPath();
+            var serifFont = AssetDatabase.LoadAssetAtPath<Font>(serifFontAssetPath);
             Assert.IsNotNull(serifFont, "比較用フォントが存在すること");
 
             var defaultBytes = AssetDatabase.LoadAssetAtPath<TextAsset>(
@@ -304,7 +406,7 @@ namespace MasaChuang.SolidText3D.Tests.Editor
         public void ComputeParamHash_FontAssetChange_ChangesHash()
         {
             var sansFont = LoadFontByFileName("NotoSansJP-Black.ttf");
-            var serifFont = LoadFontByFileName("NotoSerifJP-Black.ttf");
+            var serifFont = AssetDatabase.LoadAssetAtPath<Font>(GetComparisonFontAssetPath());
             Assert.IsNotNull(sansFont);
             Assert.IsNotNull(serifFont);
 

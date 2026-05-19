@@ -21,27 +21,28 @@ TTF / OTF フォントから 3D テキストメッシュを生成する Unity UP
 3. 次の URL を入力します
 
 ```text
-https://github.com/masya-7s3s/SolidText3D.git?path=/Packages/com.masachuang.solidtext3d#v2.2.3
+https://github.com/masya-7s3s/SolidText3D.git?path=/Packages/com.masachuang.solidtext3d
 ```
 
-`#v2.2.3` は使いたい Release tag に置き換えます。  
-このリポジトリは Unity プロジェクト全体を含むため、`?path=/Packages/com.masachuang.solidtext3d` を付けます。
+過去のリリース版を指定したい場合だけ、URL の末尾に `#vX.Y.Z` を付けます。
 
 ### ローカル package.json から導入する
 
 1. Unity Package Manager を開きます
 2. 追加メニューから Add package from disk... を選びます
-3. Packages/com.masachuang.solidtext3d/package.json を指定します
+3. [package.json](package.json) を指定します
 
 manifest.json に直接記述する場合の例です。
 
 ```json
 {
   "dependencies": {
-    "com.masachuang.solidtext3d": "https://github.com/masya-7s3s/SolidText3D.git?path=/Packages/com.masachuang.solidtext3d#v2.2.3"
+    "com.masachuang.solidtext3d": "https://github.com/masya-7s3s/SolidText3D.git?path=/Packages/com.masachuang.solidtext3d"
   }
 }
 ```
+
+過去のリリース版を固定したい場合だけ、URL の末尾に `#vX.Y.Z` を付けます。
 
 ローカル参照で使う場合の例です。
 
@@ -111,14 +112,14 @@ RequestRegenerateMesh() は latest-only で古い request を圧縮し、古い 
 2. SolidText3DComponent の Font Asset に Font を割り当てます
 3. 必要なら RegenerateMesh() で反映します
 
-Editor では .ttf / .otf のインポート時に Assets/SolidText3DFonts 配下へ .bytes キャッシュを自動生成します。  
+Editor では .ttf / .otf のインポート時に [Assets/SolidText3DFonts](../../Assets/SolidText3DFonts) 配下へ .bytes キャッシュを自動生成します。  
 ビルド済みプレイヤーで FontAsset を差し替えても、その場で新しいフォントデータを自動解決するわけではありません。
 
 ## 詳細ドキュメント
 
-- Documentation~/index.md: パッケージ同梱の詳細ガイド
-- CHANGELOG.md: 変更履歴
-- Third Party Notices.md: サードパーティライセンス
+- [Documentation~/index.md](Documentation~/index.md): パッケージ同梱の詳細ガイド
+- [CHANGELOG.md](CHANGELOG.md): 変更履歴
+- [Third Party Notices.md](Third%20Party%20Notices.md): サードパーティライセンス
 
 リポジトリ版の長文ドキュメントは documents 配下にあります。
 

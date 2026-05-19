@@ -159,6 +159,33 @@ namespace MasaChuang.SolidText3D.Tests.Editor
                 Assert.AreEqual(0f, glyphs[i].Offset.y, 0.001f, $"MaxWidth=0 のとき Y オフセットが 0 であること (glyph {i})");
         }
 
+        [Test]
+        public void ApplyHorizontalLayout_MonospaceMode_UsesHalfAndFullWidthCells()
+        {
+            var glyphs = new List<GlyphContour>
+            {
+                new GlyphContour { AdvanceWidth = 0.8f, Bounds = new Rect(0f, 0f, 0.8f, 1f), IsVisible = true, CharIndex = 0 },
+                new GlyphContour { AdvanceWidth = 0.3f, Bounds = new Rect(1.1f, 0f, 0.3f, 1f), IsVisible = true, CharIndex = 1 },
+                new GlyphContour { AdvanceWidth = 0.85f, Bounds = new Rect(1.7f, 0f, 0.85f, 1f), IsVisible = true, CharIndex = 2 },
+                new GlyphContour { AdvanceWidth = 0.4f, Bounds = new Rect(2.8f, 0f, 0.4f, 1f), IsVisible = true, CharIndex = 3 }
+            };
+
+            var p = DefaultParams("Ａ1Ｂ2");
+            p.MonospaceMode = true;
+            p.LetterSpacing = 0.2f;
+
+            LayoutEngine.ApplyHorizontalLayout(glyphs, p);
+
+            Assert.AreEqual(0.1f, glyphs[0].Bounds.xMin + glyphs[0].Offset.x, 0.001f,
+                "全角文字は 1em セル内で中央寄せされること");
+            Assert.AreEqual(1.3f, glyphs[1].Bounds.xMin + glyphs[1].Offset.x, 0.001f,
+                "半角文字は 0.5em セルと共通 LetterSpacing で配置されること");
+            Assert.AreEqual(1.975f, glyphs[2].Bounds.xMin + glyphs[2].Offset.x, 0.001f,
+                "後続の全角文字も固定セル幅で連続配置されること");
+            Assert.AreEqual(3.15f, glyphs[3].Bounds.xMin + glyphs[3].Offset.x, 0.001f,
+                "後続の半角文字も固定セル幅で連続配置されること");
+        }
+
 
         // ── T027: 縦書きレイアウトテスト ────────────────────────────────
 
