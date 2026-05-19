@@ -53,6 +53,7 @@ SolidText3DComponent は、GameObject に 3D テキストメッシュを生成�
 | VerticalAnchor | VerticalAnchor | Lower | 縦方向の基準位置です。 |
 | DepthAnchor | DepthAnchor | Front | 奥行き方向の基準位置です。 |
 | WritingMode | WritingMode | Horizontal | Horizontal / Vertical を切り替えます。 |
+| MonospaceMode | bool | false | 全角を 1em、半角を 0.5em の固定セルで配置する等幅表示モードです。LetterSpacing はセルの外側へ追加されます。 |
 | MaxWidth | float | 0 | 横書き用の幅設定として保持されますが、現行実装では自動折り返しに使われません。 |
 | MaxHeight | float | 0 | 縦書きで列を折り返す高さです。0 は無制限です。 |
 | RotateAsciiInVertical | bool | false | 縦書き時に印字可能 ASCII を 90 度回転します。 |
@@ -93,7 +94,7 @@ SolidText3DComponent は、GameObject に 3D テキストメッシュを生成�
 - Mesh Update: dirty 状態の確認と手動再生成
 - Text & Font: テキスト本文とフォント設定
 - Geometry: 押し出し厚み、サイズ、文字間・行間
-- Layout: 書字方向、アンカー、折り返し関連設定
+- Layout: 書字方向、Monospace Mode、アンカー、折り返し関連設定
 - Outline: outline の有効化と見た目設定
 - Output: SingleObject / PerCharacter の切り替え
 

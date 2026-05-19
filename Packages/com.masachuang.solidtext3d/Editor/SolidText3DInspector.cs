@@ -144,6 +144,7 @@ namespace MasaChuang.SolidText3D.Editor
 
                 EditorGUI.BeginChangeCheck();
                 var newWritingMode = (WritingMode)EditorGUILayout.EnumPopup("Writing Mode", _target.WritingMode);
+                bool newMonospaceMode = EditorGUILayout.Toggle("Monospace Mode", _target.MonospaceMode);
                 bool newRotateAscii = EditorGUILayout.Toggle("Rotate ASCII in Vertical", _target.RotateAsciiInVertical);
 
                 if (newWritingMode != WritingMode.Vertical)
@@ -161,6 +162,7 @@ namespace MasaChuang.SolidText3D.Editor
                 {
                     Undo.RecordObject(_target, "Change Layout");
                     _target.WritingMode = newWritingMode;
+                    _target.MonospaceMode = newMonospaceMode;
                     _target.RotateAsciiInVertical = newRotateAscii;
                     _target.HorizontalAnchor = newHorizontalAnchor;
                     _target.VerticalAnchor = newVerticalAnchor;

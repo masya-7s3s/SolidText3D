@@ -1,5 +1,8 @@
 ﻿using UnityEngine;
 using MasaChuang.SolidText3D;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
 namespace MasaChuang.SolidText3D.Samples
 {
@@ -27,17 +30,36 @@ namespace MasaChuang.SolidText3D.Samples
         private void Update()
         {
             // スペースキーでスコアを増加させてテキストを動的に更新
-            if (Input.GetKeyDown(KeyCode.Space))
+            if (IsSpacePressedThisFrame())
             {
                 _score += 100;
                 UpdateScoreText();
             }
         }
 
+        private static bool IsSpacePressedThisFrame()
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
+            {
+                return true;
+            }
+#endif
+
+#if ENABLE_LEGACY_INPUT_MANAGER
+            return Input.GetKeyDown(KeyCode.Space);
+#else
+            return false;
+#endif
+        }
+
         private void UpdateScoreText()
         {
             if (_text3D != null)
+            {
                 _text3D.Text = $"Score: {_score}";
+                _text3D.RegenerateMesh();
+            }
         }
     }
 }

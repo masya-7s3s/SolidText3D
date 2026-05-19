@@ -44,6 +44,9 @@
         /// <summary>書字方向。デフォルト: Horizontal</summary>
         public WritingMode WritingMode;
 
+        /// <summary>全角=1em、半角=0.5em の固定セルで配置するか</summary>
+        public bool MonospaceMode;
+
         /// <summary>横書き時の最大幅（0 = 無制限）</summary>
         public float MaxWidth;
 

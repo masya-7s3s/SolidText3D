@@ -105,6 +105,7 @@ if (!text3D.HasPendingRegeneration)
 - VerticalAnchor
 - DepthAnchor
 - WritingMode
+- MonospaceMode
 - ObjectMode
 - MaxWidth
 - MaxHeight
@@ -142,6 +143,9 @@ text3D.RegenerateMesh();
 - 表示内容が本当に変わったときだけ Text を更新する
 - 文字数の多い長文を高頻度で更新しない
 - PerCharacter は SingleObject よりオブジェクト数が増えるので必要な場所だけ使う
+
+同梱 Samples の Basic Usage / CJK Example も、Text を更新したあとに RegenerateMesh() を呼ぶ構成です。
+どちらのサンプルもスペースキー入力は Input System / Legacy Input Manager の両方に対応しています。
 
 ## ランタイムでフォントを差し替えたいとき
 

@@ -30,6 +30,22 @@ text3D.RegenerateMesh();
 横書きでは Letter Spacing が文字送りに足されます。  
 縦書きでは Letter Spacing が上下方向の送り、Line Spacing が列幅に効きます。
 
+## 等幅表示モードを使う
+
+桁揃えを優先したい場合は MonospaceMode を使います。
+
+```csharp
+text3D.MonospaceMode = true;
+text3D.Text = "HP 128/256";
+text3D.RegenerateMesh();
+```
+
+このモードでは、全角文字は 1em、半角文字は 0.5em の固定セルで配置されます。
+Letter Spacing はセルの外側へ加算されるため、可変幅モードから切り替えても字間の印象が急に崩れにくくなっています。
+
+横書きでは各行を固定セルで並べ直し、縦書きでも同じ半角 / 全角のセル幅判定を列内の配置に使います。
+タイマー、時計、スコア、在庫数のように数字や ASCII 記号の並びを見やすくしたい表示に向いています。
+
 ## 縦書きにする
 
 ```csharp

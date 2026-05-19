@@ -34,6 +34,7 @@ MonoBehaviour として GameObject に追加して使用します。
 | VerticalAnchor | VerticalAnchor | 縦方向の基準位置です。 |
 | DepthAnchor | DepthAnchor | 奥行き方向の基準位置です。 |
 | WritingMode | WritingMode | Horizontal / Vertical を切り替えます。 |
+| MonospaceMode | bool | 全角を 1em、半角を 0.5em の固定セルで配置する等幅表示モードです。LetterSpacing は可変幅時と同じ追加間隔として使われます。 |
 | ObjectMode | ObjectMode | SingleObject / PerCharacter を切り替えます。 |
 | MaxWidth | float | 横書き用の値として保持されますが、現行実装では自動折り返しに使われません。 |
 | MaxHeight | float | 縦書きの列折り返し高さです。 |
@@ -53,12 +54,18 @@ MonoBehaviour として GameObject に追加して使用します。
 
 RequestRegenerateMesh() は latest-only で古い request を圧縮し、古い completed result で表示が巻き戻らないように実装されています。
 
+## 等幅表示モード
+
+- MonospaceMode = true で、全角文字は 1em 幅、半角文字は 0.5em 幅の固定セルで配置します
+- LetterSpacing は固定セルの外側に加算されるため、可変幅モードと切り替えても字間の印象が極端に変わりにくくなります
+- タイマー、時計、スコア表示のように桁揃えを優先したい用途に向いています
+
 ## Inspector セクション
 
 - Mesh Update: dirty 状態の表示と Regenerate Mesh
 - Text & Font: テキストとフォントの設定
 - Geometry: Extrusion Depth、Font Size、Letter Spacing、Line Spacing
-- Layout: Writing Mode、Anchor、Max Width、Max Height
+- Layout: Writing Mode、Monospace Mode、Anchor、Max Width、Max Height
 - Outline: Enabled、Offset Amount、Thickness Ratio (Body=1)、Display Mode、Material
 - Output: Object Mode の切り替え
 

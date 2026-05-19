@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -62,8 +62,21 @@ jobs:
           zip -r "com.masachuang.solidtext3d-${VERSION}.zip" "com.masachuang.solidtext3d"
 
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.package.outputs.tag_name }}
-          generate_release_notes: true
-          files: dist/com.masachuang.solidtext3d-${{ steps.package.outputs.version }}.zip
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          TAG_NAME="${{ steps.package.outputs.tag_name }}"
+          VERSION="${{ steps.package.outputs.version }}"
+          ARCHIVE_PATH="dist/com.masachuang.solidtext3d-${VERSION}.zip"
+
+          if gh release view "$TAG_NAME" > /dev/null 2>&1; then
+            gh release upload "$TAG_NAME" "$ARCHIVE_PATH" --clobber
+            exit 0
+          fi
+
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            gh release create "$TAG_NAME" "$ARCHIVE_PATH" --generate-notes
+          else
+            gh release create "$TAG_NAME" "$ARCHIVE_PATH" --target "${GITHUB_SHA}" --generate-notes
+          fi

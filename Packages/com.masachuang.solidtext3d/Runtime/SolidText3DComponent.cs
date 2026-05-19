@@ -37,6 +37,7 @@ namespace MasaChuang.SolidText3D
         [SerializeField] private VerticalAnchor _verticalAnchor = VerticalAnchor.Lower;
         [SerializeField] private DepthAnchor _depthAnchor = DepthAnchor.Front;
         [SerializeField] private WritingMode _writingMode = WritingMode.Horizontal;
+        [SerializeField] private bool _monospaceMode = false;
         [SerializeField] private ObjectMode _objectMode = ObjectMode.SingleObject;
         [SerializeField] private float _maxWidth = 0f;
         [SerializeField] private float _maxHeight = 0f;
@@ -291,6 +292,15 @@ namespace MasaChuang.SolidText3D
         }
 
         /// <summary>
+        /// 全角を 1em、半角を 0.5em の固定セルで配置する等幅表示モード。
+        /// </summary>
+        public bool MonospaceMode
+        {
+            get => _monospaceMode;
+            set { _monospaceMode = value; MarkDirty(); }
+        }
+
+        /// <summary>
         /// テキストの GameObject 生成モード（SingleObject / PerCharacter）。
         /// </summary>
         public ObjectMode ObjectMode
@@ -540,6 +550,7 @@ namespace MasaChuang.SolidText3D
                 VerticalAnchor = _verticalAnchor,
                 DepthAnchor = _depthAnchor,
                 WritingMode = _writingMode,
+                MonospaceMode = _monospaceMode,
                 MaxWidth = _maxWidth,
                 MaxHeight = _maxHeight,
                 RotateAsciiInVertical = _rotateAsciiInVertical
@@ -969,6 +980,7 @@ namespace MasaChuang.SolidText3D
             hash ^= _verticalAnchor.GetHashCode();
             hash ^= _depthAnchor.GetHashCode();
             hash ^= _writingMode.GetHashCode();
+            hash ^= _monospaceMode.GetHashCode();
             hash ^= _objectMode.GetHashCode();
             hash ^= _extrusionDepth.GetHashCode();
             hash ^= _fontSize.GetHashCode();

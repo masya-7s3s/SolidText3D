@@ -11,6 +11,7 @@ Unity の GameObject として扱える 3D テキストを生成し、日本語�
 - 日本語・中国語・韓国語を含む CJK テキストに対応
 - Edit Mode / Play Mode の両方で明示再生成に対応
 - 横書き / 縦書きに対応
+- 全角 1em / 半角 0.5em の等幅表示モード
 - SingleObject / PerCharacter を切り替え可能
 - 文字本体と独立したアウトラインメッシュを生成
 - Unity 6 系で利用可能
@@ -20,48 +21,49 @@ Unity の GameObject として扱える 3D テキストを生成し、日本語�
 - ワールド空間に表示する立体タイトル
 - ネームプレートやラベル
 - スコア、残り時間、状態表示などの動的テキスト
+- タイマーや時計のような桁揃えが必要な表示
 - 文字単位アニメーションを使う演出
 
 ## リポジトリ構成
 
-- Packages/com.masachuang.solidtext3d: UPM パッケージ本体
-- Assets/Samples: Unity に取り込んだサンプル
-- documents: GitHub 用のユーザー向けドキュメント
+- [Packages/com.masachuang.solidtext3d](Packages/com.masachuang.solidtext3d): UPM パッケージ本体
+- [Assets/Samples](Assets/Samples): Unity に取り込んだサンプル
+- [documents](documents): GitHub 用のユーザー向けドキュメント
 
 ## 導入方法
 
 ### GitHub Release / Git URL から導入する
 
-Unity Package Manager で GitHub のタグ付きリリースを直接指定できます。
+Unity Package Manager で Git URL を指定して導入できます。
 
-1. GitHub Releases で使いたいバージョンを確認します。
-2. Unity で Package Manager を開きます。
-3. 「+」 から Add package from git URL... を選びます。
-4. 次の URL を入力します。
+1. Unity で Package Manager を開きます。
+2. 「+」 から Add package from git URL... を選びます。
+3. 次の URL を入力します。
 
 ```text
-https://github.com/masya-7s3s/SolidText3D.git?path=/Packages/com.masachuang.solidtext3d#v2.2.3
+https://github.com/masya-7s3s/SolidText3D.git?path=/Packages/com.masachuang.solidtext3d
 ```
 
-`#v2.2.3` の部分は使いたい Release tag に置き換えてください。  
-このリポジトリは Unity プロジェクト全体を含むため、`?path=/Packages/com.masachuang.solidtext3d` の指定が必要です。
+過去のリリース版を指定したい場合だけ、URL の末尾に `#vX.Y.Z` を付けてください。
 
 ### manifest.json に直接追加する
 
 ```json
 {
   "dependencies": {
-    "com.masachuang.solidtext3d": "https://github.com/masya-7s3s/SolidText3D.git?path=/Packages/com.masachuang.solidtext3d#v2.2.3"
+    "com.masachuang.solidtext3d": "https://github.com/masya-7s3s/SolidText3D.git?path=/Packages/com.masachuang.solidtext3d"
   }
 }
 ```
+
+過去のリリース版を固定したい場合だけ、URL の末尾に `#vX.Y.Z` を付けてください。
 
 ### ローカルパッケージとして導入する
 
 1. このリポジトリを取得します。
 2. Unity で Package Manager を開きます。
 3. 「+」 から Add package from disk... を選びます。
-4. Packages/com.masachuang.solidtext3d/package.json を指定します。
+4. [Packages/com.masachuang.solidtext3d/package.json](Packages/com.masachuang.solidtext3d/package.json) を指定します。
 
 ### ローカル参照を manifest.json に直接追加する
 
@@ -75,7 +77,7 @@ https://github.com/masya-7s3s/SolidText3D.git?path=/Packages/com.masachuang.soli
 
 ## リリース運用
 
-- `Packages/com.masachuang.solidtext3d/package.json` の `version` を更新します
+- [Packages/com.masachuang.solidtext3d/package.json](Packages/com.masachuang.solidtext3d/package.json) の `version` を更新します
 - 同じ版の Git tag を `vX.Y.Z` 形式で作成して push します
 - GitHub Actions の release workflow が tag と package version の一致を検証し、Release とパッケージ zip を自動生成します
 
@@ -118,6 +120,7 @@ public sealed class SolidText3DSample : MonoBehaviour
 - 高頻度更新では RequestRegenerateMesh() を使います
 - HasPendingRegeneration で deferred path の収束状態を確認できます
 - DeferredRegenerationFailed は keep-last-good のまま失敗を通知します
+- MonospaceMode を有効にすると、全角は 1em、半角は 0.5em の固定セルで配置され、LetterSpacing は共通の追加間隔として扱われます
 - 横書きの Max Width は現行実装では自動折り返しに使われません
 - 縦書きの Max Height は列折り返しに使われます
 - ビルド済みプレイヤーで FontAsset を差し替えても、その場で新しいフォントデータを自動解決するわけではありません
@@ -131,22 +134,22 @@ Package Manager から次の Samples を Import できます。
 
 ## ドキュメント
 
-GitHub 上で読むユーザー向けドキュメントは documents 配下にあります。
+GitHub 上で読むユーザー向けドキュメントは [documents](documents) 配下にあります。
 
-- documents/README.md
-- documents/tutorials/first-3d-text.md
-- documents/how-to/import-fonts.md
-- documents/how-to/update-from-script.md
-- documents/how-to/use-outline.md
-- documents/how-to/adjust-layout.md
-- documents/reference/solid-text-3d-component.md
-- documents/explanation/runtime-behavior.md
-- documents/explanation/layout-and-objects.md
+- [documents/README.md](documents/README.md)
+- [documents/tutorials/first-3d-text.md](documents/tutorials/first-3d-text.md)
+- [documents/how-to/import-fonts.md](documents/how-to/import-fonts.md)
+- [documents/how-to/update-from-script.md](documents/how-to/update-from-script.md)
+- [documents/how-to/use-outline.md](documents/how-to/use-outline.md)
+- [documents/how-to/adjust-layout.md](documents/how-to/adjust-layout.md)
+- [documents/reference/solid-text-3d-component.md](documents/reference/solid-text-3d-component.md)
+- [documents/explanation/runtime-behavior.md](documents/explanation/runtime-behavior.md)
+- [documents/explanation/layout-and-objects.md](documents/explanation/layout-and-objects.md)
 
-UPM パッケージの概要は Packages/com.masachuang.solidtext3d/README.md にあります。  
-Package Manager 同梱向けの詳細ガイドは Packages/com.masachuang.solidtext3d/Documentation~/index.md にあります。
+UPM パッケージの概要は [Packages/com.masachuang.solidtext3d/README.md](Packages/com.masachuang.solidtext3d/README.md) にあります。  
+Package Manager 同梱向けの詳細ガイドは [Packages/com.masachuang.solidtext3d/Documentation~/index.md](Packages/com.masachuang.solidtext3d/Documentation~/index.md) にあります。
 
 ## ライセンス
 
-MIT License です。詳細は LICENSE を参照してください。  
-サードパーティライセンスは Packages/com.masachuang.solidtext3d/Third Party Notices.md を参照してください。
+MIT License です。詳細は [LICENSE](LICENSE) を参照してください。  
+サードパーティライセンスは [Packages/com.masachuang.solidtext3d/Third Party Notices.md](Packages/com.masachuang.solidtext3d/Third%20Party%20Notices.md) を参照してください。
